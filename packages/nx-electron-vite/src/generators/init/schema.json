@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "Init",
+  "title": "",
+  "type": "object",
+  "properties": {
+    "hostProject": {
+      "type": "string",
+      "alias": "hp",
+      "description": "Name of the host project",
+      "x-prompt": "Name of the host project",
+      "x-dropdown": "projects",
+      "x-priority": "important"
+    },
+    "name": {
+      "type": "string",
+      "alias": "n",
+      "description": " you will give to your Electron Application",
+      "x-prompt": "Human readable name for your Electron Application?"
+    },
+    "author": {
+      "type": "string",
+      "alias": "a",
+      "description": "Author of the electron application",
+      "x-prompt": "Author of the electron application"
+    },
+    "description": {
+      "type": "string",
+      "alias": "d",
+      "description": "description the electron application",
+      "x-prompt": "description the electron application"
+    }
+  },
+  "required": ["name","hostProject","author","description"]
+}

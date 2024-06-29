@@ -1,0 +1,19 @@
+{
+  "name": "@erickrodrcodes/nx-electron-vite",
+  "version": "0.0.1",
+  "dependencies": {
+    "@nx/devkit": "19.3.2",
+    "tslib": "^2.3.0",
+    "electron-builder": "^24.13.3",
+    "electron": "^30.0.2",
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "vite-plugin-electron": "^0.28.6",
+    "png2icons": "^2.0.1"
+  },
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
+  "private": true,
+  "generators": "./generators.json",
+  "executors": "./executors.json"
+}

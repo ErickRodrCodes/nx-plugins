@@ -1,0 +1,9 @@
+{
+  "generators": {
+    "init": {
+      "factory": "./src/generators/init/generator",
+      "schema": "./src/generators/init/schema.json",
+      "description": "An init generator that helps to initialize the electron app for your vite project"
+    }
+  }
+}

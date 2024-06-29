@@ -1,0 +1,14 @@
+{
+  "executors": {
+    "build-electron": {
+      "implementation": "./src/executors/build-electron/executor",
+      "schema": "./src/executors/build-electron/schema.json",
+      "description": "An executor that helps to build the electron app for your vite project"
+    },
+    "build-icons": {
+      "implementation": "./src/executors/build-icons/executor",
+      "schema": "./src/executors/build-icons/schema.json",
+      "description": "an executor that helps to create the set of icons for your project"
+    }
+  }
+}

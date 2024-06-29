@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Nx Electron Build",
+  "description": "Build Electron for an Nx Application with electron-vite and electron-builder",
+  "type": "object",
+  "properties": {
+    "hostProject": {
+      "type": "string",
+      "alias": "hp",
+      "description": "The name of the host project.",
+      "$default": {
+        "$source": "projectName"
+      },
+      "x-dropdown": "projects",
+      "x-priority": "important"
+    },
+    "hostProjectRoot": {
+      "type": "string",
+      "alias": "hp",
+      "description": "the relative path of the project root",
+      "$default": {
+        "$source": ""
+      },
+      "x-priority": "important"
+    },
+    "mainOutputPath": {
+      "type": "string",
+      "alias": "hp",
+      "description": "Relative path of the main process output directory",
+      "$default": {
+        "$source": ""
+      },
+      "x-priority": "important"
+    },
+    "mainOutputFilename": {
+      "type": "string",
+      "alias": "hp",
+      "description": "The name of the main process file",
+      "$default": {
+        "$source": ""
+      },
+      "x-priority": "important"
+    }
+  },
+  "required": ["hostProject","hostProjectRoot","mainOutputPath","mainOutputFilename"]
+}
