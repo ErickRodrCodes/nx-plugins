@@ -1,7 +1,7 @@
 {
   "name": "nx-electron-vite",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "package/nx-electron-vite/src",
+  "sourceRoot": "packages/nx-electron-vite/src",
   "projectType": "library",
   "tags": [],
   "targets": {
@@ -9,28 +9,28 @@
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/package/nx-electron-vite",
-        "main": "package/nx-electron-vite/src/index.ts",
-        "tsConfig": "package/nx-electron-vite/tsconfig.lib.json",
+        "outputPath": "dist/packages/nx-electron-vite",
+        "main": "packages/nx-electron-vite/src/index.ts",
+        "tsConfig": "packages/nx-electron-vite/tsconfig.lib.json",
         "assets": [
-          "package/nx-electron-vite/*.md",
+          "packages/nx-electron-vite/*.md",
           {
-            "input": "./package/nx-electron-vite/src",
+            "input": "./packages/nx-electron-vite/src",
             "glob": "**/!(*.ts)",
             "output": "./src"
           },
           {
-            "input": "./package/nx-electron-vite/src",
+            "input": "./packages/nx-electron-vite/src",
             "glob": "**/*.d.ts",
             "output": "./src"
           },
           {
-            "input": "./package/nx-electron-vite",
+            "input": "./packages/nx-electron-vite",
             "glob": "generators.json",
             "output": "."
           },
           {
-            "input": "./package/nx-electron-vite",
+            "input": "./packages/nx-electron-vite",
             "glob": "executors.json",
             "output": "."
           }
@@ -44,7 +44,7 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "package/nx-electron-vite/jest.config.ts"
+        "jestConfig": "packages/nx-electron-vite/jest.config.ts"
       }
     }
   }

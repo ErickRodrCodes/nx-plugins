@@ -10,9 +10,9 @@ Authored by Erick Rodriguez
 
 ## Plugins
 
-| Status | Name                                         | Description                                                                                                                          |
-| ------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| ✅     | [nx-electron-vite](package/nx-electron-vite) | [Nx](https://nx.dev) plugin to generate, run, package and build [Electron](https://electronjs.org) projects inside your Nx workspace |
+| Status | Name                                          | Description                                                                                                                          |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| ✅     | [nx-electron-vite](packages/nx-electron-vite) | [Nx](https://nx.dev) plugin to generate, run, package and build [Electron](https://electronjs.org) projects inside your Nx workspace |
 
 ## Cli tools
 
