@@ -1,35 +1,5 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "pluginsConfig": {
-    "@nx/js" : {
-      "analyzeSourceFiles": true
-    }
-  },
-  "release": {
-    "projects":["packages/**"],
-    "projectsRelationship": "independent",
-    "releaseTagPattern": "{projectName}/v{version}",
-    "git":{
-      "commitMessage": "chore({projectName}): 🚀 release {version} [skip ci]"
-    },
-    "changelog": {
-      "projectChangelogs" : {
-        "createRelease":"github"
-      }
-    },
-    "version": {
-      "preVersionCommand": "pnpm dlx nx run-many -t build",
-      "generatorOptions": {
-        "currentVersionResolver": "git-tag",
-        "specifierSource": "conventional-commits",
-        "updateDependants": "auto"
-      }
-    }
-  },
-  "workspaceLayout": {
-    "libsDir": "packages",
-    "appsDir": "e2e"
-  },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
@@ -70,6 +40,58 @@
           "ci": true,
           "codeCoverage": true
         }
+      }
+    },
+    "@angular-devkit/build-angular:application": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    }
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e"
+      }
+    },
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "eslint:lint"
+      }
+    },
+    {
+      "plugin": "@nx/vite/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "testTargetName": "test",
+        "serveTargetName": "serve",
+        "previewTargetName": "preview",
+        "serveStaticTargetName": "serve-static"
+      }
+    }
+  ],
+  "generators": {
+    "@nx/angular:application": {
+      "e2eTestRunner": "playwright",
+      "linter": "eslint",
+      "style": "css",
+      "unitTestRunner": "jest"
+    },
+    "@nx/react": {
+      "application": {
+        "babel": true,
+        "style": "css",
+        "linter": "eslint",
+        "bundler": "vite"
+      },
+      "component": {
+        "style": "css"
+      },
+      "library": {
+        "style": "css",
+        "linter": "eslint"
       }
     }
   }

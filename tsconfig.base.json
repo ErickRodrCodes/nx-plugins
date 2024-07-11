@@ -16,7 +16,7 @@
     "baseUrl": ".",
     "paths": {
       "@erickrodrcodes/nx-electron-vite": [
-        "packages/nx-electron-vite/src/index.ts"
+        "package/nx-electron-vite/src/index.ts"
       ]
     }
   },

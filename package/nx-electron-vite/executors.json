@@ -1,0 +1,14 @@
+{
+  "executors": {
+    "build-electron": {
+      "implementation": "./src/executors/build-electron/executor",
+      "schema": "./src/executors/build-electron/schema.json",
+      "description": "builds the electron app from the requested project"
+    },
+    "build-icons": {
+      "implementation": "./src/executors/build-icons/executor",
+      "schema": "./src/executors/build-icons/schema.json",
+      "description": "builds the electron icons from the requested project"
+    }
+  }
+}
