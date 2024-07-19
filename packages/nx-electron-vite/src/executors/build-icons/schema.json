@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "BuildIcons executor",
+  "description": "",
+  "type": "object",
+  "properties": {
+    "hostProject": {
+      "type": "string",
+      "description": "The host project name",
+      "$default": {
+        "$source": "projectName"
+      },
+      "x-dropdown": "projects",
+      "x-priority": "important"
+    },
+    "hostProjectRoot": {
+      "type": "string",
+      "description": "the relative path of the project root",
+      "x-priority": "important"
+    }
+  },
+  "required": ["hostProject", "hostProjectRoot"]
+}
