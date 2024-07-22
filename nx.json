@@ -96,6 +96,24 @@
     }
   },
   "release": {
-    "projects": ["packages/*"]
+    "projects": ["packages/*"],
+    "projectsRelationship": "independent",
+    "releaseTagPattern": "{projectName}/v{version}",
+    "git": {
+      "commitMessage": "chore(release): 🚀 release packages [skip ci]"
+    },
+    "changelog": {
+      "projectChangelogs": {
+        "createRelease": "github"
+      }
+    },
+    "version": {
+      "preVersionCommand": "npx nx run-many -t build",
+      "generatorOptions": {
+        "currentVersionResolver": "git-tag",
+        "specifierSource": "conventional-commits",
+        "updateDependents": "auto"
+      }
+    }
   }
 }
