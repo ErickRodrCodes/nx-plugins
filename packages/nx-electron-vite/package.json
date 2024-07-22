@@ -1,6 +1,6 @@
 {
   "name": "@erickrodrcodes/nx-electron-vite",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "dependencies": {
     "@nx/devkit": "19.4.0",
     "tslib": "^2.3.0",
@@ -9,7 +9,6 @@
   "type": "commonjs",
   "main": "./src/index.js",
   "typings": "./src/index.d.ts",
-  "private": true,
   "generators": "./generators.json",
   "executors": "./executors.json"
 }

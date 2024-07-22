@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@erickrodrcodes/lib-test": ["packages/lib-test/src/index.ts"],
       "@erickrodrcodes/nx-electron-vite": [
         "packages/nx-electron-vite/src/index.ts"
       ]
