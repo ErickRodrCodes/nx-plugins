@@ -12,7 +12,7 @@ describe('init', () => {
   it('should add the needed dependencies dependencies', async () => {
     await initGenerator(tree, {
       skipFormat: true,
-      installPluginDependencies: false,
+      skipInstallPluginDependencies: true,
     });
     const packageJson = readJson(tree, 'package.json');
     expect(packageJson.devDependencies['electron-builder']).toBeDefined();

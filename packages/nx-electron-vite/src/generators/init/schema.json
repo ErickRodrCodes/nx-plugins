@@ -14,10 +14,10 @@
       "type": "boolean",
       "default": false
     },
-    "installPluginDependencies": {
-      "description": "Installing Plugin dependencies. If you set this to false you might need to run your package manager install command to complete the install.",
+    "skipInstallPluginDependencies": {
+      "description": "Do not install Plugin dependencies with your package manager.",
       "type": "boolean",
-      "default": true
+      "default": false
     }
   },
   "required": []

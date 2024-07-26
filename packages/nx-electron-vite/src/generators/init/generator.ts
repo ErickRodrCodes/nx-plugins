@@ -50,7 +50,7 @@ export async function initGenerator(tree: Tree, schema: InitGeneratorSchema) {
     );
   }
 
-  if (schema.installPluginDependencies) {
+  if (!schema.skipInstallPluginDependencies && !schema.skipPackageJson) {
     tasks.push(() => {
       installPackagesTask(tree, true);
     });

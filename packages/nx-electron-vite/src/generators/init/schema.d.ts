@@ -12,5 +12,5 @@ export interface InitGeneratorSchema {
   /**
    * skip the installation of plugin dependencies.
    */
-  installPluginDependencies?: boolean;
+  skipInstallPluginDependencies?: boolean;
 }
