@@ -22,7 +22,7 @@ If successful, you will see the package correctly installed
 | :--------------------------------------------: |
 | _Expected result of the output of the command_ |
 
-By using `nx add`, you are executing inherently the generator [Init](#init), which will add all the needed dependencies for this plugin to work.
+By using `nx add`, you are executing inherently the generator [`Init`](./generators.md#init), which will add all the needed dependencies for this plugin to work.
 
 You can also use your package manager and add `@erickrodrcodes/nx-electron-vite` to the list of `devDependencies`, and then run
 
