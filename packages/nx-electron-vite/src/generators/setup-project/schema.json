@@ -7,7 +7,7 @@
     "hostProject": {
       "type": "string",
       "alias": "hp",
-      "description": "Name of the host project",
+      "description": "The name of the host project you will use with electron",
       "x-prompt": "Name of the host project",
       "x-dropdown": "projects",
       "x-priority": "important"
@@ -15,7 +15,7 @@
     "name": {
       "type": "string",
       "alias": "n",
-      "description": " you will give to your Electron Application",
+      "description": "A Human readable name for your Electron Application",
       "x-prompt": "Human readable name for your Electron Application?"
     },
     "author": {
@@ -27,7 +27,7 @@
     "description": {
       "type": "string",
       "alias": "d",
-      "description": "description the electron application",
+      "description": "A brief description of the electron application",
       "x-prompt": "description the electron application"
     }
   },
