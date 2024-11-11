@@ -46,6 +46,9 @@
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
+    },
+    "e2e-ci--**/*": {
+      "dependsOn": ["^build"]
     }
   },
   "plugins": [
@@ -93,9 +96,31 @@
         "style": "css",
         "linter": "eslint"
       }
+    },
+    "@nx/angular:component": {
+      "style": "css"
     }
   },
   "release": {
-    "projects": ["packages/*"]
-  }
+    "projects": ["packages/*"],
+    "projectsRelationship": "independent",
+    "releaseTagPattern": "{projectName}/v{version}",
+    "git": {
+      "commitMessage": "chore(release): 🚀 release packages [skip ci]"
+    },
+    "changelog": {
+      "projectChangelogs": {
+        "createRelease": "github"
+      }
+    },
+    "version": {
+      "preVersionCommand": "npx nx run-many -t build",
+      "generatorOptions": {
+        "currentVersionResolver": "git-tag",
+        "specifierSource": "conventional-commits",
+        "updateDependents": "auto"
+      }
+    }
+  },
+  "useLegacyCache": true
 }
