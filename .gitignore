@@ -46,3 +46,5 @@ Thumbs.db
 dist
 build
 
+
+vite.config.*.timestamp*

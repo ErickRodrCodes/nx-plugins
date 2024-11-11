@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "SetupProject",
+  "title": "Setup Project for Nx Electron Vite",
+  "type": "object",
+  "properties": {
+    "hostProject": {
+      "type": "string",
+      "alias": "hp",
+      "description": "The name of the host project you will use with electron",
+      "x-prompt": "Name of the host project",
+      "x-dropdown": "projects",
+      "x-priority": "important"
+    },
+    "name": {
+      "type": "string",
+      "alias": "n",
+      "description": "A Human readable name for your Electron Application",
+      "x-prompt": "Human readable name for your Electron Application?"
+    },
+    "author": {
+      "type": "string",
+      "alias": "a",
+      "description": "Author of the electron application",
+      "x-prompt": "Author of the electron application"
+    },
+    "description": {
+      "type": "string",
+      "alias": "d",
+      "description": "A brief description of the electron application",
+      "x-prompt": "description the electron application"
+    }
+  },
+  "required": ["name", "hostProject", "author", "description"]
+}

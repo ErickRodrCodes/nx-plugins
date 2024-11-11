@@ -1,47 +1,16 @@
 export interface InitGeneratorSchema {
   /**
-   * Human readable name for the application
+   * Skipping adding dependencies to the package.json
    */
-  name: string;
+  skipPackageJson?: boolean;
 
   /**
-   * application name with dashes
+   * format files that will be modified during init
    */
-  executableName: string;
+  skipFormat?: boolean;
 
   /**
-   * Host frontend project with Vite we want to use Electron
+   * skip the installation of plugin dependencies.
    */
-  hostProject: string;
-
-  /**
-   * path to the root of the project
-   */
-  hostProjectRoot: string;
-
-  /**
-   * author of the application
-   */
-  author: string;
-
-  /**
-   * description of the application
-   */
-
-  description: string;
-
-  /**
-   * workspace name
-   */
-  workspace?: string;
-
-  /**
-   * path to the dist folder of the host project
-   */
-  hostProjectDistFolder?: string;
-
-  /**
-   * path to the nsis Extra File Path
-   */
-  nsisExtraFilePath?: string;
+  skipInstallPluginDependencies?: boolean;
 }

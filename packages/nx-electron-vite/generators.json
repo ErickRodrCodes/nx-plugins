@@ -3,7 +3,12 @@
     "init": {
       "factory": "./src/generators/init/generator",
       "schema": "./src/generators/init/schema.json",
-      "description": "test description"
+      "description": "Initializes the dependencies needed to run electron apps with Nx frontend apps that uses Vite"
+    },
+    "setup-project": {
+      "factory": "./src/generators/setup-project/generator",
+      "schema": "./src/generators/setup-project/schema.json",
+      "description": "creates the needed files to adapt your frontend project into a compatible project to be used and published by electron"
     }
   }
 }

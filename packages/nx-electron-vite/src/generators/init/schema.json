@@ -1,35 +1,24 @@
 {
   "$schema": "https://json-schema.org/schema",
   "$id": "Init",
-  "title": "",
+  "title": "Init @erickrodrcodes/nx-electron-vite",
   "type": "object",
   "properties": {
-    "hostProject": {
-      "type": "string",
-      "alias": "hp",
-      "description": "Name of the host project",
-      "x-prompt": "Name of the host project",
-      "x-dropdown": "projects",
-      "x-priority": "important"
+    "skipPackageJson": {
+      "description": "Do not add dependencies to `package.json`.",
+      "type": "boolean",
+      "default": false
     },
-    "name": {
-      "type": "string",
-      "alias": "n",
-      "description": " you will give to your Electron Application",
-      "x-prompt": "Human readable name for your Electron Application?"
+    "skipFormat": {
+      "description": "Skip formatting files.",
+      "type": "boolean",
+      "default": false
     },
-    "author": {
-      "type": "string",
-      "alias": "a",
-      "description": "Author of the electron application",
-      "x-prompt": "Author of the electron application"
-    },
-    "description": {
-      "type": "string",
-      "alias": "d",
-      "description": "description the electron application",
-      "x-prompt": "description the electron application"
+    "skipInstallPluginDependencies": {
+      "description": "Do not install Plugin dependencies with your package manager.",
+      "type": "boolean",
+      "default": false
     }
   },
-  "required": ["name", "hostProject", "author", "description"]
+  "required": []
 }
