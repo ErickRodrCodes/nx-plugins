@@ -7,7 +7,7 @@ export default function electronNxViteConfig() {
     main: {
       entry: 'electron/main/main.ts',
       onstart: () => {
-        startup(['../../dist/apps/<%= hostProject %>-electron/main.js']);
+        startup(['--inspect=5858,'../../dist/apps/<%= hostProject %>-electron/main.js']);
       },
       vite: {
         build: {
