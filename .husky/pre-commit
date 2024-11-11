@@ -1,2 +1,2 @@
-npx lint-staged --concurrent false --relative
 npm run affected:test --base=develop --head=HEAD
+npx nx format:write --base develop --head HEAD

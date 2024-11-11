@@ -78,7 +78,6 @@
     "jest-environment-node": "^29.4.1",
     "jest-preset-angular": "~14.1.0",
     "jsdom": "~22.1.0",
-    "lint-staged": "^15.2.7",
     "nx": "20.0.12",
     "postcss": "8.4.38",
     "prettier": "^2.6.2",
