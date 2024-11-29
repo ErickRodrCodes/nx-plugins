@@ -2,26 +2,26 @@
 import electron from 'vite-plugin-electron/simple';
 import { startup } from 'vite-plugin-electron';
 
-export default function electronNxViteConfig() {
+export function electronNxViteConfig() {
   return electron({
     main: {
-      entry: 'electron/main/main.ts',
+      entry: 'src/main/main.ts',
       onstart: () => {
-        startup(['--inspect=5858', '../../dist/apps/<%= hostProject %>-electron/main.js']);
+        startup(['--inspect=5858','../../dist/apps/nx-electron-new-app/main.js']);
       },
       vite: {
         build: {
-          outDir: '../../dist/apps/<%= hostProject %>-electron',
+          outDir: '../../dist/apps/nx-electron-new-app/',
         },
       },
     },
     preload: {
       vite: {
         build: {
-          outDir: '../../dist/apps/<%= hostProject %>-electron',
+          outDir: '../../dist/apps/nx-electron-new-app/',
         },
       },
-      input: 'electron/preload/preload.ts',
+      input: 'src/preload/preload.ts',
     },
     // Ployfill the Electron and Node.js API for Renderer process.
     // If you want use Node.js in Renderer process, the `nodeIntegration` needs to be enabled in the Main process.
@@ -33,4 +33,6 @@ export default function electronNxViteConfig() {
         : {},
   });
 }
+
+export default electronNxViteConfig;
 
