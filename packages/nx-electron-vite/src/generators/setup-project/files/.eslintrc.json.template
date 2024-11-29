@@ -1,0 +1,18 @@
+{
+  "extends": ["<%= offsetFromRoot %>.eslintrc.json"],
+  "ignorePatterns": ["!**/*"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.js", "*.mjs", "*.mts"],
+      "rules": {}
+    },
+    {
+      "files": ["*.ts", "*.mts"],
+      "rules": {}
+    },
+    {
+      "files": ["*.js", "*.mjs"],
+      "rules": {}
+    }
+  ]
+}

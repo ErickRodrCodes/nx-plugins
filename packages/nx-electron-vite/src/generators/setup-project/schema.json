@@ -1,35 +1,80 @@
 {
-  "$schema": "https://json-schema.org/schema",
+  "$schema": "https://json-schema.org/draft-07/schema",
   "$id": "SetupProject",
   "title": "Setup Project for Nx Electron Vite",
   "type": "object",
   "properties": {
-    "hostProject": {
+    "updater": {
+      "type": "boolean",
+      "default": false,
+      "alias": "u",
+      "description": "Add an auto-updater script to the electron application configuration",
+      "x-prompt": "Add an auto-updater script to the electron application configuration?"
+    },
+    "guestProject": {
       "type": "string",
       "alias": "hp",
-      "description": "The name of the host project you will use with electron",
-      "x-prompt": "Name of the host project",
+      "description": "The name of the guest project you will use with electron",
+      "x-prompt": "Name of the guest project",
       "x-dropdown": "projects",
-      "x-priority": "important"
+      "x-priority": "important",
+      "$id": "0"
     },
     "name": {
       "type": "string",
       "alias": "n",
-      "description": "A Human readable name for your Electron Application",
-      "x-prompt": "Human readable name for your Electron Application?"
+      "description": "A Human readable name for your Electron Application (used on the window title)",
+      "x-prompt": "A Human readable name for your Electron Application (used on the window title)",
+      "pattern": "^(?!\\s*$).+"
+    },
+    "nameProject": {
+      "type": "string",
+      "alias": "np",
+      "description": "The name of the Electron project in Nx Graph (lowercases and dashes only). If left blank, the guest project's name is used with '-electron' appended.",
+      "x-prompt": "The name of the Electron project in Nx Graph (lowercases and dashes only). If left blank, the guest project's name is used with '-electron' appended.",
+      "pattern": "^(?:[a-z]+(?:-[a-z]+)*|)$"
     },
     "author": {
       "type": "string",
       "alias": "a",
       "description": "Author of the electron application",
-      "x-prompt": "Author of the electron application"
+      "x-prompt": "Author of the electron application",
+      "pattern": "(?!\\s*$)"
     },
     "description": {
       "type": "string",
       "alias": "d",
       "description": "A brief description of the electron application",
+      "pattern": "(?!\\s*$)",
       "x-prompt": "description the electron application"
+    },
+    "directory": {
+      "type": "string",
+      "alias": "dr",
+      "description": "The directory that will contain the new application. If not specified, the workspace default apps directory will be used.",
+      "pattern": "(?:^@[a-zA-Z0-9-*~][a-zA-Z0-9-*._~]*\\/[a-zA-Z0-9-~][a-zA-Z0-9-._~]*|^[a-zA-Z][^:]*)$",
+      "x-prompt": "Path to create the electron project"
+    },
+    "test": {
+      "type": "string",
+      "alias": "t",
+      "default": "none",
+      "description": "Which testing framework do you want to use for the main process project?",
+      "enum": ["none", "vitest"]
+    },
+    "executableName": {
+      "type": "string",
+      "alias": "en",
+      "description": "name of the executable file (lowercases and dashes only)",
+      "x-prompt": "name of the executable file (lowercases and dashes only)",
+      "pattern": "^(?!\\s*$)(?:[a-z]+(?:-[a-z]+)*|)$"
     }
   },
-  "required": ["name", "hostProject", "author", "description"]
+  "required": [
+    "author",
+    "description",
+    "executableName",
+    "guestProject",
+    "name"
+  ]
 }

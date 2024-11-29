@@ -18,6 +18,12 @@
       "type": "string",
       "description": "the relative path of the project root",
       "x-priority": "important"
+    },
+    "mode": {
+      "type": "string",
+      "description": "use 'app' to generate the icon for the app. 'setup' for the icon of the installer, 'composite' to generate the icons at the same time",
+      "x-priority": "important",
+      "enum": ["app", "setup", "composite"]
     }
   },
   "required": ["hostProject", "hostProjectRoot"]

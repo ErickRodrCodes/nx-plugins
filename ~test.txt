@@ -1,0 +1,177 @@
+import { rebuild } from '@electron/rebuild';
+import { readdir } from 'fs/promises';
+import { createRequire } from 'module';
+import { dirname, extname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+
+
+// Configuration
+const packageJson = require('./package.json');
+const electronDep = packageJson.devDependencies?.electron || packageJson.dependencies?.electron;
+
+if (!electronDep) {
+  console.error('❌ Electron dependency not found in package.json');
+  console.error('Please ensure Electron is installed as a dependency or devDependency');
+  process.exit(1);
+}
+
+const ELECTRON_VERSION = electronDep.replace('^', '');
+console.log(`📝 Using Electron version: ${ELECTRON_VERSION}`);
+
+/**
+ * Validates if a module exists in node_modules
+ * @param {string} moduleName - Name of the module to check
+ * @returns {Promise<boolean>} - True if module exists
+ */
+async function validateModule(moduleName) {
+  try {
+    require.resolve(`${moduleName}/package.json`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Module "${moduleName}" not found in node_modules`);
+    return false;
+  }
+}
+
+/**
+ * Rebuilds one or more native modules for Electron
+ * @param {string|string[]} moduleNames - Single module name or array of module names
+ * @returns {Promise<{
+ *   successful: Array<{moduleName: string, nativeFilePath: string}>,
+ *   failed: Array<{moduleName: string, error: string}>
+ * }>}
+ */
+async function rebuildNativeModules(moduleNames) {
+  // Ensure moduleNames is always an array
+  const modules = Array.isArray(moduleNames) ? moduleNames : [moduleNames];
+
+  if (modules.length === 0) {
+    console.warn('⚠️ No modules specified for rebuilding');
+    return { successful: [], failed: [] };
+  }
+
+  // Validate all modules first
+  console.log('🔍 Validating modules...');
+  const validationResults = await Promise.all(
+    modules.map(async (moduleName) => ({
+      moduleName,
+      exists: await validateModule(moduleName)
+    }))
+  );
+
+  // Filter out invalid modules
+  const invalidModules = validationResults.filter(result => !result.exists);
+  const validModules = validationResults.filter(result => result.exists).map(result => result.moduleName);
+
+  // Early exit if any module is invalid
+  if (invalidModules.length > 0) {
+    const invalidModuleNames = invalidModules.map(m => m.moduleName).join(', ');
+    throw new Error(`Cannot proceed with rebuild. Missing modules: ${invalidModuleNames}`);
+  }
+
+  // If we get here, all modules are valid
+  console.log('✅ All modules validated successfully');
+  const successful = [];
+  const failed = [];
+
+  // Proceed with rebuilding all valid modules
+  for (const moduleName of validModules) {
+    try {
+      console.log(`📦 Rebuilding ${moduleName}...`);
+
+      await rebuild({
+        buildPath: __dirname,
+        force: true,
+        onlyModules: [moduleName],
+        electronVersion: ELECTRON_VERSION,
+        onLog: (message) => console.log(`[${moduleName}] ${message}`),
+      });
+
+      const nativeFilePath = await getNativeAddonFile(moduleName);
+      successful.push({ moduleName, nativeFilePath });
+
+      console.log(`✅ Successfully rebuilt ${moduleName}`);
+      console.log(`📍 Native addon location: ${nativeFilePath}`);
+    } catch (error) {
+      console.error(`❌ Failed to rebuild ${moduleName}:`, error.message);
+      failed.push({
+        moduleName,
+        error: error.message || 'Unknown error occurred during rebuild'
+      });
+    }
+  }
+
+  // Log summary
+  if (successful.length > 0) {
+    console.log('✅ Successfully rebuilt modules:', successful.map(s => s.moduleName).join(', '));
+  }
+  if (failed.length > 0) {
+    console.error('❌ Failed to rebuild modules:', failed.map(f => f.moduleName).join(', '));
+  }
+
+  return { successful, failed };
+}
+
+/**
+ * Locates the native addon (.node) file for a given module
+ * @param {string} moduleName - Name of the module
+ * @returns {Promise<string>} - Path to the .node file
+ */
+async function getNativeAddonFile(moduleName) {
+  try {
+    const modulePackagePath = require.resolve(`${moduleName}/package.json`);
+    const moduleFolder = dirname(modulePackagePath);
+
+    const nodeFile = await findNodeFile(moduleFolder);
+    if (!nodeFile) {
+      throw new Error(`No .node file found for "${moduleName}" in ${moduleFolder}`);
+    }
+
+    return nodeFile;
+  } catch (error) {
+    throw new Error(`Failed to locate native addon for "${moduleName}": ${error.message}`);
+  }
+}
+
+/**
+ * Recursively searches for a .node file in a directory
+ * @param {string} directory - Directory to search in
+ * @returns {Promise<string|null>} - Path to the .node file or null if not found
+ */
+async function findNodeFile(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = join(directory, entry.name);
+
+    if (entry.isFile() && extname(entry.name) === '.node') {
+      return fullPath;
+    }
+
+    if (entry.isDirectory()) {
+      const result = await findNodeFile(fullPath);
+      if (result) return result;
+    }
+  }
+
+  return null;
+}
+
+// Example usage with better error handling:
+export async function rebuildModules() {
+  try {
+    const results = await rebuildNativeModules([
+      'better-sqlite3',
+      'nodemon'
+    ]);
+
+    return results;
+  } catch (error) {
+    console.error('Failed to rebuild modules:', error.message);
+    throw error;
+  }
+}
+
+rebuildModules().then(console.log).catch(console.error)
+

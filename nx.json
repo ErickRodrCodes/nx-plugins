@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "packageManager": "pnpm",
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
@@ -49,6 +50,14 @@
     },
     "e2e-ci--**/*": {
       "dependsOn": ["^build"]
+    },
+    "@nx/esbuild:esbuild": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "publish-package": {
+      "dependsOn": ["build", "test"]
     }
   },
   "plugins": [
@@ -99,6 +108,12 @@
     },
     "@nx/angular:component": {
       "style": "css"
+    },
+    "@nx/web:application": {
+      "style": "css",
+      "linter": "eslint",
+      "unitTestRunner": "vitest",
+      "e2eTestRunner": "none"
     }
   },
   "release": {
@@ -108,19 +123,18 @@
     "git": {
       "commitMessage": "chore(release): 🚀 release packages [skip ci]"
     },
-    "changelog": {
-      "projectChangelogs": {
-        "createRelease": "github"
-      }
-    },
     "version": {
-      "preVersionCommand": "npx nx run-many -t build",
       "generatorOptions": {
         "currentVersionResolver": "git-tag",
         "specifierSource": "conventional-commits",
         "updateDependents": "auto"
-      }
+      },
+      "packageRoot": "packages/nx-electron-vite",
+      "postVersionCommand": "pnpm exec nx run-many -t build"
+    },
+    "changelog": {
+      "projectChangelogs": {}
     }
   },
-  "useLegacyCache": true
+  "useLegacyCache": false
 }

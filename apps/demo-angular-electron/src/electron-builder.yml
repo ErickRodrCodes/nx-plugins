@@ -1,0 +1,51 @@
+appId: demo-angular.electron.app
+productName: demo-angular
+directories:
+  buildResources: build
+files:
+  - '!**/*'
+  - '!dist/apps/demo-angular-electron/package.json'
+  - 'dist/apps/demo-angular'
+  - 'dist/apps/demo-angular-electron'
+  - 'dist/apps/demo-angular-electron-icons'
+asarUnpack:
+  - resources/**
+win:
+  executableName: test-app
+  icon: dist/apps/demo-angular-electron-icons/icon.ico
+  publisherName: 'erick'
+  # Uncomment the following lines if you will include certification
+  # information on this file (change accordingly):
+  # certificateFile: apps/demo-angular-electron/src/resources/certificate/Self.pfx
+  # certificatePassword: ""
+nsis:
+  installerIcon: dist/apps/demo-angular-electron-icons/setup.ico
+  artifactName: demo-angular-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  include: apps/demo-angular-electron/src/installer.nsh
+mac:
+  entitlementsInherit: apps/demo-angular-electron/src/resources/entitlements/entitlements.mac.plist
+  icon: dist/apps/demo-angular-electron-icons/icon.icns
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  notarize: false
+dmg:
+  artifactName: demo-angular-${version}.${ext}
+linux:
+  icon: dist/apps/demo-angular-electron-icons/icon.ico
+  target:
+    - AppImage
+    - snap
+    - deb
+  maintainer: electronjs.org
+  category: Utility
+appImage:
+  artifactName: demo-angular-${version}.${ext}
+npmRebuild: false
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/

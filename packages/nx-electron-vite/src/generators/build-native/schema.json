@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Build Native executor",
+  "description": "An executor that helps to build native modules for Electron for your electron host project",
+  "type": "object",
+  "properties": {
+    "hostProject": {
+      "type": "string",
+      "description": "The Electron host project name to add native modules",
+      "$default": {
+        "$source": "projectName"
+      },
+      "x-dropdown": "projects",
+      "x-priority": "important"
+    },
+    "npmPackageName": {
+      "type": "string",
+      "description": "The npm package you intend to use a .node native module from",
+      "x-priority": "important"
+    }
+  },
+  "required": ["hostProject", "npmPackageName"]
+}

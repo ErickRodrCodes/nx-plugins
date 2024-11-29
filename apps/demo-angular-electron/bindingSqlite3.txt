@@ -1,0 +1,73 @@
+import * as fs from 'fs';
+import { createRequire } from 'module';
+import * as path from 'path';
+import { type Plugin, normalizePath } from 'vite';
+
+const require = createRequire(import.meta.url);
+
+/**
+ * A function that takes your build of better_sqlite3 node into your project directory
+ * @param args
+ * @returns
+ */
+export function bindingSqlite3(
+  args: {
+    output?: string;
+    better_sqlite3_node?: string;
+    command?: string;
+  } = {}
+): Plugin {
+  const TAG = '[vite-plugin-binding-sqlite3]';
+  const options = {
+    output: args.output || 'dist-native',
+    better_sqlite3_node: args.better_sqlite3_node || 'better_sqlite3_node',
+    command: args.command || 'build',
+  };
+
+  return {
+    name: 'vite-plugin-binding-sqlite3',
+    config(config) {
+      // https://github.com/vitejs/vite/blob/v4.4.9/packages/vite/src/node/config.
+      // ts#L496-L499
+      const resolvedRoot = normalizePath(
+        config.root ? path.resolve(config.root) : process.cwd()
+      );
+      // this will point to the project root so it can write .env file and place the better_sqlite3.node
+      const projectRoot = resolvedRoot.split(path.sep);
+
+      const output = path.posix.join(...projectRoot, options.output);
+      const better_sqlite3_path = require.resolve('better-sqlite3');
+      const arrPath = better_sqlite3_path.split(path.sep);
+      const better_sqlite3_root = arrPath.slice(0, arrPath.indexOf);
+
+      const better_sqlite3_node = path.posix.join(
+        ...better_sqlite3_root,
+        'build',
+        'Release',
+        options.better_sqlite3_node
+      );
+      const better_sqlite3_copy = path.posix.join(
+        output,
+        options.better_sqlite3_node
+      );
+      if (!fs.existsSync(better_sqlite3_node)) {
+        throw new Error(`${TAG} Can not found "${better_sqlite3_node}".`);
+      }
+      if (!fs.existsSync(output)) {
+        fs.mkdirSync(output, { recursive: true });
+      }
+
+      fs.copyFileSync(better_sqlite3_node, better_sqlite3_copy);
+      const BETTER_SQLITE3_BINDING = `${options.output}/${options.better_sqlite3_node}`;
+      if (!fs.existsSync(path.join(...projectRoot, '.env'))) {
+        fs.writeFileSync(
+          path.join(...projectRoot, '.env'),
+          `VITE_BETTER_SQLITE3_BINDING=${BETTER_SQLITE3_BINDING}`
+        );
+        console.log(TAG, `binding to ${BETTER_SQLITE3_BINDING}`);
+      }
+    },
+  };
+}
+
+export default bindingSqlite3;

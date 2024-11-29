@@ -1,4 +1,4 @@
-export interface InitGeneratorSchema {
+export interface initSchema {
   /**
    * Skipping adding dependencies to the package.json
    */

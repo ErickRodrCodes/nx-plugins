@@ -1,25 +1,51 @@
 {
-  "eslint.validate": [
-    "json"
-  ],
+  "eslint.validate": ["json"],
+  // "workbench.colorCustomizations": {
+  //   "activityBar.activeBackground": "#3399ff",
+  //   "activityBar.background": "#3399ff",
+  //   "activityBar.foreground": "#15202b",
+  //   "activityBar.inactiveForeground": "#15202b99",
+  //   "activityBarBadge.background": "#bf0060",
+  //   "activityBarBadge.foreground": "#e7e7e7",
+  //   "commandCenter.border": "#e7e7e799",
+  //   "sash.hoverBorder": "#3399ff",
+  //   "statusBar.background": "#007fff",
+  //   "statusBar.foreground": "#e7e7e7",
+  //   "statusBarItem.hoverBackground": "#3399ff",
+  //   "statusBarItem.remoteBackground": "#007fff",
+  //   "statusBarItem.remoteForeground": "#e7e7e7",
+  //   "titleBar.activeBackground": "#007fff",
+  //   "titleBar.activeForeground": "#e7e7e7",
+  //   "titleBar.inactiveBackground": "#007fff99",
+  //   "titleBar.inactiveForeground": "#e7e7e799"
+  // },
+  // "peacock.color": "#007fff",
+  "json.schemaDownload.enable": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always",
+    "source.organizeImports": "always",
+    "source.sortImports": "always",
+    "source.removeUnusedImports": "always"
+  },
   "workbench.colorCustomizations": {
-    "activityBar.activeBackground": "#ab307e",
-    "activityBar.background": "#ab307e",
+    "activityBar.activeBackground": "#587f99",
+    "activityBar.background": "#587f99",
     "activityBar.foreground": "#e7e7e7",
     "activityBar.inactiveForeground": "#e7e7e799",
-    "activityBarBadge.background": "#25320e",
-    "activityBarBadge.foreground": "#e7e7e7",
+    "activityBarBadge.background": "#d0aec3",
+    "activityBarBadge.foreground": "#15202b",
     "commandCenter.border": "#e7e7e799",
-    "sash.hoverBorder": "#ab307e",
-    "statusBar.background": "#832561",
+    "sash.hoverBorder": "#587f99",
+    "statusBar.background": "#456479",
     "statusBar.foreground": "#e7e7e7",
-    "statusBarItem.hoverBackground": "#ab307e",
-    "statusBarItem.remoteBackground": "#832561",
+    "statusBarItem.hoverBackground": "#587f99",
+    "statusBarItem.remoteBackground": "#456479",
     "statusBarItem.remoteForeground": "#e7e7e7",
-    "titleBar.activeBackground": "#832561",
+    "titleBar.activeBackground": "#456479",
     "titleBar.activeForeground": "#e7e7e7",
-    "titleBar.inactiveBackground": "#83256199",
+    "titleBar.inactiveBackground": "#45647999",
     "titleBar.inactiveForeground": "#e7e7e799"
   },
-  "peacock.color": "#832561"
+  "peacock.color": "#456479"
 }

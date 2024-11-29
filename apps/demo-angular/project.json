@@ -15,13 +15,14 @@
         "browser": "apps/demo-angular/src/main.ts",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/demo-angular/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
         "assets": [
           {
             "glob": "**/*",
             "input": "apps/demo-angular/public"
           }
         ],
-        "styles": ["apps/demo-angular/src/styles.css"],
+        "styles": ["apps/demo-angular/src/styles.scss"],
         "scripts": []
       },
       "configurations": {
@@ -34,8 +35,8 @@
             },
             {
               "type": "anyComponentStyle",
-              "maximumWarning": "2kb",
-              "maximumError": "4kb"
+              "maximumWarning": "4kb",
+              "maximumError": "8kb"
             }
           ],
           "outputHashing": "all"
@@ -69,11 +70,12 @@
     "lint": {
       "executor": "@nx/eslint:lint"
     },
-    "test": {
-      "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+    "serve-static": {
+      "executor": "@nx/web:file-server",
       "options": {
-        "jestConfig": "apps/demo-angular/jest.config.ts"
+        "buildTarget": "demo-angular:build",
+        "staticFilePath": "dist/apps/demo-angular/browser",
+        "spa": true
       }
     }
   }

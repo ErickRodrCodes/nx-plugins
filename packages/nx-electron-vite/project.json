@@ -6,15 +6,46 @@
   "release": {
     "version": {
       "generatorOptions": {
-        "packageRoot": "dist\\{projectRoot}",
-        "currentVersionResolver": "git-tag"
+        "currentVersionResolver": "disk",
+        "packageRoot": "dist/packages/nx-electron-vite"
       }
     }
   },
   "tags": [],
   "targets": {
+    "clean": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "rimraf dist/packages/nx-electron-vite"
+      }
+    },
+    "pre-release": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "commands": ["git config --local core.hooksPath /dev/null"]
+      }
+    },
+    "post-release": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "commands": ["git config --local core.hooksPath .husky/"]
+      }
+    },
+    "release": {
+      "executor": "@nx/js:release",
+      "cache": false,
+      "dependsOn": ["pre-release"],
+      "options": {
+        "packageRoot": "dist/packages/nx-electron-vite"
+      },
+      "postTargets": ["post-release"]
+    },
     "build": {
       "executor": "@nx/js:tsc",
+      "cache": false,
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/packages/nx-electron-vite",
@@ -41,6 +72,11 @@
             "input": "./packages/nx-electron-vite",
             "glob": "executors.json",
             "output": "."
+          },
+          {
+            "input": "./packages/nx-electron-vite",
+            "glob": "package.json",
+            "output": "."
           }
         ]
       }
@@ -56,8 +92,10 @@
       }
     },
     "nx-release-publish": {
+      "dependsOn": ["clean", "build"],
+      "cache": false,
       "options": {
-        "packageRoot": "dist\\{projectRoot}"
+        "packageRoot": "dist/packages/nx-electron-vite"
       }
     }
   }

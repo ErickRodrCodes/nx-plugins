@@ -1,5 +1,5 @@
-import * as ts from 'typescript';
 import { Tree } from '@nx/devkit';
+import * as ts from 'typescript';
 
 export function injectViteConfig(pathToConfig: string, tree: Tree) {
   // Read the existing Vite configuration file
@@ -52,10 +52,21 @@ export function injectViteConfig(pathToConfig: string, tree: Tree) {
         []
       );
 
+      // Create a call expression for `electronNxViteConfig()`
+      const redirectWhenReadyConfig = ts.factory.createCallExpression(
+        ts.factory.createIdentifier('redirectWhenAvailable'),
+        undefined,
+        [ts.factory.createStringLiteral('http://localhost:4200')]
+      );
+
       // Add the `electronNxViteConfig()` call to the start of the plugins array
       const updatedPluginsArray = ts.factory.updateArrayLiteralExpression(
         pluginsProperty.initializer,
-        [electronNxViteConfigCall, ...pluginsProperty.initializer.elements]
+        [
+          electronNxViteConfigCall,
+          redirectWhenReadyConfig,
+          ...pluginsProperty.initializer.elements,
+        ]
       );
 
       // Update the plugins property
@@ -86,14 +97,35 @@ export function injectViteConfig(pathToConfig: string, tree: Tree) {
       );
 
       // Create the import declaration `import electronNxViteConfig from './electron-nx-vite.config';`
+      // const electronImport = ts.factory.createImportDeclaration(
+      //   undefined,
+      //   ts.factory.createImportClause(
+      //     false,
+      //     ts.factory.createIdentifier('electronNxViteConfig'),
+      //     undefined
+      //   ),
+      //   ts.factory.createStringLiteral('./electron-nx-vite.config')
+      // );
+
       const electronImport = ts.factory.createImportDeclaration(
         undefined,
         ts.factory.createImportClause(
           false,
-          ts.factory.createIdentifier('electronNxViteConfig'),
-          undefined
+          undefined,
+          ts.factory.createNamedImports([
+            ts.factory.createImportSpecifier(
+              true,
+              undefined,
+              ts.factory.createIdentifier('electronNxViteConfig')
+            ),
+            ts.factory.createImportSpecifier(
+              true,
+              undefined,
+              ts.factory.createIdentifier('redirectWhenAvailable')
+            ),
+          ])
         ),
-        ts.factory.createStringLiteral('./electron-nx-vite.config')
+        undefined
       );
 
       // Place the new import after the first line (e.g., after the reference directive)

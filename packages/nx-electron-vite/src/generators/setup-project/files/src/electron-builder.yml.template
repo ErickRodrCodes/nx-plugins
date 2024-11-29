@@ -1,0 +1,56 @@
+appId: <%= guestProject %>.electron.app
+productName: <%= guestProject %>
+directories:
+  buildResources: build
+files:
+ - '!**/*'
+ - '!<%= outputDistFolder %>/package.json'
+ - '<%= guestDistFolder %>'
+ - '<%= outputDistFolder %>'
+ - '<%= outputDistFolderIcons %>'
+asarUnpack:
+  - resources/**
+win:
+  executableName:  <%= executableName %>
+  icon: <%= outputDistFolderIcons %>/icon.ico
+  publisherName : "<%= author %>"
+  # Uncomment the following lines if you will include certification
+  # information on this file (change accordingly):
+  # certificateFile: <%= directoryResources %>/certificate/Self.pfx
+  # certificatePassword: ""
+nsis:
+  installerIcon: <%= outputDistFolderIcons %>/setup.ico
+  artifactName: <%= guestProject %>-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  include: <%= nsisExtraFilePath %>
+mac:
+  entitlementsInherit: <%= directoryResources %>/entitlements/entitlements.mac.plist
+  icon: <%= outputDistFolderIcons %>/icon.icns
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  notarize: false
+dmg:
+  artifactName: <%= guestProject %>-${version}.${ext}
+linux:
+  icon: <%= outputDistFolderIcons %>/icon.ico
+  target:
+    - AppImage
+    - snap
+    - deb
+  maintainer: electronjs.org
+  category: Utility
+appImage:
+  artifactName: <%= guestProject %>-${version}.${ext}
+npmRebuild: false
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
+<% if(updater === true)  { %>
+publish:
+  provider: generic
+  url: https://{ provide here the url where updates will be read }
+<% } %>
