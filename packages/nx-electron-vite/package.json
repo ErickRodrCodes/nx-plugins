@@ -1,6 +1,6 @@
 {
   "name": "@erickrodrcodes/nx-electron-vite",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "dependencies": {
     "@nx/devkit": "19.4.0",
     "tslib": "^2.3.0",

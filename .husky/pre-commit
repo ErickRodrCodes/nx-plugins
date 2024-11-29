@@ -1,2 +1,2 @@
-npm run affected:test --base=develop --head=HEAD
+npx nx affected --target test --base=develop --head=HEAD
 npx nx format:write --base develop --head HEAD
