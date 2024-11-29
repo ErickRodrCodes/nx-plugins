@@ -123,5 +123,5 @@
       }
     }
   },
-  "useLegacyCache": true
+  "useLegacyCache": false
 }
