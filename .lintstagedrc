@@ -1,8 +1,0 @@
-{
-    "*.ts": [
-        "npm run nx affected:lint --fix --files"
-    ],
-    "*": [
-        "npm run nx format:write --files"
-    ]
-}

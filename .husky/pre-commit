@@ -1,2 +1,3 @@
-npx nx affected --target test --base=develop --head=HEAD
-npx nx format:write --base develop --head HEAD
+pnpm exec nx affected -t test --base=develop --head=HEAD
+pnpm exec nx affected -t lint --base=develop --head=HEAD
+pnpm exec nx format:write --base develop --head HEAD
