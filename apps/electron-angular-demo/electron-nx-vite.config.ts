@@ -3,6 +3,10 @@ import electron from 'vite-plugin-electron/simple';
 import { startup } from 'vite-plugin-electron';
 import waitOn from 'wait-on';
 
+/**
+ * This function returns the configuration for the electron application. It uses the vite-plugin-electron to build the electron application.
+ * @returns
+ */
 export function electronNxViteConfig() {
   return electron({
     main: {
@@ -38,6 +42,13 @@ export function electronNxViteConfig() {
   });
 }
 
+/**
+ * This function will redirect the electron window to the given URL when it is available. Usually, this url is the one used by the frontend application when
+ * running the command `nx run electron-angular-demo:serve`. This is useful when you want to start the electron app only after the frontend application is available.
+ * @param url the url of the guest frontend application
+ * @param timeout a timeout to wait for the application to be available. Default is 30000ms
+ * @returns voi
+ */
 export function redirectWhenAvailable(url: string, timeout = 30000) {
   return {
     name: 'redirect-middleware',
@@ -45,7 +56,7 @@ export function redirectWhenAvailable(url: string, timeout = 30000) {
       try {
         await waitOn({
           resources: [`${url}`],
-          timeout: 30000, // Adjust the timeout as needed
+          timeout,
           log: false,
         });
         console.log(

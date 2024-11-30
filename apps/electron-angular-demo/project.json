@@ -35,6 +35,9 @@
       "options": {
         "jestConfig": "apps/electron-angular-demo/jest.config.ts"
       }
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
     }
   }
 }
