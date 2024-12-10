@@ -29,6 +29,12 @@
       "alias": "d",
       "description": "A brief description of the electron application",
       "x-prompt": "description the electron application"
+    },
+    "usingVite": {
+      "type": "string",
+      "enum": ["yes","no"],
+      "description": "If your project is using Vite as bundler, would you like to integrate the plugin on the building/development process?",
+      "x-prompt": "If your project is using Vite as bundler, it can integrate lint,test and build targets along with your selected project. Otherwise, if not detected, or if you choose 'no', it will generate a new application with the needed files to run electron main thread along with the required serve executor for your selected application."
     }
   },
   "required": ["name", "hostProject", "author", "description"]

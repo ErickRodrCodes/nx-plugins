@@ -1,0 +1,56 @@
+appId: <%= hostProject %>.electron.app
+productName: <%= hostProject %>
+directories:
+  buildResources: build
+files:
+ - '!**/*'
+ - 'dist/apps/electron-angular-demo/**/*'
+ - 'dist/apps/demo-angular/browser/*'
+ - '<%= hostProjectDistFolder %>'
+ - '!<%= hostProjectDistFolder %>/package.json'
+ - '<%= hostProjectDistFolder %>-electron'
+ - '<%= hostProjectDistFolder %>-electron-icons'
+asarUnpack:
+  - resources/**
+win:
+  executableName:  <%= hostProject %>
+  icon: <%=hostProjectDistFolder %>-electron-icons/icon.ico
+  publisherName : "<%= author %>"
+  # Uncomment the following lines if you will include certification
+  # information on this file (change accordingly):
+  # certificateFile: <%= hostProjectRoot %>/electron/resources/certificate/Self.pfx
+  # certificatePassword: ""
+nsis:
+  installerIcon: <%=hostProjectDistFolder %>-electron-icons/setup.ico
+  artifactName: <%= hostProject %>-${version}-setup.${ext}d
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  include: <%= nsisExtraFilePath %>
+mac:
+  entitlementsInherit: <%= hostProjectDistFolder %>-entitlements/entitlements.mac.plist
+  icon: <%= hostProjectDistFolder %>-electron-icons/icon.icns
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  notarize: false
+dmg:
+  artifactName: <%= hostProject %>-${version}.${ext}
+linux:
+  icon: <%= hostProjectDistFolder %>-electron-icons/icon.ico
+  target:
+    - AppImage
+    - snap
+    - deb
+  maintainer: electronjs.org
+  category: Utility
+appImage:
+  artifactName: <%= hostProject %>-${version}.${ext}
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://example.com/auto-updates
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/

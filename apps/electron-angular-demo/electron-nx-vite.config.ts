@@ -64,7 +64,7 @@ export function redirectWhenAvailable(url: string, timeout = 30000) {
         );
       } catch (err) {
         console.error(`Error: unable to perform operatioin:`, err.message);
-        process.exit(1); // Exit the process if Application A is not available
+        process.exit(1); // Exit the process if application is not available
       }
 
       server.middlewares.use((req, res, next) => {

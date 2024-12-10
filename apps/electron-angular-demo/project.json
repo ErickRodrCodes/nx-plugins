@@ -6,14 +6,15 @@
   "tags": [],
   "implicitDependencies": ["demo-angular"],
   "targets": {
+    "build": {
+      "dependsOn": ["^build"]
+    },
     "electron": {
       "configurations": {
         "build": {
           "dependsOn": ["^build"],
           "options": {
-            "commands": [
-              "nx run electron-angular-demo:build"
-            ],
+            "commands": ["nx run electron-angular-demo:build"],
             "parallel": false
           }
         },
@@ -28,6 +29,23 @@
       "executor": "nx:run-commands",
       "defaultConfiguration": "serve"
     },
+
+    "dist": {
+      "dependsOn": [{
+        "projects" : ["electron-angular-demo"],
+        "target": "electron:build"
+      }],
+      "executor":"@erickrodrcodes/nx-electron-vite:build-electron",
+      "options": {
+        "hostProject": "electron-angular-demo",
+        "guestProject": "demo-angular",
+        "mainOutputPath": "dist/apps/electron-angular-demo-executable",
+        "mainOutputFilename": "main.js",
+        "author": "Erick Rodriguez",
+        "description": "An application that logs medical usage and generate some reports"
+      }
+    },
+
     "test": {
       "executor": "@nx/jest:jest",
       "dependsOn": ["^test"],

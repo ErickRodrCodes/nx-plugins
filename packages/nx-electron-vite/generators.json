@@ -3,12 +3,17 @@
     "init": {
       "factory": "./src/generators/init/generator",
       "schema": "./src/generators/init/schema.json",
-      "description": "Initializes the dependencies needed to run electron apps with Nx frontend apps that uses Vite"
+      "description": "Initialize the plugin"
     },
     "setup-project": {
       "factory": "./src/generators/setup-project/generator",
       "schema": "./src/generators/setup-project/schema.json",
-      "description": "creates the needed files to adapt your frontend project into a compatible project to be used and published by electron"
+      "description": "Setup a new project"
+    },
+    "setup-project-non-vite": {
+      "factory": "./src/generators/setup-project-non-vite/generator",
+      "schema": "./src/generators/setup-project-non-vite/schema.json",
+      "description": "a generator for guest projects that do not use Vite as bundler"
     }
   }
 }
