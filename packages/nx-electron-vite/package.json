@@ -1,6 +1,6 @@
 {
   "name": "@erickrodrcodes/nx-electron-vite",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "dependencies": {
     "@nx/devkit": "^20.2.1",
     "@nx/vite": "^20.2.1",
