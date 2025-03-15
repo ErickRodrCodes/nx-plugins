@@ -87,7 +87,15 @@
       }
     },
     "nx-release-publish": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build"],
+      "executor": "@nx/js:release-publish",
+      "cache": false,
+      "options": {
+        "packageRoot": "dist/packages/nx-electron-vite"
+      }
+    },
+    "publish": {
+      "executor": "@nx/js:release-publish",
       "cache": false,
       "options": {
         "packageRoot": "dist/packages/nx-electron-vite"
