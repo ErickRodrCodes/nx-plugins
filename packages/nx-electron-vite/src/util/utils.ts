@@ -132,9 +132,11 @@ export async function normalizeOptions(
     isUndefined: schema.nameProject === undefined,
   });
 
-  // Normalize project name: if empty or whitespace, use guestProject-electron
+  // Normalize project name: use guestProject-electron only if nameProject is undefined, null, empty string or whitespace
   const projectName =
-    !schema.nameProject || schema.nameProject.trim() === ''
+    schema.nameProject === undefined ||
+    schema.nameProject === null ||
+    schema.nameProject.trim() === ''
       ? `${schema.guestProject}-electron`
       : schema.nameProject;
 
