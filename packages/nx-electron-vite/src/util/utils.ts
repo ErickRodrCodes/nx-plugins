@@ -124,14 +124,6 @@ export async function normalizeOptions(
   tree: Tree,
   schema: SetupProjectSchema
 ): Promise<SetupProjectSchema> {
-  logger.debug('Debug nameProject:', {
-    value: schema.nameProject,
-    type: typeof schema.nameProject,
-    isEmpty: schema.nameProject === '',
-    isNull: schema.nameProject === null,
-    isUndefined: schema.nameProject === undefined,
-  });
-
   // Normalize project name: use guestProject-electron only if nameProject is undefined, null, empty string or whitespace
   const projectName =
     schema.nameProject === undefined ||

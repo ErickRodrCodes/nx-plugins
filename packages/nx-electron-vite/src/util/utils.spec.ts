@@ -9,10 +9,23 @@ import {
 } from './utils';
 
 // Mock the external devkit functions
-jest.mock('@nx/devkit', () => ({
-  ...jest.requireActual('@nx/devkit'),
-  readProjectConfiguration: jest.fn(),
-}));
+jest.mock('@nx/devkit', () => {
+  const actual = jest.requireActual('@nx/devkit');
+  return {
+    ...actual,
+    getWorkspaceLayout: jest.fn().mockReturnValue({ appsDir: 'apps' }),
+    readProjectConfiguration: jest.fn().mockReturnValue({
+      targets: {
+        build: {
+          options: {
+            outputPath: 'dist/apps/test-app'
+          }
+        }
+      }
+    }),
+    offsetFromRoot: jest.fn().mockReturnValue('../')
+  };
+});
 
 jest.mock('@nx/devkit/src/generators/project-name-and-root-utils', () => ({
   determineProjectNameAndRootOptions: jest.fn(),
@@ -61,21 +74,22 @@ describe('utils', () => {
     (getRootTsConfigPath as jest.Mock).mockReturnValue('tsconfig.base.json');
   });
 
-  describe('normalizeOptions', () => {
+  describe('normalizeOptions - directory handling', () => {
     beforeEach(() => {
-      // Reset the mock before each test
-      (devkit.determineProjectNameAndRootOptions as jest.Mock).mockReset();
+      (devkit.determineProjectNameAndRootOptions as jest.Mock).mockImplementation((tree, options) => {
+        return Promise.resolve({
+          projectName: options.name,
+          projectRoot: `${options.directory}/${options.name}`,
+          names: {
+            projectFileName: options.name,
+            projectSimpleName: options.name
+          },
+          importPath: `@test/${options.name}`
+        });
+      });
     });
 
     it('should use workspace apps directory when no directory is specified', async () => {
-      // Setup mock to return expected project structure
-      (
-        devkit.determineProjectNameAndRootOptions as jest.Mock
-      ).mockResolvedValue({
-        projectName: 'gato-electron',
-        projectRoot: 'apps/gato-electron',
-      });
-
       const options: SetupProjectSchema = {
         guestProject: 'gato',
         name: 'Gato App',
@@ -105,14 +119,6 @@ describe('utils', () => {
     });
 
     it('should use custom directory when specified', async () => {
-      // Setup mock for custom directory
-      (
-        devkit.determineProjectNameAndRootOptions as jest.Mock
-      ).mockResolvedValue({
-        projectName: 'gato-electron',
-        projectRoot: 'casa/gato-electron',
-      });
-
       const options: SetupProjectSchema = {
         guestProject: 'gato',
         name: 'Gato App',
@@ -141,14 +147,6 @@ describe('utils', () => {
     });
 
     it('should handle custom project name with workspace directory', async () => {
-      // Setup mock for custom project name
-      (
-        devkit.determineProjectNameAndRootOptions as jest.Mock
-      ).mockResolvedValue({
-        projectName: 'mi-gato-electron',
-        projectRoot: 'apps/mi-gato-electron',
-      });
-
       const options: SetupProjectSchema = {
         guestProject: 'gato',
         name: 'Gato App',
@@ -177,14 +175,6 @@ describe('utils', () => {
     });
 
     it('should handle custom project name with custom directory', async () => {
-      // Setup mock for custom name and directory
-      (
-        devkit.determineProjectNameAndRootOptions as jest.Mock
-      ).mockResolvedValue({
-        projectName: 'mi-gato-electron',
-        projectRoot: 'casa/mi-gato-electron',
-      });
-
       const options: SetupProjectSchema = {
         guestProject: 'gato',
         name: 'Gato App',
@@ -211,41 +201,109 @@ describe('utils', () => {
       expect(result.directory).toBe('casa/mi-gato-electron');
       expect(result.nameProject).toBe('mi-gato-electron');
     });
+  });
 
-    it('should handle directory with trailing spaces', async () => {
-      // Setup mock for directory with spaces
-      (
-        devkit.determineProjectNameAndRootOptions as jest.Mock
-      ).mockResolvedValue({
-        projectName: 'gato-electron',
-        projectRoot: 'casa/gato-electron',
+  describe('normalizeOptions - nameProject handling', () => {
+    let tree: Tree;
+    const baseSchema: SetupProjectSchema = {
+      guestProject: 'test-app',
+      name: 'Test App',
+      author: 'Test Author',
+      description: 'Test Description',
+      executableName: 'test-app',
+      updater: true,
+      nameProject: undefined,
+      directory: undefined,
+      testRunner: 'jest'
+    };
+
+    beforeEach(() => {
+      tree = {
+        exists: jest.fn().mockReturnValue(true),
+        read: jest.fn().mockReturnValue('{}'),
+      } as unknown as Tree;
+      jest.clearAllMocks();
+      (devkit.determineProjectNameAndRootOptions as jest.Mock).mockImplementation((tree, options) => {
+        return Promise.resolve({
+          projectName: options.name,
+          projectRoot: `${options.directory}/${options.name}`,
+          names: {
+            projectFileName: options.name,
+            projectSimpleName: options.name
+          },
+          importPath: `@test/${options.name}`
+        });
       });
+    });
 
-      const options: SetupProjectSchema = {
-        guestProject: 'gato',
-        name: 'Gato App',
-        author: 'Test Author',
-        description: 'Test Description',
-        executableName: 'gato',
-        directory: 'casa  ',
-        nameProject: '',
-        updater: false,
-        testRunner: 'none',
-      };
-
-      const result = await normalizeOptions(tree, options);
-
+    it('should use guestProject-electron when nameProject is undefined', async () => {
+      const schema = { ...baseSchema };
+      const result = await normalizeOptions(tree, schema);
       expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
         tree,
-        {
-          name: 'gato-electron',
+        expect.objectContaining({
+          name: 'test-app-electron',
           projectType: 'application',
-          directory: 'casa',
-        }
+          directory: 'apps'
+        })
       );
+      expect(result.nameProject).toBe('test-app-electron');
+    });
 
-      expect(result.directory).toBe('casa/gato-electron');
-      expect(result.nameProject).toBe('gato-electron');
+    it('should use guestProject-electron when nameProject is null', async () => {
+      const schema = { ...baseSchema, nameProject: null };
+      const result = await normalizeOptions(tree, schema);
+      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
+        tree,
+        expect.objectContaining({
+          name: 'test-app-electron',
+          projectType: 'application',
+          directory: 'apps'
+        })
+      );
+      expect(result.nameProject).toBe('test-app-electron');
+    });
+
+    it('should use guestProject-electron when nameProject is empty string', async () => {
+      const schema = { ...baseSchema, nameProject: '' };
+      const result = await normalizeOptions(tree, schema);
+      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
+        tree,
+        expect.objectContaining({
+          name: 'test-app-electron',
+          projectType: 'application',
+          directory: 'apps'
+        })
+      );
+      expect(result.nameProject).toBe('test-app-electron');
+    });
+
+    it('should use guestProject-electron when nameProject is whitespace', async () => {
+      const schema = { ...baseSchema, nameProject: '   ' };
+      const result = await normalizeOptions(tree, schema);
+      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
+        tree,
+        expect.objectContaining({
+          name: 'test-app-electron',
+          projectType: 'application',
+          directory: 'apps'
+        })
+      );
+      expect(result.nameProject).toBe('test-app-electron');
+    });
+
+    it('should use provided nameProject when it is a valid string', async () => {
+      const schema = { ...baseSchema, nameProject: 'custom-name' };
+      const result = await normalizeOptions(tree, schema);
+      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
+        tree,
+        expect.objectContaining({
+          name: 'custom-name',
+          projectType: 'application',
+          directory: 'apps'
+        })
+      );
+      expect(result.nameProject).toBe('custom-name');
     });
   });
 
