@@ -72,11 +72,6 @@
             "input": "./packages/nx-electron-vite",
             "glob": "executors.json",
             "output": "."
-          },
-          {
-            "input": "./packages/nx-electron-vite",
-            "glob": "package.json",
-            "output": "."
           }
         ]
       }
