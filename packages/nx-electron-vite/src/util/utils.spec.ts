@@ -1,12 +1,16 @@
 import { Tree, readProjectConfiguration } from '@nx/devkit';
 import * as devkit from '@nx/devkit/src/generators/project-name-and-root-utils';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
+import * as path from 'path';
 import { SetupProjectSchema } from '../generators/setup-project/schema';
 import {
   getProjectOutputDirectory,
   getRootTsConfigPath,
   normalizeOptions,
 } from './utils';
+
+// Helper function to normalize paths for cross-platform testing
+const normalizePath = (p: string) => p.split(path.sep).join('/');
 
 // Mock the external devkit functions
 jest.mock('@nx/devkit', () => {
@@ -114,7 +118,7 @@ describe('utils', () => {
         }
       );
 
-      expect(result.directory).toBe('apps/gato-electron');
+      expect(normalizePath(result.directory)).toBe('apps/gato-electron');
       expect(result.nameProject).toBe('gato-electron');
     });
 
@@ -142,7 +146,7 @@ describe('utils', () => {
         }
       );
 
-      expect(result.directory).toBe('casa/gato-electron');
+      expect(normalizePath(result.directory)).toBe('casa/gato-electron');
       expect(result.nameProject).toBe('gato-electron');
     });
 
@@ -170,7 +174,7 @@ describe('utils', () => {
         }
       );
 
-      expect(result.directory).toBe('apps/mi-gato-electron');
+      expect(normalizePath(result.directory)).toBe('apps/mi-gato-electron');
       expect(result.nameProject).toBe('mi-gato-electron');
     });
 
@@ -198,7 +202,7 @@ describe('utils', () => {
         }
       );
 
-      expect(result.directory).toBe('casa/mi-gato-electron');
+      expect(normalizePath(result.directory)).toBe('casa/mi-gato-electron');
       expect(result.nameProject).toBe('mi-gato-electron');
     });
   });
@@ -307,6 +311,71 @@ describe('utils', () => {
     });
   });
 
+  describe('normalizeOptions - path construction', () => {
+    beforeEach(() => {
+      (devkit.determineProjectNameAndRootOptions as jest.Mock).mockImplementation((tree, options) => {
+        return Promise.resolve({
+          projectName: options.name,
+          projectRoot: `${options.directory}/${options.name}`,
+          names: {
+            projectFileName: options.name,
+            projectSimpleName: options.name
+          },
+          importPath: `@test/${options.name}`
+        });
+      });
+    });
+
+    it('should construct all paths correctly with default directory', async () => {
+      const options: SetupProjectSchema = {
+        guestProject: 'frontend',
+        name: 'Frontend App',
+        author: 'Test Author',
+        description: 'Test Description',
+        executableName: 'frontend',
+        directory: '',
+        nameProject: '',
+        updater: false,
+        testRunner: 'none',
+      };
+
+      const result = await normalizeOptions(tree, options);
+      const expectedProjectName = 'frontend-electron';
+      const expectedDirectory = `apps/${expectedProjectName}`;
+
+      expect(normalizePath(result.directory)).toBe(expectedDirectory);
+      expect(normalizePath(result.directoryRoot)).toBe(`${expectedDirectory}/src`);
+      expect(normalizePath(result.directoryResources)).toBe(`${expectedDirectory}/src/resources`);
+      expect(normalizePath(result.outputDistFolder)).toBe(`dist/${expectedDirectory}`);
+      expect(normalizePath(result.outputDistFolderIcons)).toBe(`dist/${expectedDirectory}-icons`);
+      expect(normalizePath(result.nsisExtraFilePath)).toBe(`${expectedDirectory}/src/installer.nsh`);
+    });
+
+    it('should construct all paths correctly with custom directory', async () => {
+      const options: SetupProjectSchema = {
+        guestProject: 'frontend',
+        name: 'Frontend App',
+        author: 'Test Author',
+        description: 'Test Description',
+        executableName: 'frontend',
+        directory: 'desktop',
+        nameProject: 'frontend-desktop',
+        updater: false,
+        testRunner: 'none',
+      };
+
+      const result = await normalizeOptions(tree, options);
+      const expectedDirectory = 'desktop/frontend-desktop';
+
+      expect(normalizePath(result.directory)).toBe(expectedDirectory);
+      expect(normalizePath(result.directoryRoot)).toBe(`${expectedDirectory}/src`);
+      expect(normalizePath(result.directoryResources)).toBe(`${expectedDirectory}/src/resources`);
+      expect(normalizePath(result.outputDistFolder)).toBe(`dist/${expectedDirectory}`);
+      expect(normalizePath(result.outputDistFolderIcons)).toBe(`dist/${expectedDirectory}-icons`);
+      expect(normalizePath(result.nsisExtraFilePath)).toBe(`${expectedDirectory}/src/installer.nsh`);
+    });
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -343,8 +412,8 @@ describe('utils', () => {
     );
 
     // Verify the resulting paths
-    expect(result.directory).toBe('apps/foo-electron');
-    expect(result.directoryRoot).toBe('apps/foo-electron/src');
+    expect(normalizePath(result.directory)).toBe('apps/foo-electron');
+    expect(normalizePath(result.directoryRoot)).toBe('apps/foo-electron/src');
     expect(result.nameProject).toBe('foo-electron');
   });
 
@@ -377,8 +446,8 @@ describe('utils', () => {
       }
     );
 
-    expect(result.directory).toBe('apps/custom-name');
-    expect(result.directoryRoot).toBe('apps/custom-name/src');
+    expect(normalizePath(result.directory)).toBe('apps/custom-name');
+    expect(normalizePath(result.directoryRoot)).toBe('apps/custom-name/src');
     expect(result.nameProject).toBe('custom-name');
   });
 });

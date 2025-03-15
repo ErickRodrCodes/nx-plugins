@@ -148,14 +148,17 @@ export async function normalizeOptions(
     directory: directory,
   });
 
+  // Ensure the directory path is correctly constructed
+  const projectDirectory = path.join(directory, projectName);
+
   const outputGuestDirectory = await getProjectOutputDirectory(
     tree,
     schema.guestProject
   );
 
   const options: SetupProjectSchema = {
-    directory: newProject.projectRoot,
-    directoryRoot: `${newProject.projectRoot}/src`,
+    directory: projectDirectory,
+    directoryRoot: path.join(projectDirectory, 'src'),
     guestProject: schema.guestProject,
     nameProject: newProject.projectName,
     name: schema.name,
@@ -165,14 +168,12 @@ export async function normalizeOptions(
     updater: schema.updater,
     testRunner: schema.testRunner,
     guestDistFolder: outputGuestDirectory,
-    outputDistFolderIcons: `dist/${newProject.projectRoot}-icons`,
-    outputDistFolder: `dist/${newProject.projectRoot}`,
-    directoryResources: `${newProject.projectRoot}/src/resources`,
-    offsetFromRoot: offsetFromRoot(newProject.projectRoot),
-    rootTsConfigPath: `${offsetFromRoot(
-      newProject.projectRoot
-    )}${getRootTsConfigPath()}`,
-    nsisExtraFilePath: `${newProject.projectRoot}/src/installer.nsh`,
+    outputDistFolderIcons: `dist/${projectDirectory}-icons`,
+    outputDistFolder: `dist/${projectDirectory}`,
+    directoryResources: path.join(projectDirectory, 'src/resources'),
+    offsetFromRoot: offsetFromRoot(projectDirectory),
+    rootTsConfigPath: `${offsetFromRoot(projectDirectory)}${getRootTsConfigPath()}`,
+    nsisExtraFilePath: path.join(projectDirectory, 'src/installer.nsh'),
   };
 
   return options;
