@@ -19,7 +19,7 @@ import { ChildProcess, exec } from 'child_process';
 import { existsSync } from 'fs';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { readdir } from 'node:fs/promises';
-import * as path from 'node:path';
+import * as path from 'path';
 import { resolve } from 'path';
 import { exit, platform } from 'process';
 import { SetupProjectSchema } from '../generators/setup-project/schema';
@@ -92,7 +92,7 @@ export async function getViteOutputPath(
   projectName: string
 ): Promise<string> {
   const projectConfig = readProjectConfiguration(tree, projectName);
-  const viteConfigPath = path.join(projectConfig.root, 'vite.config.ts');
+  const viteConfigPath = path.posix.join(projectConfig.root, 'vite.config.ts');
 
   if (!tree.exists(viteConfigPath)) {
     return '';
@@ -149,7 +149,7 @@ export async function normalizeOptions(
   });
 
   // Ensure the directory path is correctly constructed
-  const projectDirectory = path.join(directory, projectName);
+  const projectDirectory = path.posix.join(directory, projectName);
 
   const outputGuestDirectory = await getProjectOutputDirectory(
     tree,
@@ -158,7 +158,7 @@ export async function normalizeOptions(
 
   const options: SetupProjectSchema = {
     directory: projectDirectory,
-    directoryRoot: path.join(projectDirectory, 'src'),
+    directoryRoot: path.posix.join(projectDirectory, 'src'),
     guestProject: schema.guestProject,
     nameProject: newProject.projectName,
     name: schema.name,
@@ -170,10 +170,10 @@ export async function normalizeOptions(
     guestDistFolder: outputGuestDirectory,
     outputDistFolderIcons: `dist/${projectDirectory}-icons`,
     outputDistFolder: `dist/${projectDirectory}`,
-    directoryResources: path.join(projectDirectory, 'src/resources'),
+    directoryResources: path.posix.join(projectDirectory, 'src/resources'),
     offsetFromRoot: offsetFromRoot(projectDirectory),
     rootTsConfigPath: `${offsetFromRoot(projectDirectory)}${getRootTsConfigPath()}`,
-    nsisExtraFilePath: path.join(projectDirectory, 'src/installer.nsh'),
+    nsisExtraFilePath: path.posix.join(projectDirectory, 'src/installer.nsh'),
   };
 
   return options;
@@ -208,7 +208,7 @@ export function getRootTsConfigPath(): string | null {
  */
 function getRootTsConfigFileName(): string | null {
   for (const tsConfigName of ['tsconfig.base.json', 'tsconfig.json']) {
-    const tsConfigPath = path.join(workspaceRoot, tsConfigName);
+    const tsConfigPath = path.posix.join(workspaceRoot, tsConfigName);
     if (existsSync(tsConfigPath)) {
       return tsConfigName;
     }
@@ -375,7 +375,7 @@ export async function restorePackageJson(
   originalPackageJson: object
 ): Promise<void> {
   await writeFile(
-    path.join(workspace, 'package.json'),
+    path.posix.join(workspace, 'package.json'),
     JSON.stringify(originalPackageJson, null, 2)
   );
 }
@@ -417,7 +417,7 @@ export async function resolveIconCommand(
     await mkdir(params.iconOutputPath, { recursive: true });
   }
 
-  const resolveSourceFile = path.join(
+  const resolveSourceFile = path.posix.join(
     params.hostProjectRoot,
     'src',
     'resources',
@@ -425,7 +425,7 @@ export async function resolveIconCommand(
     'source',
     `${params.type}.png`
   );
-  const resolveTargetFile = path.join(params.iconOutputPath, params.type);
+  const resolveTargetFile = path.posix.join(params.iconOutputPath, params.type);
 
   const _args = ` ${params.osPlatform === 'darwin' ? '-icns' : '-icop'} -hm -i`;
   return `${
@@ -558,7 +558,7 @@ async function findNodeFile(directory: string): Promise<string | null> {
   const entries = await readdir(directory, { withFileTypes: true });
 
   for (const entry of entries) {
-    const fullPath = path.join(directory, entry.name);
+    const fullPath = path.posix.join(directory, entry.name);
 
     if (entry.isFile() && path.extname(entry.name) === '.node') {
       return fullPath;

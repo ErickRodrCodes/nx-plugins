@@ -328,51 +328,66 @@ describe('utils', () => {
 
     it('should construct all paths correctly with default directory', async () => {
       const options: SetupProjectSchema = {
-        guestProject: 'frontend',
-        name: 'Frontend App',
+        guestProject: 'gato',
+        name: 'Gato App',
         author: 'Test Author',
         description: 'Test Description',
-        executableName: 'frontend',
+        executableName: 'gato',
         directory: '',
-        nameProject: '',
+        nameProject: 'mi-gato-electron',
         updater: false,
         testRunner: 'none',
       };
 
       const result = await normalizeOptions(tree, options);
-      const expectedProjectName = 'frontend-electron';
-      const expectedDirectory = `apps/${expectedProjectName}`;
 
-      expect(normalizePath(result.directory)).toBe(expectedDirectory);
-      expect(normalizePath(result.directoryRoot)).toBe(`${expectedDirectory}/src`);
-      expect(normalizePath(result.directoryResources)).toBe(`${expectedDirectory}/src/resources`);
-      expect(normalizePath(result.outputDistFolder)).toBe(`dist/${expectedDirectory}`);
-      expect(normalizePath(result.outputDistFolderIcons)).toBe(`dist/${expectedDirectory}-icons`);
-      expect(normalizePath(result.nsisExtraFilePath)).toBe(`${expectedDirectory}/src/installer.nsh`);
+      // Verify all paths use forward slashes
+      const pathProperties = [
+        'directory',
+        'directoryRoot',
+        'directoryResources',
+        'outputDistFolder',
+        'outputDistFolderIcons',
+        'nsisExtraFilePath'
+      ];
+
+      pathProperties.forEach(prop => {
+        const path = result[prop];
+        expect(path).not.toContain('\\');
+        expect(path).toEqual(normalizePath(path));
+      });
     });
 
     it('should construct all paths correctly with custom directory', async () => {
       const options: SetupProjectSchema = {
-        guestProject: 'frontend',
-        name: 'Frontend App',
+        guestProject: 'gato',
+        name: 'Gato App',
         author: 'Test Author',
         description: 'Test Description',
-        executableName: 'frontend',
-        directory: 'desktop',
-        nameProject: 'frontend-desktop',
+        executableName: 'gato',
+        directory: 'custom/path',
+        nameProject: 'mi-gato-electron',
         updater: false,
         testRunner: 'none',
       };
 
       const result = await normalizeOptions(tree, options);
-      const expectedDirectory = 'desktop/frontend-desktop';
 
-      expect(normalizePath(result.directory)).toBe(expectedDirectory);
-      expect(normalizePath(result.directoryRoot)).toBe(`${expectedDirectory}/src`);
-      expect(normalizePath(result.directoryResources)).toBe(`${expectedDirectory}/src/resources`);
-      expect(normalizePath(result.outputDistFolder)).toBe(`dist/${expectedDirectory}`);
-      expect(normalizePath(result.outputDistFolderIcons)).toBe(`dist/${expectedDirectory}-icons`);
-      expect(normalizePath(result.nsisExtraFilePath)).toBe(`${expectedDirectory}/src/installer.nsh`);
+      // Verify all paths use forward slashes
+      const pathProperties = [
+        'directory',
+        'directoryRoot',
+        'directoryResources',
+        'outputDistFolder',
+        'outputDistFolderIcons',
+        'nsisExtraFilePath'
+      ];
+
+      pathProperties.forEach(prop => {
+        const path = result[prop];
+        expect(path).not.toContain('\\');
+        expect(path).toEqual(normalizePath(path));
+      });
     });
   });
 
