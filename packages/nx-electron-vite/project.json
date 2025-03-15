@@ -92,7 +92,7 @@
       }
     },
     "nx-release-publish": {
-      "dependsOn": ["clean", "build"],
+      "dependsOn": ["build"],
       "cache": false,
       "options": {
         "packageRoot": "dist/packages/nx-electron-vite"
