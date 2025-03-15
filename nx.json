@@ -58,6 +58,11 @@
     },
     "publish-package": {
       "dependsOn": ["build", "test"]
+    },
+    "nx-release-publish": {
+      "options": {
+        "packageRoot": "dist/packages/{projectName}"
+      }
     }
   },
   "plugins": [
@@ -123,17 +128,36 @@
     "git": {
       "commitMessage": "chore(release): 🚀 release packages [skip ci]"
     },
-    "version": {
-      "generatorOptions": {
-        "currentVersionResolver": "git-tag",
-        "specifierSource": "conventional-commits",
-        "updateDependents": "auto"
-      },
-      "packageRoot": "packages/nx-electron-vite",
-      "postVersionCommand": "pnpm exec nx run-many -t build"
-    },
     "changelog": {
-      "projectChangelogs": {}
+      "projectChangelogs": {
+        "createRelease": "github"
+      }
+    },
+    "version": {
+      "preVersionCommand": "pnpm nx run-many -t build --skip-nx-cache --parallel 4",
+      "conventionalCommits": true,
+      "generatorOptions": {
+        "packageRoot": "dist/packages/{projectName}",
+        "updateDependents": "auto"
+      }
+    }
+  },
+  "tasksRunnerOptions": {
+    "default": {
+      "options": {
+        "runtimeCacheInputs": ["node -v", "echo $RUNNER_OS"],
+        "canTrackAnalytics": false,
+        "showUsageWarnings": true
+      }
+    }
+  },
+  "workspaceLayout": {
+    "appsDir": "e2e",
+    "libsDir": "packages"
+  },
+  "pluginsConfig": {
+    "@nx/js": {
+      "analyzeSourceFiles": true
     }
   },
   "useLegacyCache": false

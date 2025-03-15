@@ -1,33 +1,36 @@
 {
-	"folders": [
-		{
-			"path": ".."
-		},
-		{
-			"path": "../../medical-equipment-record-v2"
-		}
-	],
-	"settings": {
-		"json.schemaDownload.enable": true,
-		"workbench.colorCustomizations": {
-			"activityBar.activeBackground": "#587f99",
-			"activityBar.background": "#587f99",
-			"activityBar.foreground": "#e7e7e7",
-			"activityBar.inactiveForeground": "#e7e7e799",
-			"activityBarBadge.background": "#d0aec3",
-			"activityBarBadge.foreground": "#15202b",
-			"commandCenter.border": "#e7e7e799",
-			"sash.hoverBorder": "#587f99",
-			"statusBar.background": "#456479",
-			"statusBar.foreground": "#e7e7e7",
-			"statusBarItem.hoverBackground": "#587f99",
-			"statusBarItem.remoteBackground": "#456479",
-			"statusBarItem.remoteForeground": "#e7e7e7",
-			"titleBar.activeBackground": "#456479",
-			"titleBar.activeForeground": "#e7e7e7",
-			"titleBar.inactiveBackground": "#45647999",
-			"titleBar.inactiveForeground": "#e7e7e799"
-		},
-		"peacock.color": "#456479"
-	}
+  "folders": [
+    {
+      "path": ".."
+    },
+    {
+      "path": "../../medical-equipment-record-v2"
+    },
+    {
+      "path": "../../nxrocks"
+    }
+  ],
+  "settings": {
+    "json.schemaDownload.enable": true,
+    "workbench.colorCustomizations": {
+      "activityBar.activeBackground": "#587f99",
+      "activityBar.background": "#587f99",
+      "activityBar.foreground": "#e7e7e7",
+      "activityBar.inactiveForeground": "#e7e7e799",
+      "activityBarBadge.background": "#d0aec3",
+      "activityBarBadge.foreground": "#15202b",
+      "commandCenter.border": "#e7e7e799",
+      "sash.hoverBorder": "#587f99",
+      "statusBar.background": "#456479",
+      "statusBar.foreground": "#e7e7e7",
+      "statusBarItem.hoverBackground": "#587f99",
+      "statusBarItem.remoteBackground": "#456479",
+      "statusBarItem.remoteForeground": "#e7e7e7",
+      "titleBar.activeBackground": "#456479",
+      "titleBar.activeForeground": "#e7e7e7",
+      "titleBar.inactiveBackground": "#45647999",
+      "titleBar.inactiveForeground": "#e7e7e799"
+    },
+    "peacock.color": "#456479"
+  }
 }
