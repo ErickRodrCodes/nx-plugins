@@ -102,8 +102,6 @@ describe('initGenerator', () => {
           'wait-on': expect.any(String),
           vitest: expect.any(String),
           'electron-is-dev': expect.any(String),
-          typescript: expect.any(String),
-          '@types/node': expect.any(String),
         })
       );
     });

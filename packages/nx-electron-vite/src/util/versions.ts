@@ -10,8 +10,6 @@ export const versionLibraries = {
   node: '20.17.0',
   vitest: '^1.6.0',
   electronIsDev: '^2.0.0',
-  typescript: '^5.3.3',
-  typesNode: '^20.11.19',
 };
 
 export const devDependencies: string[] = [
@@ -24,7 +22,5 @@ export const devDependencies: string[] = [
   'png2icons',
   'wait-on',
   'vitest',
-  'electron-is-dev',
-  'typescript',
-  '@types/node',
+  'electron-is-dev'
 ];

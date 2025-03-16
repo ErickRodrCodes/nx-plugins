@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Run lint and tests on affected files
 echo "🔍 Running lint on affected files..."
 pnpm exec nx affected:lint --base=origin/main || exit 1
