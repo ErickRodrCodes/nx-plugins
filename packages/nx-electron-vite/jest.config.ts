@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 export default {
   displayName: 'nx-electron-vite',
   preset: '../../jest.preset.js',

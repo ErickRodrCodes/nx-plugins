@@ -3,4 +3,4 @@ export interface BuildIconsExecutorSchema {
   hostProjectRoot: string;
   iconOutputPath: string;
   mode: 'app' | 'setup' | 'composite';
-} // eslint-disable-line
+}
