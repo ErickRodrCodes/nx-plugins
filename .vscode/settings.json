@@ -47,5 +47,11 @@
     "titleBar.inactiveBackground": "#45647999",
     "titleBar.inactiveForeground": "#e7e7e799"
   },
-  "peacock.color": "#456479"
+  "peacock.color": "#456479",
+  "terminal.integrated.profiles.windows": {
+    "Git Bash": null, // This will prevent Git Bash from being a default profile
+    "PowerShell": {
+      "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0l\\powershell.exe"
+    }
+  }
 }
