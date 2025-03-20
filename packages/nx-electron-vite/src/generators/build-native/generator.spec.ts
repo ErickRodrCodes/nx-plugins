@@ -366,9 +366,7 @@ describe('_buildNativeGenerator', () => {
     );
 
     // Mock tree.write to throw error for the module file, but not for directory creation
-    let writeCallCount = 0;
     (tree.write as jest.Mock).mockImplementation((path, content) => {
-      writeCallCount++;
       // Only throw for the actual module file (the last call)
       if (path.endsWith('test-package.node')) {
         throw new Error('Resource busy or locked');
