@@ -1,3 +1,13 @@
+## 0.1.0 (2025-03-20)
+
+### 🚀 Features
+
+- Added support for optional pathTarget in the schema to specify a custom path for .node binaries builds ([9bbd10d](https://github.com/ErickRodrCodes/nx-plugins/commit/9bbd10d))
+
+### ❤️ Thank You
+
+- Erick Rodriguez
+
 # 0.0.0 (2025-03-16)
 
 ### 🩹 Fixes
