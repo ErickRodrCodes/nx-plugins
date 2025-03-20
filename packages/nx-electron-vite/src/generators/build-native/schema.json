@@ -18,7 +18,12 @@
       "type": "string",
       "description": "The npm package you intend to use a .node native module from",
       "x-priority": "important"
+    },
+    "pathTarget": {
+      "type": "string",
+      "description": "Custom path where the .node binary should be copied when no hostProject is specified",
+      "x-priority": "important"
     }
   },
-  "required": ["hostProject", "npmPackageName"]
+  "required": ["npmPackageName"]
 }

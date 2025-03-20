@@ -1,4 +1,5 @@
 export interface buldNativeSchema {
-  hostProject: string;
+  hostProject?: string;
   npmPackageName: string;
+  pathTarget?: string;
 }
