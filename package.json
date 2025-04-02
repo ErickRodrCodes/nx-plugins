@@ -7,7 +7,8 @@
     "prepare": "husky",
     "release": "nx release --dry-run -- --skip-nx-cache",
     "serve-with-pid": "node tools/serve-with-pid.js",
-    "serve-nx-with-pid": "node tools/serve-nx-with-pid.js"
+    "serve-nx-with-pid": "node tools/serve-nx-with-pid.js",
+    "reset-registry": "npm set registry https://registry.npmjs.org/"
   },
   "config": {
     "commitizen": {
