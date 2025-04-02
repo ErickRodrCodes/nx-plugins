@@ -8,7 +8,7 @@ export const versionLibraries = {
   suggestedNode: 'v18.18.0',
   waitOn: '8.0.0',
   node: '20.17.0',
-  vitest: '^1.6.0',
+  vitest: '^3.0.1',
   electronIsDev: '^2.0.0',
 };
 
@@ -22,5 +22,5 @@ export const devDependencies: string[] = [
   'png2icons',
   'wait-on',
   'vitest',
-  'electron-is-dev'
+  'electron-is-dev',
 ];

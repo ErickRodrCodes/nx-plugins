@@ -5,7 +5,9 @@
   "scripts": {
     "commit": "git-cz",
     "prepare": "husky",
-    "release": "nx release --dry-run -- --skip-nx-cache"
+    "release": "nx release --dry-run -- --skip-nx-cache",
+    "serve-with-pid": "node tools/serve-with-pid.js",
+    "serve-nx-with-pid": "node tools/serve-nx-with-pid.js"
   },
   "config": {
     "commitizen": {
