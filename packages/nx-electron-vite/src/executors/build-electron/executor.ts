@@ -1,21 +1,21 @@
 import {
   ExecutorContext,
-  workspaceRoot,
+  getPackageManagerCommand,
   logger,
   runExecutor,
-  getPackageManagerCommand,
+  workspaceRoot,
 } from '@nx/devkit';
 import { readFileSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import * as path from 'node:path/posix';
 
-import { BuildElectronExecutorSchema } from './schema';
+import { join } from 'node:path';
 import {
   deleteDirectory,
   restorePackageJson,
   runCommandUntil,
 } from '../../util/utils';
-import { join } from 'node:path';
+import { BuildElectronExecutorSchema } from './schema';
 
 export default async function electronBuildExecutor(
   options: BuildElectronExecutorSchema,
@@ -100,7 +100,7 @@ The dist folder will be cleaned while running this executor.
 
   const resolveConfigFile = join(
     hostProjectRoot,
-    'electron',
+    'src',
     'electron-builder.yml'
   );
   const commandLine = `${

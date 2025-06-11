@@ -87,7 +87,7 @@ export async function updateDependencies(
         defaultConfiguration: 'serve',
       },
       icon: {
-        executor: '@erickrodrcodes/nx-electron-vite:build-icons',
+        executor: '@erickrodrcodes/nx-electron-vite:build-icon',
         defaultConfiguration: 'default',
         options: {
           hostProject: options.nameProject,

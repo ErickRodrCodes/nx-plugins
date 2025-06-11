@@ -3,26 +3,156 @@ import { startup } from 'vite-plugin-electron';
 import electron from 'vite-plugin-electron/simple';
 import waitOn from 'wait-on';
 
-import { join, resolve } from 'path';
-import { existsSync, rmSync } from 'fs';
-import { Plugin, UserConfig } from 'vite';
+import { copyFileSync, existsSync, readFileSync, rmSync } from 'fs';
+import { basename, join, resolve } from 'path';
+import { rimraf } from 'rimraf';
+import { Plugin, UserConfig, createLogger } from 'vite';
+
+const workspaceRoot = process.cwd();
+const projectRoot = __dirname;
+const logger = createLogger('info', {
+  prefix: '[Nx Electron Vite Plugin]',
+});
 
 const workspaceRoot = process.cwd();
 const projectRoot = __dirname;
 
-rmSync(join(projectRoot, 'dist'), { recursive: true, force: true });
+function cleanDist(): Plugin {
+  return {
+    name: 'clean-dist',
+    buildStart() {
+      const distPath = resolve(workspaceRoot, '<%= outputDistFolder %');
+      if (existsSync(distPath)) {
+        logger.info('🗑️  Removing dist folder: ' + distPath, {
+          timestamp: true,
+        });
+        try {
+          rimraf.sync(distPath);
+        } catch (e) {
+          logger.error('⛔ Failed to remove dist folder: ' + distPath, {
+            timestamp: true,
+          });
+          logger.error('⛔ Resource is busy and cannot be removed.', {
+            timestamp: true,
+          });
+        }
+      }
+    },
+  };
+}
+
+function copyNative(natives: { pathReference: string }): Plugin {
+  return {
+    name: 'copy-native',
+    closeBundle() {
+      const referenceFile = resolve(natives.pathReference);
+      const referenceFileContent: {
+        [key: string]: { path: string; version: string };
+      } = JSON.parse(readFileSync(referenceFile, 'utf-8'));
+      const nativesToCopy = Object.keys(referenceFileContent);
+      const results: { native: string; distPath: string; version: string }[] =
+        [];
+      const alreadyCopied: string[] = [];
+
+      for (const native of nativesToCopy) {
+        const distPath = resolve(workspaceRoot, '<%= outputDistFolder %');
+        const nativePath = resolve(
+          projectRoot,
+          'src/main/native',
+          referenceFileContent[native].path
+        );
+
+        const getFileNameFromNativePath = basename(nativePath);
+        try {
+          copyFileSync(nativePath, `${distPath}/${getFileNameFromNativePath}`);
+          results.push({
+            native,
+            distPath,
+            version: referenceFileContent[native].version,
+          });
+        } catch (e) {
+          logger.error(
+            `⛔ Native module ${native} is being used at the moment. More likely it is already copied.`,
+            {
+              timestamp: true,
+            }
+          );
+          alreadyCopied.push(native);
+        }
+      }
+      if (results.length > 0) {
+        logger.info('Native modules copied:', {
+          timestamp: true,
+        });
+        results.forEach((result) => {
+          logger.info(
+            `📦 ${result.native} (${result.version}) → ${result.distPath}`,
+            {
+              timestamp: true,
+            }
+          );
+        });
+        logger.info(`📜 Total: ${results.length} modules`, {
+          timestamp: true,
+        });
+      } else if (alreadyCopied.length > 0) {
+        alreadyCopied.forEach((result) => {
+          logger.info(
+            `⚠️  Native module ${result} was already copied. skipping...`,
+            {
+              timestamp: true,
+            }
+          );
+        });
+      } else {
+        logger.warn(
+          '✅  No native modules found in reference file, continuing...',
+          {
+            timestamp: true,
+          }
+        );
+      }
+    },
+  };
+}
 
 export async function electronNxViteConfig() {
   return await electron({
     main: {
       entry: resolve(projectRoot, 'src/main/main.ts'),
       onstart: () => {
-        startup([
-          '--inspect=5858',
-          '--enable-logging',
-          '--log-level=0',
-          resolve(workspaceRoot, '<%= outputDistFolder %>/main.js'),
-        ]);
+        const mainPath = resolve(
+          workspaceRoot,
+          '<%= outputDistFolder %>/main.js'
+        );
+        const debugPortMain = process.env['DEBUG_PORT_MAIN'] ?? 5858
+        const debugPortRenderer = process.env['DEBUG_PORT_RENDERER'] ?? 4975
+        startup(
+          [
+            /**
+             * port to debug the main process
+             */
+            `--inspect=${debugPortMain}`,
+            /**
+             * port to debug the renderer process
+             */
+            `--remote-debugging-port=${debugPortRenderer}`,
+            /**
+             * additional flags
+             */
+            '--enable-logging',
+            '--log-level=0',
+            mainPath,
+          ],
+          {
+            cwd: workspaceRoot,
+            env: {
+              ...process.env,
+              ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+              NODE_ENV: 'development',
+            },
+          }
+        );
       },
       vite: {
         build: {
@@ -44,6 +174,11 @@ export async function electronNxViteConfig() {
           outDir: resolve(workspaceRoot, '<%= outputDistFolder %>'),
           sourcemap: 'inline',
           rollupOptions: {
+            /**
+             * add external dependencies used in the preload script here.
+             * for example: packages that uses .node extensions.
+             */
+            external:[]
             output: {
               entryFileNames: '[name].js',
               chunkFileNames: '[name].js',

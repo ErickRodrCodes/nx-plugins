@@ -198,7 +198,7 @@ describe('setupProjectGenerator', () => {
         expect.objectContaining({
           targets: expect.objectContaining({
             icon: {
-              executor: '@erickrodrcodes/nx-electron-vite:build-icons',
+              executor: '@erickrodrcodes/nx-electron-vite:build-icon',
               defaultConfiguration: 'default',
               options: {
                 hostProject: fakeOptions.nameProject,
