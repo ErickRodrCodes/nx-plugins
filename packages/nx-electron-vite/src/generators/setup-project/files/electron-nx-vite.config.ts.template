@@ -5,7 +5,6 @@ import waitOn from 'wait-on';
 
 import { copyFileSync, existsSync, readFileSync, rmSync } from 'fs';
 import { basename, join, resolve } from 'path';
-import { rimraf } from 'rimraf';
 import { Plugin, UserConfig, createLogger } from 'vite';
 
 const workspaceRoot = process.cwd();
@@ -14,30 +13,20 @@ const logger = createLogger('info', {
   prefix: '[Nx Electron Vite Plugin]',
 });
 
-const workspaceRoot = process.cwd();
-const projectRoot = __dirname;
+const pkg =  JSON.parse(readFileSync(resolve(workspaceRoot, 'package.json'), 'utf-8'));
+const dependencies = Object.keys('dependencies' in pkg ? pkg.dependencies : {});
 
 function cleanDist(): Plugin {
   return {
-    name: 'clean-dist',
+    name: 'build-start-task',
     buildStart() {
-      const distPath = resolve(workspaceRoot, '<%= outputDistFolder %');
-      if (existsSync(distPath)) {
-        logger.info('🗑️  Removing dist folder: ' + distPath, {
-          timestamp: true,
-        });
-        try {
-          rimraf.sync(distPath);
-        } catch (e) {
-          logger.error('⛔ Failed to remove dist folder: ' + distPath, {
-            timestamp: true,
-          });
-          logger.error('⛔ Resource is busy and cannot be removed.', {
-            timestamp: true,
-          });
-        }
-      }
+      // here a example of code you can use to execute something at the start of the build process
+      logger.info('⚠️ Started Vite Build Start lifecycle')
     },
+    closeBundle(){
+      // here a example of code you can use to execute something at the start of the build process
+      logger.info('⚠️ Started Vite Build close bundle lifecycle')
+    }
   };
 }
 
@@ -127,6 +116,9 @@ export async function electronNxViteConfig() {
         );
         const debugPortMain = process.env['DEBUG_PORT_MAIN'] ?? 5858
         const debugPortRenderer = process.env['DEBUG_PORT_RENDERER'] ?? 4975
+        logger.info('🚀 Starting Electron with main path: ' + mainPath, {
+          timestamp: true,
+        });
         startup(
           [
             /**
@@ -155,45 +147,58 @@ export async function electronNxViteConfig() {
         );
       },
       vite: {
+        logLevel: 'info',
         build: {
+          commonjsOptions: {
+            ignoreDynamicRequires: true,
+          },
           outDir: resolve(workspaceRoot, '<%= outputDistFolder %>'),
           sourcemap: true,
+          minify: false,
           rollupOptions: {
+            external: dependencies,
             output: {
               entryFileNames: '[name].js',
               chunkFileNames: '[name].js',
             },
           },
         },
+        plugins: [
+          cleanDist(),
+          copyNative({
+            pathReference: resolve(
+              projectRoot,
+              'src/main/native/reference.json'
+            ),
+          }),
+        ],
       },
     },
     preload: {
       input: resolve(projectRoot, 'src/preload/preload.ts'),
       vite: withDebug({
+        logLevel: 'info',
         build: {
           outDir: resolve(workspaceRoot, '<%= outputDistFolder %>'),
           sourcemap: 'inline',
           rollupOptions: {
             /**
-             * add external dependencies used in the preload script here.
-             * for example: packages that uses .node extensions.
+             * use the dependencies declared on the package.json
              */
-            external:[]
+            external: dependencies,
             output: {
               entryFileNames: '[name].js',
               chunkFileNames: '[name].js',
             },
           },
         },
+        plugins: [],
       }),
     },
     // Ployfill the Electron and Node.js API for Renderer process.
     // If you want use Node.js in Renderer process, the `nodeIntegration` needs to be enabled in the Main process.
     // See 👉 https://github.com/electron-vite/vite-plugin-electron-renderer
-    renderer:
-      process.env.NODE_ENV === 'test'
-        ? undefined
-        : {},
+    renderer: process.env.NODE_ENV === 'test' ? undefined : {},
   });
 }
 
@@ -205,23 +210,29 @@ export async function electronNxViteConfig() {
 export function redirectWhenAvailable(url: string, timeout = 50000) {
   return {
     name: 'redirect-middleware',
-    async configureServer(server) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async configureServer(server: any) {
       try {
         await waitOn({
           resources: [`${url}`],
           timeout,
           log: false,
+          validateStatus: (status) => status === 200,
         });
-        console.log(
-          `\n🚀 Frontend application ${url} is available. Preparing electron to host Target Project.\n`
+        logger.info(
+          `🚀 Frontend application ${url} is available. Preparing electron to host Target Project.`
         );
-      } catch (err) {
-        console.error(`Error: unable to perform operation:`, err.message);
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        logger.error(`Error: unable to perform operation:`, err.message);
         process.exit(1);
       }
-
-      server.middlewares.use((req, res, next) => {
-        if (req?.url?.startsWith('/__vite_ping') || req?.url?.startsWith('/@vite')) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      server.middlewares.use((req: any, res: any, next: any) => {
+        if (
+          req?.url?.startsWith('/__vite_ping') ||
+          req?.url?.startsWith('/@vite')
+        ) {
           return next();
         }
         res.writeHead(302, { Location: `${url}${req.url}` });
@@ -235,8 +246,8 @@ export function redirectWhenAvailable(url: string, timeout = 50000) {
  * A function that enabled debugging capabilities
  */
 export function withDebug(config: UserConfig): UserConfig {
-  const debugFile = join(__dirname, 'node_modules/.electron-vite-debug')
-  const isDebug = existsSync(debugFile)
+  const debugFile = join(__dirname, 'node_modules/.electron-vite-debug');
+  const isDebug = existsSync(debugFile);
 
   if (isDebug) {
     // Ensure config.build is defined
@@ -246,14 +257,18 @@ export function withDebug(config: UserConfig): UserConfig {
       name: 'electron-vite-debug',
       configResolved(config) {
         // TODO: when the next version of `vite-plugine-electron` is released, use the config hook.
-        const index = config.plugins.findIndex(p => p.name === 'electron-main-watcher');
-        (config.plugins as Plugin[]).splice(index, 1)
-        rmSync(debugFile)
+        const index = config.plugins.findIndex(
+          (p) => p.name === 'electron-main-watcher'
+        );
+        if (index !== -1) {
+          (config.plugins as Plugin[]).splice(index, 1);
+        }
+        rmSync(debugFile);
       },
-    })
+    });
   }
 
-  return config
+  return config;
 }
 
 export default electronNxViteConfig;

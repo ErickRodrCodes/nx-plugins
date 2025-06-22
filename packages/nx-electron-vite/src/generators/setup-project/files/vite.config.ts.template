@@ -20,16 +20,11 @@ export default defineConfig({
   ],
   build: {
     outDir: '<%= offsetFromRoot %><%= outputDistFolder %>',
-    emptyOutDir: true,
+    emptyOutDir: false,
     reportCompressedSize: true,
     commonjsOptions: {
       transformMixedEsModules: true,
     },
-    rollupOptions:{
-      output: {
-        entryFileNames: '[name].mjs'
-      }
-    }
   },
   <% if(testRunner === 'vitest') { %>
   test: {

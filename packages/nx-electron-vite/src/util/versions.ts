@@ -10,6 +10,7 @@ export const versionLibraries = {
   node: '20.17.0',
   vitest: '^3.0.1',
   electronIsDev: '^2.0.0',
+  electronLog: '^5.4.1',
 };
 
 export const devDependencies: string[] = [
@@ -23,4 +24,5 @@ export const devDependencies: string[] = [
   'wait-on',
   'vitest',
   'electron-is-dev',
+  'electron-log',
 ];

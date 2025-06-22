@@ -54,7 +54,12 @@ export async function updateDependencies(
     targets: {
       build: {
         executor: '@nx/vite:build',
-        dependsOn: ['^build'],
+        dependsOn: [
+          {
+            projects: [options.guestProject],
+            target: 'build',
+          },
+        ],
         options: {
           outputPath: options.outputDistFolder,
         },
@@ -64,11 +69,26 @@ export async function updateDependencies(
         options: {
           buildTarget: `${options.nameProject}:build`,
         },
+        configurations: {
+          electron: {
+            dependsOn: ['build'],
+            commands: [
+              `nx run ${options.guestProject}:serve`,
+              `nx run ${options.nameProject}:serve`,
+            ],
+            parallel: true,
+          },
+        },
       },
       electron: {
         configurations: {
           build: {
-            dependsOn: ['^build'],
+            dependsOn: [
+              {
+                projects: [options.nameProject],
+                target: 'build',
+              },
+            ],
             options: {
               commands: [`nx run ${options.nameProject}:build`],
               parallel: false,
@@ -86,9 +106,15 @@ export async function updateDependencies(
         executor: 'nx:run-commands',
         defaultConfiguration: 'serve',
       },
-      icon: {
+      'nx-electron-icons': {
         executor: '@erickrodrcodes/nx-electron-vite:build-icon',
         defaultConfiguration: 'default',
+        dependsOn: [
+          {
+            projects: [options.nameProject],
+            target: 'build',
+          },
+        ],
         options: {
           hostProject: options.nameProject,
           hostProjectRoot: '{projectRoot}',
@@ -109,14 +135,9 @@ export async function updateDependencies(
       },
       dist: {
         dependsOn: [
-          '^build',
           {
             projects: [options.nameProject],
-            target: 'electron:build',
-          },
-          {
-            projects: [options.nameProject],
-            target: 'icon',
+            target: 'nx-electron-icons',
           },
         ],
         executor: '@erickrodrcodes/nx-electron-vite:build-electron',
@@ -125,7 +146,7 @@ export async function updateDependencies(
           guestProject: options.guestProject,
           hostProjectRoot: '{projectRoot}',
           mainOutputPath: options.outputDistFolder,
-          mainOutputFileName: 'main.js',
+          mainOutputFilename: 'main.js',
           author: options.author,
           description: options.description,
         },

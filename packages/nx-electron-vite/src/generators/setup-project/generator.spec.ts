@@ -138,119 +138,82 @@ describe('setupProjectGenerator', () => {
     it('should configure build target correctly', async () => {
       await updateDependencies(tree, schema);
 
-      expect(addProjectConfiguration).toHaveBeenCalledWith(
-        tree,
-        expect.any(String),
-        expect.objectContaining({
-          targets: expect.objectContaining({
-            build: {
-              executor: '@nx/vite:build',
-              dependsOn: ['^build'],
-              options: {
-                outputPath: fakeOptions.outputDistFolder,
-              },
-            },
-          }),
-        })
-      );
+      const configCall = (addProjectConfiguration as jest.Mock).mock.calls[0][2];
+      expect(configCall.targets.build).toEqual({
+        dependsOn: [{ projects: [fakeOptions.guestProject], target: 'build' }],
+        executor: '@nx/vite:build',
+        options: {
+          outputPath: fakeOptions.outputDistFolder,
+        },
+      });
     });
 
     it('should configure electron target with correct serve and build configurations', async () => {
       await updateDependencies(tree, schema);
 
-      expect(addProjectConfiguration).toHaveBeenCalledWith(
-        tree,
-        expect.any(String),
-        expect.objectContaining({
-          targets: expect.objectContaining({
-            electron: {
-              configurations: {
-                build: {
-                  dependsOn: ['^build'],
-                  options: {
-                    commands: [`nx run ${fakeOptions.nameProject}:build`],
-                    parallel: false,
-                  },
-                },
-                serve: {
-                  dependsOn: ['build'],
-                  commands: [
-                    `nx run ${fakeOptions.guestProject}:serve`,
-                    `nx run ${fakeOptions.nameProject}:serve`,
-                  ],
-                  parallel: true,
-                },
-              },
-              executor: 'nx:run-commands',
-              defaultConfiguration: 'serve',
+      const configCall = (addProjectConfiguration as jest.Mock).mock.calls[0][2];
+      expect(configCall.targets.electron).toEqual({
+        configurations: {
+          build: {
+            dependsOn: [{ projects: [fakeOptions.nameProject], target: 'build' }],
+            options: {
+              commands: [`nx run ${fakeOptions.nameProject}:build`],
+              parallel: false,
             },
-          }),
-        })
-      );
+          },
+          serve: {
+            dependsOn: ['build'],
+            commands: [
+              `nx run ${fakeOptions.guestProject}:serve`,
+              `nx run ${fakeOptions.nameProject}:serve`,
+            ],
+            parallel: true,
+          },
+        },
+        executor: 'nx:run-commands',
+        defaultConfiguration: 'serve',
+      });
     });
 
     it('should configure icon target with all modes', async () => {
       await updateDependencies(tree, schema);
 
-      expect(addProjectConfiguration).toHaveBeenCalledWith(
-        tree,
-        expect.any(String),
-        expect.objectContaining({
-          targets: expect.objectContaining({
-            icon: {
-              executor: '@erickrodrcodes/nx-electron-vite:build-icon',
-              defaultConfiguration: 'default',
-              options: {
-                hostProject: fakeOptions.nameProject,
-                hostProjectRoot: '{projectRoot}',
-                iconOutputPath: fakeOptions.outputDistFolderIcons,
-                mode: 'composite',
-              },
-              configurations: {
-                app: { mode: 'app' },
-                setup: { mode: 'setup' },
-                default: { mode: 'composite' },
-              },
-            },
-          }),
-        })
-      );
+      const configCall = (addProjectConfiguration as jest.Mock).mock.calls[0][2];
+      expect(configCall.targets['nx-electron-icons']).toEqual({
+        executor: '@erickrodrcodes/nx-electron-vite:build-icon',
+        defaultConfiguration: 'default',
+        dependsOn: [{ projects: [fakeOptions.nameProject], target: 'build' }],
+        options: {
+          hostProject: fakeOptions.nameProject,
+          hostProjectRoot: '{projectRoot}',
+          iconOutputPath: fakeOptions.outputDistFolderIcons,
+          mode: 'composite',
+        },
+        configurations: {
+          app: { mode: 'app' },
+          setup: { mode: 'setup' },
+          default: { mode: 'composite' },
+        },
+      });
     });
 
     it('should configure dist target with correct dependencies', async () => {
       await updateDependencies(tree, schema);
 
-      expect(addProjectConfiguration).toHaveBeenCalledWith(
-        tree,
-        expect.any(String),
-        expect.objectContaining({
-          targets: expect.objectContaining({
-            dist: {
-              dependsOn: [
-                '^build',
-                {
-                  projects: [fakeOptions.nameProject],
-                  target: 'electron:build',
-                },
-                {
-                  projects: [fakeOptions.nameProject],
-                  target: 'icon',
-                },
-              ],
-              executor: '@erickrodrcodes/nx-electron-vite:build-electron',
-              options: {
-                hostProject: fakeOptions.nameProject,
-                guestProject: fakeOptions.guestProject,
-                hostProjectRoot: '{projectRoot}',
-                mainOutputPath: fakeOptions.outputDistFolder,
-                mainOutputFileName: 'main.js',
-                author: fakeOptions.author,
-                description: fakeOptions.description,
-              },
-            },
-          }),
-        })
-      );
+      const configCall = (addProjectConfiguration as jest.Mock).mock.calls[0][2];
+      expect(configCall.targets.dist).toEqual({
+        dependsOn: [{ projects: [fakeOptions.nameProject], target: 'nx-electron-icons' }],
+        executor: '@erickrodrcodes/nx-electron-vite:build-electron',
+        options: {
+          hostProject: fakeOptions.nameProject,
+          guestProject: fakeOptions.guestProject,
+          hostProjectRoot: '{projectRoot}',
+          mainOutputPath: fakeOptions.outputDistFolder,
+          mainOutputFilename: 'main.js',
+          author: fakeOptions.author,
+          description: fakeOptions.description,
+        },
+      });
     });
   });
 
