@@ -1,0 +1,37 @@
+{
+  "name": "nx-electron-vite-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "e2e/nx-electron-vite/src",
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "outputs": ["{workspaceRoot}/dist/.playwright"],
+      "options": {
+        "config": "e2e/nx-electron-vite/playwright.config.ts",
+        "webServer": {
+          "command": "pnpm nx serve guest-app",
+          "port": 4200,
+          "reuseExistingServer": true
+        }
+      },
+      "configurations": {
+        "ci": {
+          "webServer": {
+            "command": "pnpm nx serve guest-app",
+            "port": 4200,
+            "reuseExistingServer": false
+          }
+        }
+      }
+    },
+    "e2e-ci": {
+      "executor": "@nx/playwright:playwright",
+      "outputs": ["{workspaceRoot}/dist/.playwright"],
+      "options": {
+        "config": "e2e/nx-electron-vite/playwright.config.ts"
+      }
+    }
+  },
+  "tags": []
+}

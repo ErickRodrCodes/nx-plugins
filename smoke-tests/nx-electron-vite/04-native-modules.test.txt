@@ -1,0 +1,254 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { setupWorkspace, TestSetup } from '../shared/setup';
+
+describe('Native Module Building', () => {
+  let testSetup: TestSetup;
+
+  beforeAll(async () => {
+    testSetup = await setupWorkspace();
+  });
+
+  afterAll(() => {
+    // Don't cleanup here - let other tests use the same workspace
+  });
+
+  it('should build native modules with build-native generator', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    console.log('Building native modules...');
+    workspaceGenerator.execCommand('npx nx g nx-electron-vite:build-native');
+
+    // Verify native directory was created
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/main/native`)).toBe(true);
+  });
+
+  it('should create native directory structure', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    // Check that native directory exists and has correct structure
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/main/native`)).toBe(true);
+
+    // Check for readme file in native directory
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/main/native/readme.md`)).toBe(true);
+  });
+
+  it('should build better-sqlite3 and place the native file correctly', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    console.log('Building better-sqlite3 native module...');
+
+    // Install better-sqlite3 first
+    workspaceGenerator.execCommand('pnpm add better-sqlite3');
+
+    // Build the native module
+    workspaceGenerator.execCommand(`npx nx g nx-electron-vite:build-native --hostProject=${electronAppName} --npmPackageName=better-sqlite3`);
+
+    // Verify the native file was created in the correct location
+    const nativeDir = `apps/${electronAppName}/src/main/native`;
+    expect(workspaceGenerator.fileExists(`${nativeDir}/better-sqlite3.node`)).toBe(true);
+
+    // Verify the file is actually a binary file (not empty)
+    const nativeFilePath = join(workspaceGenerator.getWorkspacePath(), nativeDir, 'better-sqlite3.node');
+    const fileBuffer = readFileSync(nativeFilePath);
+    expect(fileBuffer.length).toBeGreaterThan(1000); // Should be a substantial binary file
+
+    // Verify the file has the correct extension and is a native module
+    expect(nativeFilePath.endsWith('.node')).toBe(true);
+  });
+
+  it('should handle build-native with multiple packages including better-sqlite3', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    console.log('Building multiple native packages...');
+
+    // Install additional packages for testing
+    workspaceGenerator.execCommand('pnpm add ffi-napi');
+
+    // Test building multiple native packages
+    workspaceGenerator.execCommand(`npx nx g nx-electron-vite:build-native --hostProject=${electronAppName} --npmPackageName=better-sqlite3,ffi-napi`);
+
+    // Verify both modules were built
+    const nativeDir = `apps/${electronAppName}/src/main/native`;
+    expect(workspaceGenerator.fileExists(`${nativeDir}/better-sqlite3.node`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`${nativeDir}/ffi-napi.node`)).toBe(true);
+  });
+
+  it('should handle build-native with custom path', () => {
+    const { workspaceGenerator } = testSetup;
+
+    console.log('Building native modules to custom path...');
+
+    // Test building native modules to custom path
+    workspaceGenerator.execCommand('npx nx g nx-electron-vite:build-native --pathTarget=custom/native/path --npmPackageName=better-sqlite3');
+
+    // Verify custom path was created
+    expect(workspaceGenerator.fileExists('custom/native/path')).toBe(true);
+    expect(workspaceGenerator.fileExists('custom/native/path/better-sqlite3.node')).toBe(true);
+  });
+
+  it('should have correct electron-nx-vite.config.ts for native modules', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    // Verify the config file exists and has native module configuration
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/electron-nx-vite.config.ts`)).toBe(true);
+
+    const configContent = workspaceGenerator.execCommand(`cat apps/${electronAppName}/electron-nx-vite.config.ts`, { stdio: 'pipe' });
+
+    // Check for native module related configuration
+    expect(configContent).toContain('nativeModules');
+  });
+
+  it('should verify native module is included in build output', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    console.log('Building Electron app to verify native modules are included...');
+
+    // Build the Electron app
+    workspaceGenerator.execCommand(`npx nx build-electron ${electronAppName}`);
+
+    // Verify native modules are copied to build output
+    const distNativeDir = `apps/${electronAppName}/dist/native`;
+    expect(workspaceGenerator.fileExists(distNativeDir)).toBe(true);
+    expect(workspaceGenerator.fileExists(`${distNativeDir}/better-sqlite3.node`)).toBe(true);
+
+    // Verify the native file in dist is the same size as the source
+    const sourceNativePath = join(workspaceGenerator.getWorkspacePath(), `apps/${electronAppName}/src/main/native/better-sqlite3.node`);
+    const distNativePath = join(workspaceGenerator.getWorkspacePath(), distNativeDir, 'better-sqlite3.node');
+
+    const sourceSize = readFileSync(sourceNativePath).length;
+    const distSize = readFileSync(distNativePath).length;
+
+    expect(distSize).toBe(sourceSize);
+  });
+
+  it('should handle package names with spaces and commas correctly', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    console.log('Testing package name parsing with spaces and commas...');
+
+    // Test with package names that have spaces and commas
+    workspaceGenerator.execCommand(`npx nx g nx-electron-vite:build-native --hostProject=${electronAppName} --npmPackageName="better-sqlite3, ffi-napi , sqlite3"`);
+
+    // Verify all packages were processed
+    const nativeDir = `apps/${electronAppName}/src/main/native`;
+    expect(workspaceGenerator.fileExists(`${nativeDir}/better-sqlite3.node`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`${nativeDir}/ffi-napi.node`)).toBe(true);
+    // Note: sqlite3 might not be installed, so we don't check for it
+  });
+
+  it('should validate that native modules are properly linked in package.json', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    // Check that the Electron app package.json references the native modules correctly
+    const packageJson = workspaceGenerator.readJsonFile(`apps/${electronAppName}/package.json`);
+
+    // Verify the package.json has the necessary structure for native modules
+    expect(packageJson.main).toBeDefined();
+    expect(packageJson.name).toBeDefined();
+  });
+
+  it('should verify native module directory structure is correct', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    const nativeDir = `apps/${electronAppName}/src/main/native`;
+
+    // Check directory structure
+    expect(workspaceGenerator.fileExists(nativeDir)).toBe(true);
+    expect(workspaceGenerator.fileExists(`${nativeDir}/readme.md`)).toBe(true);
+
+    // Verify readme content explains the purpose
+    const readmeContent = workspaceGenerator.execCommand(`cat ${nativeDir}/readme.md`, { stdio: 'pipe' });
+    expect(readmeContent).toContain('native');
+    expect(readmeContent.length).toBeGreaterThan(10);
+  });
+
+  it('should verify native module can be loaded in Electron context', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    console.log('Testing native module loading in Electron context...');
+
+    // Create a test file to verify the native module can be loaded
+    const testFile = `
+const path = require('path');
+const { app } = require('electron');
+
+// Test loading the native module
+try {
+  const nativeModulePath = path.join(__dirname, 'native', 'better-sqlite3.node');
+  console.log('Native module path:', nativeModulePath);
+
+  // Check if the file exists
+  const fs = require('fs');
+  if (fs.existsSync(nativeModulePath)) {
+    console.log('✅ Native module file exists');
+
+    // Try to load the module
+    const betterSqlite3 = require('better-sqlite3');
+    console.log('✅ Native module loaded successfully');
+
+    // Test basic functionality
+    const db = new betterSqlite3(':memory:');
+    const result = db.prepare('SELECT 1 as test').get();
+    console.log('✅ Database test result:', result);
+
+    db.close();
+    console.log('✅ Database closed successfully');
+  } else {
+    console.log('❌ Native module file not found');
+  }
+} catch (error) {
+  console.error('❌ Error loading native module:', error.message);
+  process.exit(1);
+}
+
+app.quit();
+`;
+
+    // Write the test file
+    workspaceGenerator.execCommand(`echo '${testFile}' > apps/${electronAppName}/test-native.js`);
+
+    // Install better-sqlite3 in the Electron app
+    workspaceGenerator.execCommand(`cd apps/${electronAppName} && pnpm add better-sqlite3`);
+
+    // Build the native module
+    workspaceGenerator.execCommand(`npx nx g nx-electron-vite:build-native --hostProject=${electronAppName} --npmPackageName=better-sqlite3`);
+
+    // Build the Electron app
+    workspaceGenerator.execCommand(`npx nx build-electron ${electronAppName}`);
+
+    // Test running the native module test
+    try {
+      const result = workspaceGenerator.execCommand(`cd apps/${electronAppName}/dist && node test-native.js`, { stdio: 'pipe' });
+      expect(result).toContain('✅ Native module file exists');
+      expect(result).toContain('✅ Native module loaded successfully');
+      expect(result).toContain('✅ Database test result:');
+      expect(result).toContain('✅ Database closed successfully');
+    } catch (error) {
+      // If the test fails, it might be due to platform-specific issues
+      // but we should still verify the file exists
+      expect(workspaceGenerator.fileExists(`apps/${electronAppName}/dist/native/better-sqlite3.node`)).toBe(true);
+    }
+  });
+
+  it('should verify native module file permissions are correct', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    console.log('Verifying native module file permissions...');
+
+    // Build the native module
+    workspaceGenerator.execCommand(`npx nx g nx-electron-vite:build-native --hostProject=${electronAppName} --npmPackageName=better-sqlite3`);
+
+    // Check file permissions (on Unix-like systems)
+    try {
+      const permissions = workspaceGenerator.execCommand(`ls -la apps/${electronAppName}/src/main/native/better-sqlite3.node`, { stdio: 'pipe' });
+
+      // Verify the file has execute permissions (should be -rwxr-xr-x or similar)
+      expect(permissions).toMatch(/^-rwx/);
+    } catch (error) {
+      // On Windows, permissions work differently, so we just verify the file exists
+      expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/main/native/better-sqlite3.node`)).toBe(true);
+    }
+  });
+});

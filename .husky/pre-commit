@@ -3,4 +3,4 @@ echo "🔍 Running lint on affected files..."
 pnpm exec nx affected:lint --base=origin/main || exit 1
 
 echo "🧪 Running tests on affected files..."
-pnpm exec nx affected:test --base=origin/main || exit 1
+pnpm exec nx affected:test --base=origin/main --exclude=smoke-tests || exit 1

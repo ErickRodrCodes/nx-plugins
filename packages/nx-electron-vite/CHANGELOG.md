@@ -1,3 +1,13 @@
+## 0.1.3-DEV.0 (2025-06-23)
+
+### 🩹 Fixes
+
+- on CI mode, the dist folder doesn't exist, deletion is unnecesary ([e8239fb](https://github.com/ErickRodrCodes/nx-plugins/commit/e8239fb))
+
+### ❤️ Thank You
+
+- Erick Rodriguez
+
 ## 0.1.2 (2025-04-02)
 
 This was a version bump only for nx-electron-vite to align it with other projects, there were no code changes.

@@ -1,0 +1,71 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { setupWorkspace, TestSetup } from '../shared/setup';
+
+describe('Plugin Initialization', () => {
+  let testSetup: TestSetup;
+
+  beforeAll(async () => {
+    testSetup = await setupWorkspace();
+  });
+
+  afterAll(() => {
+    // Don't cleanup here - let other tests use the same workspace
+  });
+
+  it('should have Vite plugin properly configured in nx.json', () => {
+    const { workspaceGenerator } = testSetup;
+
+    const nxJson = workspaceGenerator.readJsonFile('nx.json');
+    expect(nxJson.plugins).toBeDefined();
+
+    // Check if Vite plugin was added
+    const vitePlugin = nxJson.plugins.find((plugin: any) =>
+      plugin.plugin === '@nx/vite/plugin'
+    );
+    expect(vitePlugin).toBeDefined();
+  });
+
+  it('should have correct Vite configuration after initialization', () => {
+    const { workspaceGenerator } = testSetup;
+
+    // Verify Vite configuration files exist
+    expect(workspaceGenerator.fileExists('vite.config.ts')).toBe(true);
+
+    // Verify Vite plugin configuration in nx.json
+    const nxJson = workspaceGenerator.readJsonFile('nx.json');
+    const vitePlugin = nxJson.plugins.find((plugin: any) =>
+      plugin.plugin === '@nx/vite/plugin'
+    );
+
+    expect(vitePlugin.options).toBeDefined();
+    expect(vitePlugin.options.buildTargetName).toBe('build');
+    expect(vitePlugin.options.testTargetName).toBe('test');
+    expect(vitePlugin.options.serveTargetName).toBe('serve');
+  });
+
+  it('should not duplicate plugin entries on re-initialization', () => {
+    const { workspaceGenerator } = testSetup;
+
+    // Run init again
+    workspaceGenerator.execCommand('npx nx g nx-electron-vite:init');
+
+    const nxJson = workspaceGenerator.readJsonFile('nx.json');
+    const vitePlugins = nxJson.plugins.filter((plugin: any) =>
+      plugin.plugin === '@nx/vite/plugin'
+    );
+
+    // Should only have one Vite plugin entry
+    expect(vitePlugins).toHaveLength(1);
+  });
+
+  it('should have correct Vite configuration structure', () => {
+    const { workspaceGenerator } = testSetup;
+
+    // Check Vite config content
+    const viteConfig = workspaceGenerator.execCommand('cat vite.config.ts', { stdio: 'pipe' });
+
+    // Verify it's a valid Vite config
+    expect(viteConfig).toContain('defineConfig');
+    expect(viteConfig).toContain('export default');
+  });
+});

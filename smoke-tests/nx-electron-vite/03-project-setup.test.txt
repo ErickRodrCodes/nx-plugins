@@ -1,0 +1,105 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { setupWorkspace, TestSetup } from '../shared/setup';
+
+describe('Electron Project Setup', () => {
+  let testSetup: TestSetup;
+
+  beforeAll(async () => {
+    testSetup = await setupWorkspace();
+  });
+
+  afterAll(() => {
+    // Don't cleanup here - let other tests use the same workspace
+  });
+
+  it('should have correct main files in Electron app', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    // Check main files exist
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/main/main.ts`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/preload/preload.ts`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/index.html`)).toBe(true);
+  });
+
+  it('should have correct configuration files', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    // Check configuration files exist
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/electron-nx-vite.config.ts`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/vite.config.ts`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/tsconfig.app.json`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/tsconfig.json`)).toBe(true);
+  });
+
+  it('should have correct package.json with scripts', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    const packageJson = workspaceGenerator.readJsonFile(`apps/${electronAppName}/package.json`);
+
+    expect(packageJson.scripts).toBeDefined();
+    expect(packageJson.scripts.build).toBeDefined();
+    expect(packageJson.scripts.serve).toBeDefined();
+    expect(packageJson.scripts.preview).toBeDefined();
+
+    // Verify main entry point
+    expect(packageJson.main).toBeDefined();
+  });
+
+  it('should have correct project configuration', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    const projectJson = workspaceGenerator.readJsonFile(`apps/${electronAppName}/project.json`);
+
+    expect(projectJson.targets).toBeDefined();
+    expect(projectJson.targets.build).toBeDefined();
+    expect(projectJson.targets.serve).toBeDefined();
+    expect(projectJson.targets.preview).toBeDefined();
+  });
+
+  it('should have correct directory structure', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    // Verify source structure
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/main`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/preload`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/resources`)).toBe(true);
+
+    // Verify resources structure
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/resources/icon`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/resources/certificate`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/src/resources/entitlements`)).toBe(true);
+  });
+
+  it('should have correct TypeScript configuration', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    const tsConfig = workspaceGenerator.readJsonFile(`apps/${electronAppName}/tsconfig.json`);
+
+    expect(tsConfig.extends).toBeDefined();
+    expect(tsConfig.compilerOptions).toBeDefined();
+    expect(tsConfig.include).toBeDefined();
+  });
+
+  it('should use automatic naming convention (guest-app-electron)', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    // Verify the project was created with the correct name
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}`)).toBe(true);
+    expect(workspaceGenerator.fileExists(`apps/${electronAppName}/project.json`)).toBe(true);
+
+    // Verify the project.json has the correct name
+    const projectJson = workspaceGenerator.readJsonFile(`apps/${electronAppName}/project.json`);
+    expect(projectJson.name).toBe(electronAppName);
+  });
+
+  it('should have correct electron-nx-vite configuration structure', () => {
+    const { workspaceGenerator, electronAppName } = testSetup;
+
+    // Check electron-nx-vite config content
+    const config = workspaceGenerator.execCommand(`cat apps/${electronAppName}/electron-nx-vite.config.ts`, { stdio: 'pipe' });
+
+    // Verify it's a valid configuration
+    expect(config).toContain('export default');
+    expect(config).toContain('defineConfig');
+  });
+});

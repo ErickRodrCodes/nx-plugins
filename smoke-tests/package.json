@@ -1,0 +1,19 @@
+{
+  "name": "smoke-tests",
+  "version": "1.0.0",
+  "description": "Smoke tests for nx-electron-vite plugin",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/ui": "^1.0.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "wait-on": "^8.0.1"
+  }
+}
