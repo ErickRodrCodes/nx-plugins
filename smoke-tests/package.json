@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:sequence": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -18,9 +18,7 @@ describe('01: Workspace Setup and Plugin Installation', () => {
 
     // Check for essential workspace files
     const packageJsonPath = join(workspacePath, 'package.json');
-    const nxJsonPath = join(workspacePath, 'nx.json');
     expect(existsSync(packageJsonPath)).toBe(true);
-    expect(existsSync(nxJsonPath)).toBe(true);
   });
 
   it('should have copied tar.gz to workspace', () => {
@@ -41,16 +39,11 @@ describe('01: Workspace Setup and Plugin Installation', () => {
     expect(packageJson.devDependencies).toBeDefined();
     expect(packageJson.devDependencies['@erickrodrcodes/nx-electron-vite']).toBe('file:./nx-electron-vite.tar.gz');
   });
+});
 
-  // it('should have React guest app properly configured', () => {
-  //   ...
-  // });
-
-  it('should be able to run nx g @erickrodrcodes/nx-electron-vite:init', () => {
-    // Run the init generator
-    workspaceGenerator!.execCommand('pnpm nx g @erickrodrcodes/nx-electron-vite:init');
-
-    // Verify the plugin is registered in nx.json
+describe('02: Plugin Initialization', () => {
+  it('should register the plugin in nx.json', () => {
+    // Verifica que el plugin esté registrado en nx.json
     const nxJson = workspaceGenerator!.readJsonFile('nx.json');
     const pluginEntry = (nxJson.plugins || []).find((plugin: any) => plugin.plugin === '@nx/vite/plugin');
     expect(pluginEntry).toBeDefined();

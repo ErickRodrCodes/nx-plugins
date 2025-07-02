@@ -44,7 +44,7 @@ function copyNative(natives: { pathReference: string }): Plugin {
       const alreadyCopied: string[] = [];
 
       for (const native of nativesToCopy) {
-        const distPath = resolve(workspaceRoot, '<%= outputDistFolder %');
+        const distPath = resolve(workspaceRoot, '<%= outputDistFolder %>');
         const nativePath = resolve(
           projectRoot,
           'src/main/native',

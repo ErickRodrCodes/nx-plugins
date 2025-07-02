@@ -14,27 +14,37 @@ let workspaceGenerator: WorkspaceGenerator | null = null;
 
 // Global setup - runs once before all tests
 beforeAll(async () => {
-  // Step 1: Clean tmp directory (but not the workspace directory)
-  if (existsSync(smokeTestsTmpDir)) {
-    await rimraf(smokeTestsTmpDir);
+  // Step 1: Check if workspace already exists and is properly configured
+  const workspacePath = join(smokeTestsTmpDir, 'smoke-test-workspace');
+  const workspaceExists = existsSync(workspacePath);
+  const tarGzExists = existsSync(join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz'));
+
+  // Only clean if neither workspace nor tar.gz exist
+  if (!workspaceExists && !tarGzExists) {
+    if (existsSync(smokeTestsTmpDir)) {
+      await rimraf(smokeTestsTmpDir);
+    }
+    // Create tmp directory
+    mkdirSync(smokeTestsTmpDir, { recursive: true });
+  } else if (!existsSync(smokeTestsTmpDir)) {
+    // Create tmp directory if it doesn't exist
+    mkdirSync(smokeTestsTmpDir, { recursive: true });
   }
 
-  // Step 2: Create tmp directory
-  mkdirSync(smokeTestsTmpDir, { recursive: true });
+  // Step 2: Build plugin (only if tar.gz doesn't exist)
+  if (!tarGzExists) {
+    execSync('pnpm nx build nx-electron-vite', { cwd: rootDir, stdio: 'inherit' });
 
-  // Step 3: Build plugin
-  execSync('pnpm nx build nx-electron-vite', { cwd: rootDir, stdio: 'inherit' });
+    // Step 3: Create tar.gz directly in smoke-tests/tmp
+    const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
+    execSync(`tar -czf "${tarGzPath}" --directory=dist/packages/nx-electron-vite --exclude=node_modules --exclude=.git .`, {
+      cwd: rootDir,
+      stdio: 'inherit'
+    });
+  }
 
-  // Step 4: Create tar.gz directly in smoke-tests/tmp
-  const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
-  execSync(`tar -czf "${tarGzPath}" --directory=dist/packages/nx-electron-vite --exclude=node_modules --exclude=.git .`, {
-    cwd: rootDir,
-    stdio: 'inherit'
-  });
-
-  // Step 5: Create workspace (only if it doesn't exist)
-  const workspacePath = join(smokeTestsTmpDir, 'smoke-test-workspace');
-  if (!existsSync(workspacePath)) {
+  // Step 4: Create workspace (only if it doesn't exist)
+  if (!workspaceExists) {
     workspaceGenerator = new WorkspaceGenerator('smoke-test-workspace');
     await workspaceGenerator.createWorkspace({
       name: 'smoke-test-workspace',
@@ -48,6 +58,13 @@ beforeAll(async () => {
     // If workspace already exists, just create the generator instance
     workspaceGenerator = new WorkspaceGenerator('smoke-test-workspace');
   }
+
+  // Step 5: Copy tar.gz and install plugin as devDependency (if not already done)
+  workspaceGenerator.copyPluginTarGz();
+  workspaceGenerator.addPluginAsDevDependency();
+
+  // Step 6: Run the init generator (only once globally)
+  workspaceGenerator.execCommand('pnpm nx g @erickrodrcodes/nx-electron-vite:init');
 }, 120000); // 2 minutes timeout
 
 // Global cleanup - runs once after all tests
