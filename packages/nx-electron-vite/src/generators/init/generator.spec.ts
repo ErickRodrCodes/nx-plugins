@@ -102,6 +102,7 @@ describe('initGenerator', () => {
           'wait-on': expect.any(String),
           vitest: expect.any(String),
           'electron-is-dev': expect.any(String),
+          'electron-log': expect.any(String),
         })
       );
     });

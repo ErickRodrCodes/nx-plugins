@@ -75,6 +75,7 @@ export async function initGenerator(tree: Tree, schema: initSchema) {
           'wait-on': versionLibraries.waitOn,
           vitest: versionLibraries.vitest,
           'electron-is-dev': versionLibraries.electronIsDev,
+          'electron-log': versionLibraries.electronLog,
         }
       )
     );
