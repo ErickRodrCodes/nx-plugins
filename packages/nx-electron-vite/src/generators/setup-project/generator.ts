@@ -86,16 +86,21 @@ export async function updateDependencies(
             dependsOn: [
               {
                 projects: [options.nameProject],
+                target: 'dist',
+              },
+            ],
+          },
+          serve: {
+            dependsOn: [
+              {
+                projects: [options.guestProject],
+                target: 'build',
+              },
+              {
+                projects: [options.nameProject],
                 target: 'build',
               },
             ],
-            options: {
-              commands: [`nx run ${options.nameProject}:build`],
-              parallel: false,
-            },
-          },
-          serve: {
-            dependsOn: ['build'],
             commands: [
               `nx run ${options.guestProject}:serve`,
               `nx run ${options.nameProject}:serve`,

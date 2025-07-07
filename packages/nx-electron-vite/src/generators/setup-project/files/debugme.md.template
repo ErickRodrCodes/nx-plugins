@@ -21,7 +21,7 @@ That said, a `launch.json` from VSCode would look like this:
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Attach to Electron Main - <$= nameProject %>",
+      "name": "Attach to Electron Main - <%= nameProject %>",
       "type": "node",
       "request": "attach",
       "port": 5858,
@@ -34,7 +34,7 @@ That said, a `launch.json` from VSCode would look like this:
       }
     },
     {
-      "name": "Attach to Electron Renderer - <$= nameProject %>",
+      "name": "Attach to Electron Renderer - <%= nameProject %>",
       "type": "pwa-chrome",
       "request": "attach",
       "port": 4975,
@@ -48,12 +48,12 @@ That said, a `launch.json` from VSCode would look like this:
   ],
   "compounds": [
     {
-      "name": "Debug <$= nameProject %>",
+      "name": "Debug <%= nameProject %>",
       "configurations": [
-        "Attach to Electron Main - <$= nameProject %>",
-        "Attach to Electron Renderer - <$= nameProject %>"
+        "Attach to Electron Main - <%= nameProject %>",
+        "Attach to Electron Renderer - <%= nameProject %>"
       ],
-      "preLaunchTask": "pnpm: serve-<$= nameProject %>" // optional if you are using a task with such execution
+      "preLaunchTask": "pnpm: serve-<%= nameProject %>" // optional if you are using a task with such execution
     }
   ]
 }
@@ -71,8 +71,8 @@ If you want to use `configurations.compounds[].preLaunchTask`, the execution sho
   "tasks": [
     {
       "type": "shell",
-      "label": "pnpm: serve-<$= nameProject %>",
-      "command": "pnpm exec nx run <$= nameProject %>:electron:serve",
+      "label": "pnpm: serve-<%= nameProject %>",
+      "command": "pnpm exec nx run <%= nameProject %>:electron:serve",
       "isBackground": true,
       "problemMatcher": {
         "owner": "custom",
@@ -95,7 +95,7 @@ If you want to use `configurations.compounds[].preLaunchTask`, the execution sho
           "endsPattern": "Angular is running in development mode"
         }
       },
-      "detail": "pnpm exec nx run <$= nameProject %>:electron:serve"
+      "detail": "pnpm exec nx run <%= nameProject %>:electron:serve"
     }
   ]
 }

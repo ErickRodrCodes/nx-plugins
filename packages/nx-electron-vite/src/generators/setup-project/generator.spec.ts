@@ -138,7 +138,8 @@ describe('setupProjectGenerator', () => {
     it('should configure build target correctly', async () => {
       await updateDependencies(tree, schema);
 
-      const configCall = (addProjectConfiguration as jest.Mock).mock.calls[0][2];
+      const configCall = (addProjectConfiguration as jest.Mock).mock
+        .calls[0][2];
       expect(configCall.targets.build).toEqual({
         dependsOn: [{ projects: [fakeOptions.guestProject], target: 'build' }],
         executor: '@nx/vite:build',
@@ -151,18 +152,26 @@ describe('setupProjectGenerator', () => {
     it('should configure electron target with correct serve and build configurations', async () => {
       await updateDependencies(tree, schema);
 
-      const configCall = (addProjectConfiguration as jest.Mock).mock.calls[0][2];
+      const configCall = (addProjectConfiguration as jest.Mock).mock
+        .calls[0][2];
       expect(configCall.targets.electron).toEqual({
         configurations: {
           build: {
-            dependsOn: [{ projects: [fakeOptions.nameProject], target: 'build' }],
-            options: {
-              commands: [`nx run ${fakeOptions.nameProject}:build`],
-              parallel: false,
-            },
+            dependsOn: [
+              { projects: [fakeOptions.nameProject], target: 'dist' },
+            ],
           },
           serve: {
-            dependsOn: ['build'],
+            dependsOn: [
+              {
+                projects: [fakeOptions.guestProject],
+                target: 'build',
+              },
+              {
+                projects: [fakeOptions.nameProject],
+                target: 'build',
+              },
+            ],
             commands: [
               `nx run ${fakeOptions.guestProject}:serve`,
               `nx run ${fakeOptions.nameProject}:serve`,
@@ -178,7 +187,8 @@ describe('setupProjectGenerator', () => {
     it('should configure icon target with all modes', async () => {
       await updateDependencies(tree, schema);
 
-      const configCall = (addProjectConfiguration as jest.Mock).mock.calls[0][2];
+      const configCall = (addProjectConfiguration as jest.Mock).mock
+        .calls[0][2];
       expect(configCall.targets['nx-electron-icons']).toEqual({
         executor: '@erickrodrcodes/nx-electron-vite:build-icon',
         defaultConfiguration: 'default',
@@ -200,9 +210,12 @@ describe('setupProjectGenerator', () => {
     it('should configure dist target with correct dependencies', async () => {
       await updateDependencies(tree, schema);
 
-      const configCall = (addProjectConfiguration as jest.Mock).mock.calls[0][2];
+      const configCall = (addProjectConfiguration as jest.Mock).mock
+        .calls[0][2];
       expect(configCall.targets.dist).toEqual({
-        dependsOn: [{ projects: [fakeOptions.nameProject], target: 'nx-electron-icons' }],
+        dependsOn: [
+          { projects: [fakeOptions.nameProject], target: 'nx-electron-icons' },
+        ],
         executor: '@erickrodrcodes/nx-electron-vite:build-electron',
         options: {
           hostProject: fakeOptions.nameProject,
