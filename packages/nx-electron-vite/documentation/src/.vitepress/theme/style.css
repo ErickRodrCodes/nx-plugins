@@ -137,3 +137,11 @@
   --docsearch-primary-color: var(--vp-c-brand-1) !important;
 }
 
+/**
+add a css transition for all the elements with a duration of 0.3s for background-color and color
+*/
+
+body *,
+html.dark {
+  transition: background-color 1s ease, color 1s ease;
+}

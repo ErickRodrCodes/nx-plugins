@@ -1,4 +1,4 @@
-<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.8 Chrome/128.0.6613.36 Electron/32.0.1 Safari/537.36" version="24.7.8">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0" version="27.1.4" pages="2">
   <diagram name="Page-1" id="Dz2OsIJfxeOvgxbdGt8w">
     <mxGraphModel dx="915" dy="683" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -91,6 +91,58 @@
         </mxCell>
         <mxCell id="fmkvdyVzabHfkykPkDL2-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bf_4v88Hokyu0CsVoKxj-15" target="fmkvdyVzabHfkykPkDL2-11">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="BvftfwWtdBX_FeztdV_9" name="Page-2">
+    <mxGraphModel dx="1426" dy="832" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="621ntMsIkHZfSL4BoK07-2" value="Traditional Standalone project structure" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=default;" vertex="1" parent="1">
+          <mxGeometry x="180" y="180" width="430" height="310" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="621ntMsIkHZfSL4BoK07-2" source="621ntMsIkHZfSL4BoK07-3" target="621ntMsIkHZfSL4BoK07-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="621ntMsIkHZfSL4BoK07-2" source="621ntMsIkHZfSL4BoK07-3" target="621ntMsIkHZfSL4BoK07-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="621ntMsIkHZfSL4BoK07-2" source="621ntMsIkHZfSL4BoK07-3" target="621ntMsIkHZfSL4BoK07-10">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200" y="180" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="270" y="90" />
+              <mxPoint x="270" y="180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-3" value="src" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.folder;" vertex="1" parent="621ntMsIkHZfSL4BoK07-2">
+          <mxGeometry x="170" y="60" width="70" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-4" value="renderer" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.folder;" vertex="1" parent="621ntMsIkHZfSL4BoK07-2">
+          <mxGeometry x="320" y="60" width="70" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-10" value="Main Renderer Files" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/general/Files.svg;" vertex="1" parent="621ntMsIkHZfSL4BoK07-2">
+          <mxGeometry x="320" y="160" width="64" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-11" value="package.json" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/general/Files.svg;" vertex="1" parent="621ntMsIkHZfSL4BoK07-2">
+          <mxGeometry x="170" y="160" width="64" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="621ntMsIkHZfSL4BoK07-2" source="621ntMsIkHZfSL4BoK07-12" target="621ntMsIkHZfSL4BoK07-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-12" value="root" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.folder;" vertex="1" parent="621ntMsIkHZfSL4BoK07-2">
+          <mxGeometry x="50" y="60" width="70" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="621ntMsIkHZfSL4BoK07-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="621ntMsIkHZfSL4BoK07-2" source="621ntMsIkHZfSL4BoK07-12" target="621ntMsIkHZfSL4BoK07-11">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="140" y="90" />
+              <mxPoint x="140" y="195" />
+            </Array>
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
