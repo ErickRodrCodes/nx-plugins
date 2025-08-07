@@ -66,7 +66,10 @@ While this approach can work for simple scenarios, it creates fundamental archit
 - **Multi-Target Deployment through Nx Executors**: Because `nx-electron-vite` maintains complete framework agnosticism and architectural separation, the guest application can leverage Nx's full ecosystem of executors for different deployment targets—web builds via Vite executors, mobile deployment through Capacitor/Ionic executors, and desktop packaging via electron-builder executors. The agnostic nature of `nx-electron-vite` means Nx can roll out the appropriate executor dependencies for development, testing, and deployment of each target without architectural conflicts or Electron-specific constraints
 - **Architectural Native Module Isolation**: Native Node.js modules are explicitly contained within the host project's dependency tree and source structure, preventing the common monolithic pattern where renderer processes accidentally import Node.js modules. This isn't achieved through bundler workarounds or runtime checks—Nx's project boundaries make it architecturally impossible for the guest application to access native dependencies, eliminating an entire class of runtime errors
 - **Monorepo-Scale Electron Applications**: The distributed architecture scales naturally to multiple Electron applications within a single Nx workspace, sharing common libraries, design systems, and build configurations while maintaining independent release cycles. Nx's affected command system ensures that changes to shared dependencies only rebuild the applications that actually depend on them
-- **True Framework Agnosticism**: The distributed architecture eliminates framework lock-in entirely. Since the guest application exists as a completely independent Nx project, it can use any framework supported by Nx—React, Angular, Vue, Svelte, SolidJS, Qwik, or even custom setups—without requiring Electron-specific adaptations, pre-configured templates, or workarounds. Unlike monolithic tools that provide [limited official framework support](https://www.electronforge.io/guides/framework-integration) (typically React and Vue only), `nx-electron-vite` leverages [Nx's comprehensive framework ecosystem](https://nx.dev/showcase/example-repos/add-svelte), including community plugins like [@nxext/svelte](https://www.npmjs.com/package/@nxext/svelte) that provide full-featured support for any framework. Each framework retains its native development experience, build optimizations, and tooling ecosystem. For instance, a Svelte application gets full SvelteKit features, proper HMR, and Vite optimizations, while an Angular project maintains its CLI capabilities and build pipeline. The host project simply consumes the built guest application as a static asset, making the framework choice completely transparent to the Electron layer
+- **True Framework Agnosticism - The Game Changer**: The distributed architecture eliminates framework lock-in entirely, representing a **fundamental paradigm shift** in Electron development. Since the guest application exists as a completely independent Nx project, it can use **any framework supported by Nx**—React, Angular, Vue, Svelte, SolidJS, Qwik, or even custom setups—without requiring Electron-specific adaptations, pre-configured templates, or workarounds.
+
+  **This is truly agnostic architecture**: Unlike monolithic tools that provide [limited official framework support](https://www.electronforge.io/guides/framework-integration) (typically React and Vue only), `nx-electron-vite` leverages [Nx's comprehensive framework ecosystem](https://nx.dev/showcase/example-repos/add-svelte), including community plugins like [@nxext/svelte](https://www.npmjs.com/package/@nxext/svelte) that provide full-featured support for any framework. Each framework retains its **complete native development experience**, build optimizations, and tooling ecosystem without compromise. For instance, a Svelte application gets full SvelteKit features, proper HMR, and Vite optimizations, while an Angular project maintains its CLI capabilities and build pipeline. The host project simply consumes the built guest application as a static asset, making the framework choice **completely invisible to the Electron layer**—this is what makes the architecture truly framework-agnostic rather than just "multi-framework compatible"
+
 - **Standardized Development Patterns**: `nx-electron-vite` provides a consistent, generator-driven workflow that standardizes Electron development across projects and teams. Unlike the ad-hoc, project-specific build configurations common in monolithic setups, `nx-electron-vite` ensures that native module handling, icon generation, project setup, and build processes follow the same patterns regardless of the underlying frontend framework or team preferences. This standardization facilitates knowledge transfer between projects, reduces onboarding time for new team members, and creates predictable development workflows that scale across organizations
 
 **Architectural Costs:**
@@ -88,7 +91,28 @@ The fundamental architectural pattern is the **Host/Guest separation**:
 
 ### What This Means for You:
 
-1.  **Framework Agnostic & Reusable Frontend**: Your frontend application remains completely framework-native with no Electron-specific adaptations required. You can develop, test, and serve it as a standalone web app using your framework's standard tooling and best practices. The same codebase can be deployed to web, mobile (via Capacitor), and desktop targets without architectural modifications, though desktop-specific features are accessible through the optional preload script interface.
+1.  **Truly Framework Agnostic & Reusable Frontend - The Revolutionary Approach**: Your frontend application remains **completely framework-native and deployment-agnostic**—this is the game-changing differentiator. It can be developed, tested, and served as a standalone web application using your framework's standard tooling without any Electron-specific code or dependencies. The same codebase can be deployed to web, mobile (via Capacitor), and desktop targets without architectural modifications.
+
+    **What makes this truly agnostic**: Unlike traditional Electron tools that claim framework support but require framework-specific templates, build configurations, or Electron-aware adaptations, `nx-electron-vite` treats your frontend application as a **completely independent entity**. Whether you're using React hooks, Angular services, Vue composition API, Svelte stores, or SolidJS signals—your application code remains **100% framework-pure** with zero Electron knowledge.
+
+    **Optional Desktop Integration**: When desktop-specific functionality is needed (file system access, native notifications, system APIs), the Electron host can optionally expose these capabilities through a preload script that injects APIs into the global `window` object. This integration is completely optional and framework-agnostic—whether your guest application is built with React, Angular, Vue, Svelte, or any other framework, it can access these APIs through standard JavaScript:
+
+    ::: code-group
+
+    ```js
+    // Example: Optional desktop APIs exposed by preload script
+    if (window.electronAPI?.openFile) {
+      // Desktop-specific functionality available
+      const file = await window.electronAPI.openFile();
+    } else {
+      // Fallback for web deployment
+      const file = await webFileAPI.selectFile();
+    }
+    ```
+
+    :::
+
+    This approach ensures your frontend remains portable across all deployment targets while optionally leveraging desktop capabilities when available.
 
 2.  **Independent Development Cycles**: Teams can work on frontend features and Electron shell functionality with complete independence. Frontend developers use their framework's native development server and tooling without any Electron overhead, while the Electron team focuses on native integrations, security policies, and desktop-specific features. This separation dramatically improves development velocity as each team can iterate at their own pace using their preferred tools.
 

@@ -18,7 +18,6 @@ export default defineConfig({
         items: [
           { text: 'What is Nx Electron Vite?', link: '/what-is-nx-electron-vite' },
           { text: 'Getting Started', link: '/getting-started' },
-          { text: 'Architecture Pattern', link: '/architecture-pattern' },
         ]
       },
       {
@@ -52,7 +51,8 @@ export default defineConfig({
       {
         text: 'API Reference',
         link: '/api-reference'
-      }
+      },
+      { text: 'Architecture Pattern', link: '/architecture-pattern' },
     ],
     footer: {
       message: 'Released under the MIT License.',
