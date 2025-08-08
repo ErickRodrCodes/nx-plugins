@@ -25,6 +25,9 @@ export default defineConfig({
         items: [
           { text: 'Scaffolding a Project', link: '/scaffolding-a-project' },
           { text: 'Development Workflow', link: '/development-workflow' },
+          { text: 'Debugging Your Application', link: '/debugging-your-application' },
+          { text: 'Generating Icons', link: '/generating-icons' },
+          { text: 'Digital Signing Applications', link: '/digital-signing' },
           { text: 'Production Builds', link: '/production-builds' },
         ]
       },

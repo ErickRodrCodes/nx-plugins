@@ -1,6 +1,5 @@
 // https://vitepress.dev/guide/custom-theme
 import 'virtual:group-icons.css'
-import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
 import './style.css'
@@ -9,8 +8,9 @@ import 'viewerjs/dist/viewer.min.css'
 import { useRoute } from 'vitepress'
 import imageViewer from 'vitepress-plugin-image-viewer'
 import vImageViewer from 'vitepress-plugin-image-viewer/lib/vImageViewer.vue'
+import { withMermaid } from "vitepress-plugin-mermaid"
 
-export default {
+export default withMermaid({
   extends: DefaultTheme,
   Layout: () => {
     return h(DefaultTheme.Layout, null, {
@@ -28,5 +28,9 @@ export default {
     const route = useRoute();
     // Using
     imageViewer(route);
-}
-} satisfies Theme
+  },
+  mermaid:{},
+  mermaidPlugin: {
+    class: "mermaid my-class", // set additional css classes for parent container
+  },
+})

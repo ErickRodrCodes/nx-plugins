@@ -67,9 +67,9 @@ The generator verifies that your selected `guestProject` is actually an applicat
 
 **Important Notes:**
 
-- If the `projectType` is `library`, the generator will stop execution
-- The generator cannot currently detect if the project is specifically a frontend application
-- Both the CLI and VS Code UI will show all apps and libraries in your monorepo, so choose carefully
+- **Libraries are rejected**: The generator will stop execution if `projectType` is `library`
+- **Frontend vs Backend detection limitation**: The generator only validates that the project is an `application` but cannot detect if it's frontend or backend. Selecting a backend application (Express, NestJS, etc.) will create a non-functional Electron setup since these cannot run in a browser renderer
+- **Choose carefully**: The UI shows all applications in your monorepo—ensure you select a browser-compatible frontend application
 
 ## Project Structure After Generation
 
