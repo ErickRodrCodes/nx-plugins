@@ -30,9 +30,9 @@ The `dist` target runs a sophisticated build pipeline:
 
 The `dist` target automatically handles dependencies:
 
-1. **Icons First**: Generates all required icons (`nx-electron-icons`)
-2. **Frontend Build**: Builds your guest project for production
-3. **Electron Build**: Builds the Electron main process
+1. **Frontend Build**: Builds your guest project for production
+2. **Electron Build**: Builds the Electron main process
+3. **Icons**: Generates all required icons (`nx-electron-icons`)
 4. **Packaging**: Uses `electron-builder` to create installers
 
 ## Understanding the Build Targets
@@ -70,6 +70,8 @@ productName: Your App Name
 directories:
   buildResources: build
 files:
+  - '!**/*'
+  - '!dist/apps/your-guest-project-electron/package.json'
   - 'dist/apps/your-guest-project' # Frontend build
   - 'dist/apps/your-guest-project-electron' # Electron host
   - 'dist/apps/your-guest-project-icons' # Generated icons
@@ -85,15 +87,16 @@ The build process temporarily modifies your workspace's `package.json` to config
 
 ## Output Structure
 
-After a successful build, you'll find distributable files in:
+After a successful build, you'll find files organized as follows:
 
 ```
-dist/
-├── apps/
-│   ├── your-guest-project/              # Built frontend
-│   ├── your-guest-project-electron/     # Built Electron host
-│   └── your-guest-project-icons/        # Generated icons
-└── [Platform-specific installers]       # .exe, .dmg, etc.
+workspace-root/
+├── dist/
+│   └── apps/
+│       ├── your-guest-project/              # Built frontend
+│       ├── your-guest-project-electron/     # Built Electron host
+│       └── your-guest-project-icons/        # Generated icons
+└── [Platform-specific installers]           # .exe, .dmg, etc. (in root)
 ```
 
 ## Build Optimization
@@ -172,6 +175,10 @@ Only modify these sections if absolutely necessary:
 - **Icon paths** (if using custom locations)
 - **File inclusion patterns** (for framework-specific build outputs)
 
+::: tip Linux Icon Format
+The generated `electron-builder.yml` template uses `.ico` format for Linux icons, but Linux typically uses `.png` format. This is a known issue in the template that will be addressed in future versions.
+:::
+
 Avoid modifying platform-specific settings or advanced electron-builder options unless you have extensive experience with the tool.
 
 ### Build Scripts Integration
@@ -193,11 +200,13 @@ nx dist your-project --configuration=production
 **Build Fails with "Package.json not found"**
 
 - Ensure your guest project builds successfully first: `nx build <guest-project>`
+- Verify the guest project's build output path matches the `files` section in `electron-builder.yml`
 
 **Icons Missing in Final Package**
 
-- Verify icon files exist in `src/resources/icon/source/`
-- Check that `nx-electron-icons` target runs successfully
+- Verify icon source files exist: `src/resources/icon/source/icon.png` and `src/resources/icon/source/setup.png`
+- Run icons generation manually: `nx nx-electron-icons <your-electron-project>`
+- Check that generated icons exist in `dist/apps/<your-electron-project>-icons/`
 
 **Large Bundle Size**
 
@@ -206,7 +215,7 @@ nx dist your-project --configuration=production
 
 **Platform-Specific Issues**
 
-- Windows: Ensure you have the Windows SDK installed
+- Windows: Ensure Node.js and npm/pnpm are properly installed
 - macOS: Check Xcode command line tools are available
 - Linux: Verify required system packages are installed
 
