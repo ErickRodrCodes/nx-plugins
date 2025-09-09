@@ -52,5 +52,9 @@ vitest.config.*.timestamp*
 .cursor\rules\nx-rules.mdc
 .github\instructions\nx.instructions.md
 
-.cursor\rules\nx-rules.mdc
-.github\instructions\nx.instructions.md
+# Electron application archives and build artifacts
+*.asar
+*.asar.unpacked
+electron-builder-output/
+release/
+electron-dist/

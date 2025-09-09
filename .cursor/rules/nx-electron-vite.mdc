@@ -253,7 +253,7 @@ Each generated Electron project includes these targets:
 
 **build**: Uses `@nx/vite:build` with guest project dependency
 **serve**: Uses `@nx/vite:dev-server` for main process
-**electron**: Uses `nx:run-commands` to run both guest and host in parallel  
+**electron**: Uses `nx:run-commands` to run both guest and host in parallel
 **nx-electron-icons**: Uses `build-icons` executor for icon generation
 **dist**: Uses `build-electron` executor for production builds
 **test**: Uses `@nx/vite:test` for testing (if vitest selected)
@@ -395,6 +395,20 @@ Main configuration file with key functions:
 
 ## Testing Strategy
 
+### ⚠️ **CRITICAL TESTING RULE** ⚠️
+
+**NEVER MODIFY PLUGIN SOURCE FILES WHEN FIXING SMOKE TESTS**
+
+This is the **HIGHEST PRIORITY** rule when working on smoke tests:
+
+- **DO NOT** modify any file in `packages/nx-electron-vite/src/`
+- **DO NOT** modify any `.template` file
+- **DO NOT** modify any generator or executor code
+- **DO NOT** modify any schema files
+- Smoke tests must test the plugin **AS IS**, not as you think it should be
+- If tests fail due to plugin behavior, report to the user the malfunction and proceed with a plan to fix either the plugin or the test malfunction.
+- Only modify files in `smoke-tests/` directory
+
 ### Smoke Tests (Optimized)
 
 **Location**: `smoke-tests/`
@@ -403,20 +417,37 @@ Main configuration file with key functions:
 
 **Test Coverage**:
 
-1. **01-workspace-setup.test.ts**: Workspace structure verification
-2. **02-plugin-init.test.ts**: Plugin initialization testing
-3. **03-project-setup.test.ts**: Electron project scaffolding
-4. **04-native-modules.test.ts**: Native module building and integration
-5. **05-icon-generation.test.ts**: Icon generation across platforms
-6. **06-app-building.test.ts**: Electron app building process
-7. **07-integration.test.ts**: End-to-end workflow testing
+Single sequential test file with comprehensive coverage:
+
+- **smoke-tests-sequential.test.ts**: Complete end-to-end testing including:
+  - Workspace structure verification
+  - Plugin initialization testing
+  - Electron project scaffolding
+  - Native module building and integration
+  - Icon generation across platforms
+  - Electron app building process
+  - Configuration validation
 
 **Performance Optimizations**:
 
 - **Shared Workspace Setup**: Single workspace creation for all tests
-- **Vitest Configuration**: Single fork to share workspace state
-- **Modular Structure**: Each test focuses on specific functionality
+- **Vitest Configuration**: Single fork with sequential execution
+- **Sequential Structure**: Guaranteed execution order and shared state
 - **No Redundancy**: Eliminates repeated workspace/plugin installation
+
+### Development Commands
+
+**Running Smoke Tests**:
+
+```bash
+# Standard execution (CI/automated environments)
+nx test smoke-tests
+
+# Development mode (with proper output streaming)
+nx test smoke-tests --output-style=stream-without-prefixes
+```
+
+**⚠️ Important**: For proper real-time test output observation during development, use `--output-style=stream-without-prefixes` flag. This ensures that test console output is displayed correctly without Nx output prefixes that can interfere with test logging.
 
 ### Test Architecture Benefits
 
@@ -873,7 +904,7 @@ Each generated Electron project includes these targets:
 
 **build**: Uses `@nx/vite:build` with guest project dependency
 **serve**: Uses `@nx/vite:dev-server` for main process
-**electron**: Uses `nx:run-commands` to run both guest and host in parallel  
+**electron**: Uses `nx:run-commands` to run both guest and host in parallel
 **nx-electron-icons**: Uses `build-icons` executor for icon generation
 **dist**: Uses `build-electron` executor for production builds
 **test**: Uses `@nx/vite:test` for testing (if vitest selected)
@@ -1015,6 +1046,20 @@ Main configuration file with key functions:
 
 ## Testing Strategy
 
+### ⚠️ **CRITICAL TESTING RULE** ⚠️
+
+**NEVER MODIFY PLUGIN SOURCE FILES WHEN FIXING SMOKE TESTS**
+
+This is the **HIGHEST PRIORITY** rule when working on smoke tests:
+
+- **DO NOT** modify any file in `packages/nx-electron-vite/src/`
+- **DO NOT** modify any `.template` file
+- **DO NOT** modify any generator or executor code
+- **DO NOT** modify any schema files
+- Smoke tests must test the plugin **AS IS**, not as you think it should be
+- If tests fail due to plugin behavior, adjust test expectations, not the plugin
+- Only modify files in `smoke-tests/` directory
+
 ### Smoke Tests (Optimized)
 
 **Location**: `smoke-tests/`
@@ -1023,20 +1068,37 @@ Main configuration file with key functions:
 
 **Test Coverage**:
 
-1. **01-workspace-setup.test.ts**: Workspace structure verification
-2. **02-plugin-init.test.ts**: Plugin initialization testing
-3. **03-project-setup.test.ts**: Electron project scaffolding
-4. **04-native-modules.test.ts**: Native module building and integration
-5. **05-icon-generation.test.ts**: Icon generation across platforms
-6. **06-app-building.test.ts**: Electron app building process
-7. **07-integration.test.ts**: End-to-end workflow testing
+Single sequential test file with comprehensive coverage:
+
+- **smoke-tests-sequential.test.ts**: Complete end-to-end testing including:
+  - Workspace structure verification
+  - Plugin initialization testing
+  - Electron project scaffolding
+  - Native module building and integration
+  - Icon generation across platforms
+  - Electron app building process
+  - Configuration validation
 
 **Performance Optimizations**:
 
 - **Shared Workspace Setup**: Single workspace creation for all tests
-- **Vitest Configuration**: Single fork to share workspace state
-- **Modular Structure**: Each test focuses on specific functionality
+- **Vitest Configuration**: Single fork with sequential execution
+- **Sequential Structure**: Guaranteed execution order and shared state
 - **No Redundancy**: Eliminates repeated workspace/plugin installation
+
+### Development Commands
+
+**Running Smoke Tests**:
+
+```bash
+# Standard execution (CI/automated environments)
+nx test smoke-tests
+
+# Development mode (with proper output streaming)
+nx test smoke-tests --output-style=stream-without-prefixes
+```
+
+**⚠️ Important**: For proper real-time test output observation during development, use `--output-style=stream-without-prefixes` flag. This ensures that test console output is displayed correctly without Nx output prefixes that can interfere with test logging.
 
 ### Test Architecture Benefits
 

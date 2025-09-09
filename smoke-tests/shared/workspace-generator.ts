@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { rimraf } from 'rimraf';
 import { fileURLToPath } from 'url';
@@ -12,6 +12,31 @@ const smokeTestsDir = join(__dirname, '../');
 async function safeRemoveDir(dir: string): Promise<void> {
   if (!existsSync(dir)) return;
   await rimraf(dir, { maxRetries: 3 });
+}
+
+// Helper function to get Nx version from workspace root package.json
+function getNxVersionFromWorkspace(): string {
+  const packageJsonPath = join(rootDir, 'package.json');
+  try {
+    const packageJsonContent = readFileSync(packageJsonPath, 'utf8');
+    const packageJson = JSON.parse(packageJsonContent);
+
+    // Try to get from devDependencies first, then dependencies
+    const nxVersion =
+      packageJson.devDependencies?.nx || packageJson.dependencies?.nx;
+
+    if (!nxVersion) {
+      throw new Error('Nx version not found in workspace package.json');
+    }
+
+    console.log(`📦 Using Nx version from workspace: ${nxVersion}`);
+    return nxVersion;
+  } catch (error) {
+    console.warn(
+      `⚠️  Could not read Nx version from workspace, using latest: ${error}`
+    );
+    return 'latest';
+  }
 }
 
 export interface WorkspaceOptions {
@@ -37,10 +62,10 @@ export class WorkspaceGenerator {
     const {
       name = 'tmp-smoke-test',
       preset = 'react-monorepo',
-      packageManager = 'pnpm',
+      packageManager = 'npm',
       skipGit = true,
       nxCloud = false,
-      directory = options.directory || process.cwd()
+      directory = options.directory || process.cwd(),
     } = options;
 
     // Only clean up if the directory already exists and we're creating a new workspace
@@ -52,20 +77,24 @@ export class WorkspaceGenerator {
     // Use --nxCloud=skip to disable Nx Cloud in latest Nx CLI
     const nxCloudFlag = nxCloud ? '' : '--nxCloud=skip';
     const skipGitFlag = skipGit ? '--skip-git' : '';
-    const workspaceTypeFlag = preset === 'empty' ? '--workspaceType=integrated' : '';
+    const workspaceTypeFlag =
+      preset === 'empty' ? '--workspaceType=integrated' : '';
 
-    const createCommand = `pnpm dlx create-nx-workspace@latest --name=${name} --preset=${preset} ${workspaceTypeFlag} ${nxCloudFlag} --package-manager=pnpm ${skipGitFlag} --interactive=false --verbose`;
+    const nxVersion = getNxVersionFromWorkspace();
+    const createCommand = `npx --yes create-nx-workspace@${nxVersion} --name=${name} --preset=${preset} ${workspaceTypeFlag} ${nxCloudFlag} --package-manager=npm ${skipGitFlag} --interactive=false --verbose`;
 
     try {
       execSync(createCommand, {
         cwd: directory,
         stdio: 'inherit',
-        encoding: 'utf8'
+        encoding: 'utf8',
       });
     } catch (error) {
       const execError = error as any;
-      if (execError.stdout) console.error(`📄 stdout: ${execError.stdout.toString()}`);
-      if (execError.stderr) console.error(`📄 stderr: ${execError.stderr.toString()}`);
+      if (execError.stdout)
+        console.error(`📄 stdout: ${execError.stdout.toString()}`);
+      if (execError.stderr)
+        console.error(`📄 stderr: ${execError.stderr.toString()}`);
       throw error;
     }
 
@@ -107,7 +136,7 @@ export class WorkspaceGenerator {
 
     execSync(command, {
       cwd: this.tmpDir,
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
   }
 
@@ -127,13 +156,15 @@ export class WorkspaceGenerator {
       }
 
       // Add the plugin pointing to the local tar.gz file
-      packageJson.devDependencies['@erickrodrcodes/nx-electron-vite'] = `file:./nx-electron-vite.tar.gz`;
+      packageJson.devDependencies[
+        '@erickrodrcodes/nx-electron-vite'
+      ] = `file:./nx-electron-vite.tar.gz`;
 
       // Write back the modified package.json
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-      // Install the dependency with pnpm
-      this.execCommand('pnpm install --no-frozen-lockfile');
+      // Install the dependency with npm
+      this.execCommand('npm install');
     } catch (error) {
       throw error;
     }
@@ -154,17 +185,20 @@ export class WorkspaceGenerator {
    * Installs the plugin locally (for development)
    */
   installPluginLocally(): void {
-    // Build the plugin
+    // Build the plugin (use pnpm in root project)
     execSync('pnpm build', { cwd: rootDir, stdio: 'inherit' });
 
     // Link the plugin globally
-    execSync('pnpm link --global', {
+    execSync('npm link', {
       cwd: join(rootDir, 'packages/nx-electron-vite'),
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
 
     // Link the plugin in the workspace
-    execSync('pnpm link nx-electron-vite', { cwd: this.tmpDir, stdio: 'inherit' });
+    execSync('npm link nx-electron-vite', {
+      cwd: this.tmpDir,
+      stdio: 'inherit',
+    });
   }
 
   /**
@@ -195,7 +229,10 @@ export class WorkspaceGenerator {
   /**
    * Executes a command in the workspace
    */
-  execCommand(command: string, options: { stdio?: 'inherit' | 'pipe' } = {}): string {
+  execCommand(
+    command: string,
+    options: { stdio?: 'inherit' | 'pipe' } = {}
+  ): string {
     const { stdio = 'inherit' } = options;
     let cmd = command;
     if (/npx\s+nx\s+/.test(command) && !/--verbose/.test(command)) {
@@ -204,7 +241,7 @@ export class WorkspaceGenerator {
     return execSync(cmd, {
       cwd: this.tmpDir,
       stdio,
-      encoding: 'utf8'
+      encoding: 'utf8',
     });
   }
 

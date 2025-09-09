@@ -9,6 +9,11 @@
       "outputs": ["{options.reportsDirectory}"],
       "options": {
         "reportsDirectory": "../../coverage/smoke-tests"
+      },
+      "configurations": {
+        "ci": {
+          "reporter": ["verbose"]
+        }
       }
     }
   },

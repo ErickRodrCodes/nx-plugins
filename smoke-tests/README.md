@@ -115,19 +115,19 @@ smoke-tests/
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Run all smoke tests (optimized)
-pnpm test
+npm test
 
 # Run specific test file
-pnpm test 04-native-modules.test.ts
+npm test 04-native-modules.test.ts
 
 # Run in watch mode
-pnpm test:watch
+npm run test:watch
 
 # Run with UI
-pnpm test:ui
+npm run test:ui
 ```
 
 ## Test Configuration

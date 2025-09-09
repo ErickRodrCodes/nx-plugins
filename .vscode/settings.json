@@ -48,5 +48,30 @@
     "titleBar.inactiveForeground": "#e7e7e799"
   },
   "peacock.color": "#456479",
-  "nxConsole.generateAiAgentRules": true
+  "nxConsole.generateAiAgentRules": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "files.exclude": {
+    "**/*.asar": true,
+    "**/*.asar.unpacked": true,
+    "**/electron-builder-output": true,
+    "**/release": true,
+    "**/electron-dist": true,
+    "**/*.node": false
+  },
+  "search.exclude": {
+    "**/*.asar": true,
+    "**/*.asar.unpacked": true,
+    "**/electron-builder-output": true,
+    "**/release": true,
+    "**/electron-dist": true
+  },
+  "files.watcherExclude": {
+    "**/*.asar": true,
+    "**/*.asar.unpacked": true,
+    "**/electron-builder-output/**": true,
+    "**/release/**": true,
+    "**/electron-dist/**": true
+  }
 }
