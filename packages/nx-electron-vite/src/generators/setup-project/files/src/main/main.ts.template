@@ -5,8 +5,6 @@ import { join } from 'path'
 
 import path from 'node:path'
 
-//@ts-expect-error is declared but never used
-const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Ensure Single Instance Lock
