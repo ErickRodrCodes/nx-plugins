@@ -1,0 +1,21 @@
+{
+  "name": "smoke-tests",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "smoke-tests/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "reportsDirectory": "../../coverage/smoke-tests"
+      },
+      "configurations": {
+        "ci": {
+          "reporter": ["verbose"]
+        }
+      }
+    }
+  },
+  "tags": []
+}

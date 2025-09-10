@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "packageManager": "pnpm",
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
@@ -10,7 +11,8 @@
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/jest.config.[jt]s",
       "!{projectRoot}/src/test-setup.[jt]s",
-      "!{projectRoot}/test-setup.[jt]s"
+      "!{projectRoot}/test-setup.[jt]s",
+      "!{projectRoot}/eslint.config.mjs"
     ],
     "sharedGlobals": []
   },
@@ -26,7 +28,8 @@
         "default",
         "{workspaceRoot}/.eslintrc.json",
         "{workspaceRoot}/.eslintignore",
-        "{workspaceRoot}/eslint.config.js"
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/eslint.config.mjs"
       ]
     },
     "@nx/jest:jest": {
@@ -49,6 +52,19 @@
     },
     "e2e-ci--**/*": {
       "dependsOn": ["^build"]
+    },
+    "@nx/esbuild:esbuild": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "publish-package": {
+      "dependsOn": ["build", "test"]
+    },
+    "nx-release-publish": {
+      "options": {
+        "packageRoot": "dist/packages/{projectName}"
+      }
     }
   },
   "plugins": [
@@ -99,6 +115,12 @@
     },
     "@nx/angular:component": {
       "style": "css"
+    },
+    "@nx/web:application": {
+      "style": "css",
+      "linter": "eslint",
+      "unitTestRunner": "vitest",
+      "e2eTestRunner": "none"
     }
   },
   "release": {
@@ -114,13 +136,31 @@
       }
     },
     "version": {
-      "preVersionCommand": "npx nx run-many -t build",
+      "preVersionCommand": "pnpm nx run-many -t build --skip-nx-cache --parallel 4",
+      "conventionalCommits": true,
       "generatorOptions": {
-        "currentVersionResolver": "git-tag",
-        "specifierSource": "conventional-commits",
+        "packageRoot": "dist/packages/{projectName}",
         "updateDependents": "auto"
       }
     }
   },
-  "useLegacyCache": true
+  "tasksRunnerOptions": {
+    "default": {
+      "options": {
+        "runtimeCacheInputs": ["node -v", "echo $RUNNER_OS"],
+        "canTrackAnalytics": false,
+        "showUsageWarnings": true
+      }
+    }
+  },
+  "workspaceLayout": {
+    "appsDir": "e2e",
+    "libsDir": "packages"
+  },
+  "pluginsConfig": {
+    "@nx/js": {
+      "analyzeSourceFiles": true
+    }
+  },
+  "useLegacyCache": false
 }

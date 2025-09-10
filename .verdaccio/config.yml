@@ -1,5 +1,11 @@
 # path to a directory with all packages
-storage: ../tmp/local-registry/storage
+storage: ./tmp/local-registry/storage
+
+# cache settings
+cache:
+  path: ./tmp/local-registry/cache
+  # disabled cache completely
+  maxage: 0
 
 # a list of other known repositories we can talk to
 uplinks:
@@ -8,13 +14,19 @@ uplinks:
     maxage: 60m
 
 packages:
+  '@erickrodrcodes/nx-electron-vite':
+    access: $all
+    publish: $all
+    unpublish: $all
+    # no proxy for our package
+    proxy: none
+
   '**':
     # give all users (including non-authenticated users) full access
     # because it is a local registry
     access: $all
     publish: $all
     unpublish: $all
-
     # if package is not available locally, proxy requests to npm registry
     proxy: npmjs
 

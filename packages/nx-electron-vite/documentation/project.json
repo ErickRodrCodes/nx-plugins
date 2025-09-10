@@ -1,0 +1,28 @@
+{
+  "name": "nx-electron-vite-documentation",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "packages/nx-electron-vite/documentation/src",
+  "tags": ["type:documentation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "command": "pnpm exec vitepress build packages/nx-electron-vite/documentation/src"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec vitepress dev packages/nx-electron-vite/documentation/src"
+      }
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec vitepress preview packages/nx-electron-vite/documentation/src"
+      }
+    }
+  }
+}

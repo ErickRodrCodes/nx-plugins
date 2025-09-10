@@ -1,0 +1,42 @@
+/// <reference types='vitest' />
+import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import { defineConfig } from 'vite';
+import {
+  electronNxViteConfig,
+  redirectWhenAvailable,
+} from './electron-nx-vite.config';
+
+export default defineConfig({
+  root: __dirname,
+  cacheDir: '../../node_modules/.vite/apps/<%= nameProject %>',
+  server: {
+    open: false,
+    port: 3000,
+  },
+  plugins: [
+    nxViteTsPaths(),
+    electronNxViteConfig(),
+    redirectWhenAvailable('http://localhost:4200'),
+  ],
+  build: {
+    outDir: '<%= offsetFromRoot %><%= outputDistFolder %>',
+    emptyOutDir: false,
+    reportCompressedSize: true,
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
+  },
+  <% if(testRunner === 'vitest') { %>
+  test: {
+    watch: false,
+    globals: true,
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    reporters: ['default'],
+    coverage: {
+      reportsDirectory: '../../coverage/apps/<%= nameProject %>',
+      provider: 'v8',
+    },
+  },
+  <% } %>
+});

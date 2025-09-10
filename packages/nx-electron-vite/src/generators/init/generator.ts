@@ -1,56 +1,85 @@
 import {
   addDependenciesToPackageJson,
-  Tree,
-  GeneratorCallback,
-  removeDependenciesFromPackageJson,
   formatFiles,
-  runTasksInSerial,
+  GeneratorCallback,
   installPackagesTask,
+  NX_VERSION,
+  readJson,
+  removeDependenciesFromPackageJson,
+  runTasksInSerial,
+  Tree,
+  writeJson,
 } from '@nx/devkit';
-import {
-  electronBuilderVersion,
-  electronVersion,
-  png2iconsVersion,
-  vitePluginElectronRendererVersion,
-  vitePluginElectronVersion,
-} from '../../util/versions';
-import { InitGeneratorSchema } from './schema';
+import { initGenerator as initVite } from '@nx/vite';
+import { devDependencies, versionLibraries } from '../../util/versions';
+import { initSchema } from './schema';
 
-export const dependencies: Record<string, string> = {};
+function ensureVitePlugin(tree: Tree) {
+  const nxJson = readJson(tree, 'nx.json');
 
-export async function initGenerator(tree: Tree, schema: InitGeneratorSchema) {
+  // Initialize plugins array if it doesn't exist
+  if (!nxJson.plugins) {
+    nxJson.plugins = [];
+  }
+
+  // Check if Vite plugin already exists
+  const vitePluginExists = nxJson.plugins.some(
+    (plugin) => plugin.plugin === '@nx/vite/plugin'
+  );
+
+  // Add Vite plugin if it doesn't exist
+  if (!vitePluginExists) {
+    nxJson.plugins.push({
+      plugin: '@nx/vite/plugin',
+      options: {
+        buildTargetName: 'build',
+        testTargetName: 'test',
+        serveTargetName: 'serve',
+        previewTargetName: 'preview',
+        serveStaticTargetName: 'serve-static',
+      },
+    });
+
+    writeJson(tree, 'nx.json', nxJson);
+  }
+}
+
+export async function initGenerator(tree: Tree, schema: initSchema) {
   const tasks: GeneratorCallback[] = [];
-  if (!schema.skipPackageJson) {
-    tasks.push(
-      removeDependenciesFromPackageJson(
-        tree,
-        [
-          'electron-builder',
-          'electron',
-          'vite-plugin-electron-renderer',
-          'vite-plugin-electron',
-          'png2icons',
-        ],
-        []
-      )
-    );
 
+  // Initialize Vite first
+  const viteInitTask = await initVite(tree, { skipFormat: true });
+  tasks.push(viteInitTask);
+
+  // Ensure Vite plugin is configured
+  ensureVitePlugin(tree);
+
+  if (!schema.skipPackageJson) {
+    // Remove existing dependencies to ensure clean state
+    tasks.push(removeDependenciesFromPackageJson(tree, [], devDependencies));
+
+    // Add all required dependencies
     tasks.push(
       addDependenciesToPackageJson(
         tree,
-        {},
+        {}, // No runtime dependencies
         {
-          'electron-builder': electronBuilderVersion,
-          electron: electronVersion,
-          'vite-plugin-electron-renderer': vitePluginElectronRendererVersion,
-          'vite-plugin-electron': vitePluginElectronVersion,
-          png2icons: png2iconsVersion,
+          '@nx/vite': NX_VERSION,
+          'electron-builder': versionLibraries.electronBuilder,
+          '@electron/rebuild': versionLibraries.electronRebuild,
+          electron: versionLibraries.electron,
+          'vite-plugin-electron-renderer':
+            versionLibraries.vitePluginElectronRenderer,
+          'vite-plugin-electron': versionLibraries.vitePluginElectron,
+          png2icons: versionLibraries.png2icons,
+          'wait-on': versionLibraries.waitOn,
+          vitest: versionLibraries.vitest,
+          'electron-is-dev': versionLibraries.electronIsDev,
+          'electron-log': versionLibraries.electronLog,
         }
       )
     );
-  }
 
-  if (!schema.skipInstallPluginDependencies && !schema.skipPackageJson) {
     tasks.push(() => {
       installPackagesTask(tree, true);
     });
