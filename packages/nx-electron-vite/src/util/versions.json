@@ -1,14 +1,14 @@
 {
-  "electronBuilder": "^24.13.3",
-  "electronRebuild": "^3.7.1",
-  "electron": "^30.0.2",
-  "vitePluginElectronRenderer": "^0.14.5",
-  "vitePluginElectron": "^0.28.6",
-  "png2icons": "^2.0.1",
-  "suggestedNode": "v18.18.0",
-  "waitOn": "8.0.0",
-  "node": "20.17.0",
-  "vitest": "^3.0.1",
-  "electronIsDev": "^2.0.0",
-  "electronLog": "^5.4.1"
+  "electronBuilder": "26.0.2",
+  "electronRebuild": "4.0.1",
+  "electron": "39.0.0",
+  "vitePluginElectronRenderer": "0.14.6",
+  "vitePluginElectron": "0.29.0",
+  "png2icons": "2.0.1",
+  "suggestedNode": "v22.20.0",
+  "waitOn": "9.0.1",
+  "node": "22.20.0",
+  "vitest": "3.2.4",
+  "electronIsDev": "3.0.1",
+  "electronLog": "5.4.3"
 }
