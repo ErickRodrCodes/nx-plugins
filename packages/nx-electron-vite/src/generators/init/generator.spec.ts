@@ -2,10 +2,11 @@ import * as devkit from '@nx/devkit';
 import { Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import * as vitePlugin from '@nx/vite';
+import { vi } from 'vitest';
 import initGenerator from './generator';
 
-jest.mock('@nx/vite', () => ({
-  initGenerator: jest.fn().mockResolvedValue(() => Promise.resolve()),
+vi.mock('@nx/vite', () => ({
+  initGenerator: vi.fn().mockResolvedValue(() => Promise.resolve()),
 }));
 
 describe('initGenerator', () => {
@@ -13,7 +14,7 @@ describe('initGenerator', () => {
 
   beforeEach(() => {
     tree = createTreeWithEmptyWorkspace();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Vite initialization', () => {
@@ -78,7 +79,7 @@ describe('initGenerator', () => {
 
   describe('dependency management', () => {
     it('should add required dependencies when skipPackageJson is false', async () => {
-      const addDependenciesSpy = jest.spyOn(
+      const addDependenciesSpy = vi.spyOn(
         devkit,
         'addDependenciesToPackageJson'
       );
@@ -108,7 +109,7 @@ describe('initGenerator', () => {
     });
 
     it('should not modify dependencies when skipPackageJson is true', async () => {
-      const addDependenciesSpy = jest.spyOn(
+      const addDependenciesSpy = vi.spyOn(
         devkit,
         'addDependenciesToPackageJson'
       );
@@ -124,7 +125,7 @@ describe('initGenerator', () => {
 
   describe('formatFiles behavior', () => {
     it('should call formatFiles when skipFormat is false', async () => {
-      const formatSpy = jest.spyOn(devkit, 'formatFiles');
+      const formatSpy = vi.spyOn(devkit, 'formatFiles');
 
       await initGenerator(tree, {
         skipPackageJson: true,
@@ -135,7 +136,7 @@ describe('initGenerator', () => {
     });
 
     it('should not call formatFiles when skipFormat is true', async () => {
-      const formatSpy = jest.spyOn(devkit, 'formatFiles');
+      const formatSpy = vi.spyOn(devkit, 'formatFiles');
 
       await initGenerator(tree, {
         skipPackageJson: true,

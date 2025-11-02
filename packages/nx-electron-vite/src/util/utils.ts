@@ -132,13 +132,11 @@ export async function normalizeOptions(
       ? `${schema.guestProject}-electron`
       : schema.nameProject;
 
-  // Get the workspace layout to determine where applications should go
-  const workspaceLayout = getWorkspaceLayout(tree);
-
-  // If directory is undefined, empty, or just whitespace, use the workspace default
+  // If directory is undefined, empty, or just whitespace, use workspace layout default
+  const { appsDir } = getWorkspaceLayout(tree);
   const directory =
     !schema.directory || schema.directory.trim() === ''
-      ? workspaceLayout.appsDir
+      ? appsDir
       : schema.directory.trim();
 
   // Let Nx determine the final project name and root directory
@@ -172,7 +170,9 @@ export async function normalizeOptions(
     outputDistFolder: `dist/${projectDirectory}`,
     directoryResources: path.posix.join(projectDirectory, 'src/resources'),
     offsetFromRoot: offsetFromRoot(projectDirectory),
-    rootTsConfigPath: `${offsetFromRoot(projectDirectory)}${getRootTsConfigPath()}`,
+    rootTsConfigPath: `${offsetFromRoot(
+      projectDirectory
+    )}${getRootTsConfigPath()}`,
     nsisExtraFilePath: path.posix.join(projectDirectory, 'src/installer.nsh'),
   };
 
@@ -442,7 +442,7 @@ async function validateModule(moduleName: string): Promise<boolean> {
   try {
     require.resolve(`${moduleName}/package.json`);
     return true;
-  } catch (error) {
+  } catch {
     logger.error(`❌ Module "${moduleName}" not found in node_modules`);
     return false;
   }

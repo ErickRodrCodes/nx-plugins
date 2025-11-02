@@ -2,6 +2,7 @@ import { Tree, readProjectConfiguration } from '@nx/devkit';
 import * as devkit from '@nx/devkit/src/generators/project-name-and-root-utils';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import * as path from 'path';
+import { vi } from 'vitest';
 import { SetupProjectSchema } from '../generators/setup-project/schema';
 import {
   getProjectOutputDirectory,
@@ -13,35 +14,35 @@ import {
 const normalizePath = (p: string) => p.split(path.sep).join('/');
 
 // Mock the external devkit functions
-jest.mock('@nx/devkit', () => {
-  const actual = jest.requireActual('@nx/devkit');
+vi.mock('@nx/devkit', async () => {
+  const actual = await vi.importActual('@nx/devkit');
   return {
     ...actual,
-    getWorkspaceLayout: jest.fn().mockReturnValue({ appsDir: 'apps' }),
-    readProjectConfiguration: jest.fn().mockReturnValue({
+    getWorkspaceLayout: vi.fn().mockReturnValue({ appsDir: 'apps' }),
+    readProjectConfiguration: vi.fn().mockReturnValue({
       targets: {
         build: {
           options: {
-            outputPath: 'dist/apps/test-app'
-          }
-        }
-      }
+            outputPath: 'dist/apps/test-app',
+          },
+        },
+      },
     }),
-    offsetFromRoot: jest.fn().mockReturnValue('../')
+    offsetFromRoot: vi.fn().mockReturnValue('../'),
   };
 });
 
-jest.mock('@nx/devkit/src/generators/project-name-and-root-utils', () => ({
-  determineProjectNameAndRootOptions: jest.fn(),
+vi.mock('@nx/devkit/src/generators/project-name-and-root-utils', () => ({
+  determineProjectNameAndRootOptions: vi.fn(),
 }));
 
 // Mock our internal functions
-jest.mock('./utils', () => {
-  const actual = jest.requireActual('./utils');
+vi.mock('./utils', async () => {
+  const actual = await vi.importActual('./utils');
   return {
     ...actual,
-    getProjectOutputDirectory: jest.fn(),
-    getRootTsConfigPath: jest.fn(),
+    getProjectOutputDirectory: vi.fn(),
+    getRootTsConfigPath: vi.fn(),
   };
 });
 
@@ -62,7 +63,7 @@ describe('utils', () => {
     );
 
     // Mock readProjectConfiguration to return a basic project config
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as vi.mock).mockReturnValue({
       root: 'apps/foo',
       targets: {
         build: {
@@ -74,23 +75,25 @@ describe('utils', () => {
     });
 
     // Set up default mocks for each test
-    (getProjectOutputDirectory as jest.Mock).mockResolvedValue('dist/apps/foo');
-    (getRootTsConfigPath as jest.Mock).mockReturnValue('tsconfig.base.json');
+    (getProjectOutputDirectory as vi.mock).mockResolvedValue('dist/apps/foo');
+    (getRootTsConfigPath as vi.mock).mockReturnValue('tsconfig.base.json');
   });
 
   describe('normalizeOptions - directory handling', () => {
     beforeEach(() => {
-      (devkit.determineProjectNameAndRootOptions as jest.Mock).mockImplementation((tree, options) => {
-        return Promise.resolve({
-          projectName: options.name,
-          projectRoot: `${options.directory}/${options.name}`,
-          names: {
-            projectFileName: options.name,
-            projectSimpleName: options.name
-          },
-          importPath: `@test/${options.name}`
-        });
-      });
+      vi.mocked(devkit.determineProjectNameAndRootOptions).mockImplementation(
+        (tree, options) => {
+          return Promise.resolve({
+            projectName: options.name,
+            projectRoot: `${options.directory}/${options.name}`,
+            names: {
+              projectFileName: options.name,
+              projectSimpleName: options.name,
+            },
+            importPath: `@test/${options.name}`,
+          });
+        }
+      );
     });
 
     it('should use workspace apps directory when no directory is specified', async () => {
@@ -218,26 +221,28 @@ describe('utils', () => {
       updater: true,
       nameProject: undefined,
       directory: undefined,
-      testRunner: 'jest'
+      testRunner: 'jest',
     };
 
     beforeEach(() => {
       tree = {
-        exists: jest.fn().mockReturnValue(true),
-        read: jest.fn().mockReturnValue('{}'),
+        exists: vi.fn().mockReturnValue(true),
+        read: vi.fn().mockReturnValue('{}'),
       } as unknown as Tree;
-      jest.clearAllMocks();
-      (devkit.determineProjectNameAndRootOptions as jest.Mock).mockImplementation((tree, options) => {
-        return Promise.resolve({
-          projectName: options.name,
-          projectRoot: `${options.directory}/${options.name}`,
-          names: {
-            projectFileName: options.name,
-            projectSimpleName: options.name
-          },
-          importPath: `@test/${options.name}`
-        });
-      });
+      vi.clearAllMocks();
+      vi.mocked(devkit.determineProjectNameAndRootOptions).mockImplementation(
+        (tree, options) => {
+          return Promise.resolve({
+            projectName: options.name,
+            projectRoot: `${options.directory}/${options.name}`,
+            names: {
+              projectFileName: options.name,
+              projectSimpleName: options.name,
+            },
+            importPath: `@test/${options.name}`,
+          });
+        }
+      );
     });
 
     it('should use guestProject-electron when nameProject is undefined', async () => {
@@ -248,7 +253,7 @@ describe('utils', () => {
         expect.objectContaining({
           name: 'test-app-electron',
           projectType: 'application',
-          directory: 'apps'
+          directory: 'apps',
         })
       );
       expect(result.nameProject).toBe('test-app-electron');
@@ -262,7 +267,7 @@ describe('utils', () => {
         expect.objectContaining({
           name: 'test-app-electron',
           projectType: 'application',
-          directory: 'apps'
+          directory: 'apps',
         })
       );
       expect(result.nameProject).toBe('test-app-electron');
@@ -276,7 +281,7 @@ describe('utils', () => {
         expect.objectContaining({
           name: 'test-app-electron',
           projectType: 'application',
-          directory: 'apps'
+          directory: 'apps',
         })
       );
       expect(result.nameProject).toBe('test-app-electron');
@@ -290,7 +295,7 @@ describe('utils', () => {
         expect.objectContaining({
           name: 'test-app-electron',
           projectType: 'application',
-          directory: 'apps'
+          directory: 'apps',
         })
       );
       expect(result.nameProject).toBe('test-app-electron');
@@ -304,7 +309,7 @@ describe('utils', () => {
         expect.objectContaining({
           name: 'custom-name',
           projectType: 'application',
-          directory: 'apps'
+          directory: 'apps',
         })
       );
       expect(result.nameProject).toBe('custom-name');
@@ -313,17 +318,19 @@ describe('utils', () => {
 
   describe('normalizeOptions - path construction', () => {
     beforeEach(() => {
-      (devkit.determineProjectNameAndRootOptions as jest.Mock).mockImplementation((tree, options) => {
-        return Promise.resolve({
-          projectName: options.name,
-          projectRoot: `${options.directory}/${options.name}`,
-          names: {
-            projectFileName: options.name,
-            projectSimpleName: options.name
-          },
-          importPath: `@test/${options.name}`
-        });
-      });
+      vi.mocked(devkit.determineProjectNameAndRootOptions).mockImplementation(
+        (tree, options) => {
+          return Promise.resolve({
+            projectName: options.name,
+            projectRoot: `${options.directory}/${options.name}`,
+            names: {
+              projectFileName: options.name,
+              projectSimpleName: options.name,
+            },
+            importPath: `@test/${options.name}`,
+          });
+        }
+      );
     });
 
     it('should construct all paths correctly with default directory', async () => {
@@ -348,10 +355,10 @@ describe('utils', () => {
         'directoryResources',
         'outputDistFolder',
         'outputDistFolderIcons',
-        'nsisExtraFilePath'
+        'nsisExtraFilePath',
       ];
 
-      pathProperties.forEach(prop => {
+      pathProperties.forEach((prop) => {
         const path = result[prop];
         expect(path).not.toContain('\\');
         expect(path).toEqual(normalizePath(path));
@@ -380,10 +387,10 @@ describe('utils', () => {
         'directoryResources',
         'outputDistFolder',
         'outputDistFolderIcons',
-        'nsisExtraFilePath'
+        'nsisExtraFilePath',
       ];
 
-      pathProperties.forEach(prop => {
+      pathProperties.forEach((prop) => {
         const path = result[prop];
         expect(path).not.toContain('\\');
         expect(path).toEqual(normalizePath(path));
@@ -392,12 +399,12 @@ describe('utils', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should construct correct path when nameProject is empty', async () => {
     // Mock the determineProjectNameAndRootOptions to verify input and return expected output
-    (devkit.determineProjectNameAndRootOptions as jest.Mock).mockResolvedValue({
+    vi.mocked(devkit.determineProjectNameAndRootOptions).mockResolvedValue({
       projectName: 'foo-electron',
       projectRoot: 'apps/foo-electron',
     });
@@ -433,7 +440,7 @@ describe('utils', () => {
   });
 
   it('should use provided nameProject when it exists', async () => {
-    (devkit.determineProjectNameAndRootOptions as jest.Mock).mockResolvedValue({
+    vi.mocked(devkit.determineProjectNameAndRootOptions).mockResolvedValue({
       projectName: 'custom-name',
       projectRoot: 'apps/custom-name',
     });

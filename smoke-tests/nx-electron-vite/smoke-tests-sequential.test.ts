@@ -67,25 +67,25 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
         versionLibraries.electron
       );
       expect(packageJson.devDependencies['electron-builder']).toBe(
-        versionLibraries['electron-builder']
+        versionLibraries.electronBuilder
       );
       expect(packageJson.devDependencies['vite-plugin-electron']).toBe(
-        versionLibraries['vite-plugin-electron']
+        versionLibraries.vitePluginElectron
       );
       expect(packageJson.devDependencies['vite-plugin-electron-renderer']).toBe(
-        versionLibraries['vite-plugin-electron-renderer']
+        versionLibraries.vitePluginElectronRenderer
       );
       expect(packageJson.devDependencies['@electron/rebuild']).toBe(
-        versionLibraries['electron-rebuild']
+        versionLibraries.electronRebuild
       );
       expect(packageJson.devDependencies['electron-is-dev']).toBe(
-        versionLibraries['electron-is-dev']
+        versionLibraries.electronIsDev
       );
       expect(packageJson.devDependencies['png2icons']).toBe(
         versionLibraries.png2icons
       );
       expect(packageJson.devDependencies['wait-on']).toBe(
-        versionLibraries['wait-on']
+        versionLibraries.waitOn
       );
     });
   });

@@ -4,6 +4,7 @@ import {
   logger,
   workspaceRoot,
 } from '@nx/devkit';
+
 import { readFileSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import * as path from 'node:path/posix';
