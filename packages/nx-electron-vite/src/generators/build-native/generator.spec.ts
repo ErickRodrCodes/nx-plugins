@@ -78,6 +78,10 @@ describe('_buildNativeGenerator', () => {
   it('should exit with error if the host project does not exist', async () => {
     (readProjectConfiguration as Mock).mockReturnValue(undefined);
 
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation((number) => {
+      throw new Error('process.exit: ' + number);
+    });
+
     await expect(
       _buildNativeGenerator(tree, {
         ...mockSchemaWithHostProject,
@@ -88,7 +92,7 @@ describe('_buildNativeGenerator', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'there is no app called non-existent-project in the structure of the monorepo. Aborting'
     );
-    // expect(mockExit).toHaveBeenCalledWith(1);
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 
   it('should throw error if neither hostProject nor pathTarget is provided', async () => {
