@@ -5,12 +5,11 @@ import {
   workspaceRoot,
 } from '@nx/devkit';
 
-import { readFileSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
+import { unlink, writeFile } from 'node:fs/promises';
 import * as path from 'node:path/posix';
 
 import { join } from 'node:path';
-import { restorePackageJson, runCommandUntil } from '../../util/utils';
+import { runCommandUntil } from '../../util/utils';
 import { BuildElectronExecutorSchema } from './schema';
 
 export default async function electronBuildExecutor(
@@ -41,35 +40,41 @@ The dist folder will be cleaned while running this executor.
   );
 
   const workspace = workspaceRoot;
-  const packageJson = readFileSync(
-    path.join(workspace, 'package.json'),
-    'utf-8'
-  );
-  const originalPackageJson = JSON.parse(packageJson);
-  const parsedPackageJson = JSON.parse(packageJson);
-  parsedPackageJson.main = path.join(mainOutputPath, mainOutputFilename);
-  parsedPackageJson.author = author;
-  parsedPackageJson.description = description;
-  // TODO: add author and description to package.json
 
-  logger.warn(`🧪 Updating package.json to be used on the build process.`);
-  await writeFile(
-    path.join(workspace, 'package.json'),
-    JSON.stringify(parsedPackageJson, null, 2)
-  );
-
-  logger.warn(`
-🧪 Building Electron App with electron-builder from built files from ${hostProject}...
-`);
-
+  // Create a temporary configuration file that extends the original one
+  // and adds the necessary metadata overrides
   const resolveConfigFile = join(
     hostProjectRoot,
     'src',
     'electron-builder.yml'
   );
+
+  const tempConfigPath = path.join(workspace, 'electron-builder.temp.json');
+
+  const tempConfig = {
+    extends: resolveConfigFile,
+    extraMetadata: {
+      main: path.join(mainOutputPath, mainOutputFilename),
+      author: author,
+      description: description,
+      // Add name and version to avoid electron-builder looking up the workspace package.json
+      name: hostProject,
+      version: '0.0.0',
+    },
+  };
+
+  logger.warn(
+    `🧪 Creating temporary electron-builder config at ${tempConfigPath}`
+  );
+  await writeFile(tempConfigPath, JSON.stringify(tempConfig, null, 2));
+
+  logger.warn(`
+🧪 Building Electron App with electron-builder from built files from ${hostProject}...
+`);
+
   const commandLine = `${
     getPackageManagerCommand().exec
-  } electron-builder --config=${resolveConfigFile}`;
+  } electron-builder --config=${tempConfigPath}`;
 
   try {
     await runCommandUntil(commandLine, (criteria) =>
@@ -77,13 +82,18 @@ The dist folder will be cleaned while running this executor.
     );
   } catch (error) {
     logger.error('Electron build failed.');
-    await restorePackageJson(workspace, originalPackageJson);
     return { success: false };
+  } finally {
+    try {
+      await unlink(tempConfigPath);
+      logger.info('🧹 Cleaned up temporary config file.');
+    } catch (e) {
+      logger.warn('⚠️ Failed to clean up temporary config file.');
+    }
   }
 
   logger.warn(`
-✅ Electron build completed. Restoring package.json...`);
-  await restorePackageJson(workspace, originalPackageJson);
+✅ Electron build completed.`);
 
   return {
     success: true,

@@ -10,6 +10,11 @@ export interface SetupProjectSchema {
   guestProject: string;
 
   /**
+   * The name of the guest project without npm scope (@scope/name -> name)
+   */
+  guestProjectName?: string;
+
+  /**
    * The name of the project in human language
    */
   name: string;

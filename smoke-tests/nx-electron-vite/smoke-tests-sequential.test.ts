@@ -95,7 +95,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     // These tests verify that the project was created correctly
 
     it('should have correct main files in Electron app', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Check main files exist
       expect(
@@ -114,7 +114,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have correct configuration files', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Check configuration files exist
       expect(
@@ -136,7 +136,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have correct package.json with basic properties', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       const packageJson = workspaceGenerator!.readJsonFile(
         `apps/${electronAppName}/package.json`
@@ -150,7 +150,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have correct project configuration', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       const projectJson = workspaceGenerator!.readJsonFile(
         `apps/${electronAppName}/project.json`
@@ -163,7 +163,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have correct directory structure', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Verify source structure
       expect(
@@ -195,7 +195,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have correct TypeScript configuration', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       const tsConfig = workspaceGenerator!.readJsonFile(
         `apps/${electronAppName}/tsconfig.json`
@@ -207,7 +207,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should use automatic naming convention (guest-app-electron)', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Verify the project was created with the correct name
       expect(workspaceGenerator!.fileExists(`apps/${electronAppName}`)).toBe(
@@ -225,7 +225,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have correct electron-nx-vite configuration structure', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Check electron-nx-vite config content (using type command for Windows compatibility)
       const config = workspaceGenerator!.execCommand(
@@ -244,7 +244,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
 
   describe('04: Native Module Building', () => {
     it('should install better-sqlite3 and build native modules', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       console.log('Installing better-sqlite3...');
 
@@ -265,7 +265,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have created native directory structure', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Check that native directory exists
       expect(
@@ -283,7 +283,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have built better-sqlite3 and placed the native file correctly', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Verify the native file was created in the correct location
       const nativeDir = `apps/${electronAppName}/src/main/native`;
@@ -295,7 +295,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have reference.json file (plugin limitation: not updated currently)', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Read reference.json - currently the plugin doesn't update this file correctly
       const referenceJson = workspaceGenerator!.readJsonFile(
@@ -311,7 +311,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
 
   describe('05: Icon Generation', () => {
     it('should have source icon files in correct location', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Check for source icon files that should be created by setup-project
       expect(
@@ -327,7 +327,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should generate platform-specific icons using nx-electron-icons target', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       console.log('Generating icons...');
       console.log(`Running on platform: ${process.platform}`);
@@ -370,7 +370,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have correct icon configuration in project.json', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Check that project.json has the nx-electron-icons target
       const projectJson = workspaceGenerator!.readJsonFile(
@@ -388,7 +388,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
 
   describe('06: App Building (Distribution)', () => {
     it('should have correct dist target configuration in project.json', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Check that project.json has the dist target configured correctly
       const projectJson = workspaceGenerator!.readJsonFile(
@@ -411,7 +411,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should build the Electron application successfully', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       console.log('Building Electron application...');
       console.log(
@@ -489,7 +489,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
 
     it('should have electron-builder configuration file', () => {
-      const electronAppName = 'smoke-test-workspace-electron';
+      const electronAppName = 'smoke-test-app-electron';
 
       // Verify electron-builder.yml exists
       expect(

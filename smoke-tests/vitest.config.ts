@@ -9,13 +9,13 @@ export default defineConfig({
           summary: false,
         },
       ],
+      ['json', { outputFile: './test-results.json' }],
     ],
     globals: true,
     environment: 'node',
     testTimeout: 300000, // 5 minutes for smoke tests
     hookTimeout: 300000,
     teardownTimeout: 60000,
-    setupFiles: ['./vitest.setup.ts'], // Global setup file
     // Use threads with strict sequential execution
     pool: 'threads',
     poolOptions: {
@@ -40,7 +40,7 @@ export default defineConfig({
     },
     maxConcurrency: 1, // Only run 1 test at a time
     fileParallelism: false, // Don't run test files in parallel
-    reporters: process.env.CI ? ['basic', 'json'] : ['basic'],
+    // reporters: process.env.CI ? ['basic', 'json'] : ['basic'],
     // outputFile: process.env.CI ? './test-results.json' : undefined,
     // Force process exit after tests complete
     forceRerunTriggers: [],

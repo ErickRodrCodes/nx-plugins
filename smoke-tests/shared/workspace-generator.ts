@@ -51,8 +51,15 @@ export interface WorkspaceOptions {
 export class WorkspaceGenerator {
   private tmpDir: string;
 
-  constructor(tmpDirName: string = 'tmp-smoke-test') {
-    this.tmpDir = join(smokeTestsDir, 'tmp', tmpDirName);
+  constructor(
+    tmpDirNameOrPath: string = 'tmp-smoke-test',
+    isAbsolute: boolean = false
+  ) {
+    if (isAbsolute) {
+      this.tmpDir = tmpDirNameOrPath;
+    } else {
+      this.tmpDir = join(smokeTestsDir, 'tmp', tmpDirNameOrPath);
+    }
   }
 
   /**
@@ -132,7 +139,7 @@ export class WorkspaceGenerator {
    */
   generateReactApp(appName: string = 'guest-app', directory?: string): void {
     const dirFlag = directory ? `--directory=${directory}` : '';
-    const command = `npx nx g @nx/react:app ${appName} ${dirFlag} --verbose`;
+    const command = `npx nx g @nx/react:app ${appName} ${dirFlag} --style=tailwind --bundler=vite --unitTestRunner=vitest --e2eTestRunner=none --linter=eslint --no-interactive --verbose`;
 
     execSync(command, {
       cwd: this.tmpDir,
@@ -205,7 +212,8 @@ export class WorkspaceGenerator {
    * Copies the plugin tar.gz file to the workspace
    */
   copyPluginTarGz(): void {
-    const sourceTarGzPath = join(__dirname, '../tmp/nx-electron-vite.tar.gz');
+    // The tarball is in the parent directory of the workspace (which is the unique run dir)
+    const sourceTarGzPath = join(this.tmpDir, '../nx-electron-vite.tar.gz');
     const targetTarGzPath = join(this.tmpDir, 'nx-electron-vite.tar.gz');
 
     const fs = require('fs');

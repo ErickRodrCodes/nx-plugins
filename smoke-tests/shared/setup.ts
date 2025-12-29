@@ -1,23 +1,20 @@
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync } from 'fs';
+import { mkdirSync } from 'fs';
 import { join } from 'path';
-import { rimraf } from 'rimraf';
 import { fileURLToPath } from 'url';
 import { afterAll, beforeAll } from 'vitest';
 import { WorkspaceGenerator } from './workspace-generator';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const rootDir = join(__dirname, '../../');
-const smokeTestsTmpDir = join(__dirname, '../tmp');
+const testHash = Date.now().toString();
+const smokeTestsTmpDir = join(__dirname, `../tmp/run-${testHash}`);
 
 let workspaceGenerator: WorkspaceGenerator | null = null;
 
 // Global setup - runs once before all tests
 beforeAll(async () => {
-  // Always clean and start fresh
-  if (existsSync(smokeTestsTmpDir)) {
-    await rimraf(smokeTestsTmpDir);
-  }
+  // Create unique directory - no cleanup needed since it's unique
   mkdirSync(smokeTestsTmpDir, { recursive: true });
 
   // Step 1: Build plugin
@@ -44,15 +41,24 @@ beforeAll(async () => {
 
   // Step 3: Create workspace
   console.log('Creating workspace...');
-  workspaceGenerator = new WorkspaceGenerator('smoke-test-workspace');
+  const workspacePath = join(smokeTestsTmpDir, 'smoke-test-workspace');
+  workspaceGenerator = new WorkspaceGenerator(workspacePath, true);
   await workspaceGenerator.createWorkspace({
     name: 'smoke-test-workspace',
-    preset: 'react-monorepo',
+    preset: 'apps',
     packageManager: 'npm',
     skipGit: true,
     nxCloud: false,
     directory: smokeTestsTmpDir,
   });
+
+  // Step 3.1: Add @nx/react
+  console.log('Adding @nx/react...');
+  workspaceGenerator.execCommand('npx nx add @nx/react --yes');
+
+  // Step 3.2: Create React app
+  console.log('Creating React app...');
+  workspaceGenerator.generateReactApp('smoke-test-app');
 
   // Step 4: Install plugin
   console.log('Installing plugin...');
@@ -67,12 +73,12 @@ beforeAll(async () => {
 
   // Step 6: Create Electron project
   console.log('Creating Electron project...');
-  const electronAppName = 'smoke-test-workspace-electron';
-  const command = `npx nx g @erickrodrcodes/nx-electron-vite:setup-project --guestProject="smoke-test-workspace" --nameProject="${electronAppName}" --name="Smoke Test Electron App" --author="Test Author" --description="Test Electron application" --executableName="smoke-test-app" --updater=false --test=none --no-interactive`;
+  const electronAppName = 'smoke-test-app-electron';
+  const command = `npx nx g @erickrodrcodes/nx-electron-vite:setup-project --guestProject="smoke-test-app" --nameProject="${electronAppName}" --name="Smoke Test Electron App" --author="Test Author" --description="Test Electron application" --executableName="smoke-test-app" --updater=false --test=none --no-interactive`;
   workspaceGenerator.execCommand(command);
 
   console.log('Setup completed successfully');
-}, 180000); // 3 minutes timeout
+}, 300000); // 5 minutes timeout
 
 // Global cleanup - runs once after all tests
 afterAll(async () => {

@@ -104,12 +104,16 @@ export async function getViteOutputPath(
       `Unable to read Vite configuration file: ${viteConfigPath}`
     );
   }
-  const viteConfig = await import(path.resolve(viteConfigPath));
 
-  // Dynamically import the Vite config file
-  if (viteConfig?.default?.build?.outDir) {
-    const outputPath = viteConfig.default.build.outDir;
-    return outputPath.replace(/\.\.\//g, '');
+  // Parse the vite config content to extract outDir using regex
+  // Match: outDir: './dist' or outDir: "./dist" or outDir: '../../dist/apps/something'
+  const outDirMatch = viteConfigContent.match(/outDir:\s*['"]([^'"]+)['"]/);
+
+  if (outDirMatch && outDirMatch[1]) {
+    const outputPath = outDirMatch[1];
+    // Join project root with the outDir to get full path from workspace root
+    const fullPath = path.posix.join(projectConfig.root, outputPath);
+    return fullPath.replace(/\.\.\//g, '');
   }
   return '';
 }
