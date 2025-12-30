@@ -221,7 +221,7 @@ describe('setupProjectGenerator', () => {
           guestProject: fakeOptions.guestProject,
           hostProjectRoot: '{projectRoot}',
           mainOutputPath: fakeOptions.outputDistFolder,
-          mainOutputFilename: 'main.js',
+          mainOutputFilename: 'main.cjs',
           author: fakeOptions.author,
           description: fakeOptions.description,
         },

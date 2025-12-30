@@ -1,6 +1,5 @@
 {
   "name": "<%=nameProject%>",
-  "type": "module",
   "author": "<%=author%>",
   "description": "<%=description%>"
 }

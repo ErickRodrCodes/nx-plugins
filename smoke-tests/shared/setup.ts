@@ -71,7 +71,7 @@ beforeAll(async () => {
 
   // Step 3.2: Create React app
   console.log('Creating React app...');
-  workspaceGenerator.generateReactApp('smoke-test-app');
+  workspaceGenerator.generateReactApp('smoke-test-app', 'apps/smoke-test-app');
 
   // Step 4: Install plugin
   console.log('Installing plugin...');
@@ -87,7 +87,7 @@ beforeAll(async () => {
   // Step 6: Create Electron project
   console.log('Creating Electron project...');
   const electronAppName = 'smoke-test-app-electron';
-  const command = `npx nx g @erickrodrcodes/nx-electron-vite:setup-project --guestProject="smoke-test-app" --nameProject="${electronAppName}" --name="Smoke Test Electron App" --author="Test Author" --description="Test Electron application" --executableName="smoke-test-app" --updater=false --test=none --no-interactive`;
+  const command = `npx nx g @erickrodrcodes/nx-electron-vite:setup-project --guestProject="smoke-test-app" --name="Smoke Test Electron App" --author="Test Author" --description="Test Electron application" --executableName="smoke-test-app" --directory="apps/${electronAppName}" --updater=false --test=none --no-interactive`;
   workspaceGenerator.execCommand(command);
 
   console.log('Setup completed successfully');

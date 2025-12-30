@@ -247,8 +247,13 @@ export class WorkspaceGenerator {
   ): string {
     const { stdio = 'inherit' } = options;
     let cmd = command;
-    if (/npx\s+nx\s+/.test(command) && !/--verbose/.test(command)) {
-      cmd = command + ' --verbose';
+    if (/npx\s+nx\s+/.test(command)) {
+      if (!/--verbose/.test(command)) {
+        cmd = command + ' --verbose';
+      }
+      if (!/--skip-nx-cache/.test(command)) {
+        cmd = cmd + ' --skip-nx-cache';
+      }
     }
     return execSync(cmd, {
       cwd: this.tmpDir,

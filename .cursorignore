@@ -3,7 +3,7 @@
 
 # Build and distribution files
 dist/
-# tmp/  # Temporarily commented out for smoke test editing
+tmp/
 build/
 out/
 
