@@ -101,7 +101,7 @@ describe('initGenerator', () => {
           'vite-plugin-electron-renderer': expect.any(String),
           png2icons: expect.any(String),
           'wait-on': expect.any(String),
-          vitest: expect.any(String),
+          // Note: Vitest is not included - managed by framework generators
           'electron-is-dev': expect.any(String),
           'electron-log': expect.any(String),
         })

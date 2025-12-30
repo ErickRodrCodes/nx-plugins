@@ -4,11 +4,7 @@ import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import * as path from 'path';
 import { vi } from 'vitest';
 import { SetupProjectSchema } from '../generators/setup-project/schema';
-import {
-  getProjectOutputDirectory,
-  getRootTsConfigPath,
-  normalizeOptions,
-} from './utils';
+import { normalizeOptions } from './utils';
 
 // Helper function to normalize paths for cross-platform testing
 const normalizePath = (p: string) => p.split(path.sep).join('/');

@@ -13,7 +13,7 @@ asarUnpack:
 win:
   executableName:  <%= executableName %>
   icon: <%= outputDistFolderIcons %>/icon.ico
-  publisherName : "<%= author %>"
+  # publisherName: "<%= author %>"  # Removed - not supported in electron-builder 26+
   # Uncomment the following lines if you will include certification
   # information on this file (change accordingly):
   # certificateFile: <%= directoryResources %>/certificate/Self.pfx

@@ -24,6 +24,16 @@ function cleanDist(): Plugin {
       logger.info('⚠️ Started Vite Build Start lifecycle')
     },
     closeBundle(){
+      // Copy package.json to dist for ESM support
+      const distPath = resolve(workspaceRoot, '<%= outputDistFolder %>');
+      const pkgJsonSource = resolve(projectRoot, 'package.json');
+      const pkgJsonDest = resolve(distPath, 'package.json');
+      try {
+        copyFileSync(pkgJsonSource, pkgJsonDest);
+        logger.info('✅ Copied package.json to dist for ESM support');
+      } catch (e) {
+        logger.warn('⚠️  Failed to copy package.json to dist');
+      }
       // here a example of code you can use to execute something at the start of the build process
       logger.info('⚠️ Started Vite Build close bundle lifecycle')
     }

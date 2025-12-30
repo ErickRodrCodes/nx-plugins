@@ -14,6 +14,19 @@ let workspaceGenerator: WorkspaceGenerator | null = null;
 
 // Global setup - runs once before all tests
 beforeAll(async () => {
+  // Step 0: Kill any lingering esbuild processes that might lock files
+  console.log('Killing any lingering esbuild processes...');
+  try {
+    execSync('taskkill /im esbuild.exe /f', {
+      cwd: rootDir,
+      stdio: 'ignore', // Suppress output - it's ok if no process exists
+    });
+    console.log('✓ Cleaned up esbuild processes');
+  } catch (e) {
+    // Ignore errors - process might not be running
+    console.log('✓ No esbuild processes to clean up');
+  }
+
   // Create unique directory - no cleanup needed since it's unique
   mkdirSync(smokeTestsTmpDir, { recursive: true });
 

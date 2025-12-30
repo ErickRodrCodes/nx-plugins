@@ -73,7 +73,8 @@ export async function initGenerator(tree: Tree, schema: initSchema) {
           'vite-plugin-electron': versionLibraries.vitePluginElectron,
           png2icons: versionLibraries.png2icons,
           'wait-on': versionLibraries.waitOn,
-          vitest: versionLibraries.vitest,
+          // Note: Vitest version is managed by the framework generator (React/Angular/etc)
+          // We don't force a specific version to avoid peer dependency conflicts
           'electron-is-dev': versionLibraries.electronIsDev,
           'electron-log': versionLibraries.electronLog,
         }

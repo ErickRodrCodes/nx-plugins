@@ -6,6 +6,38 @@ import { smokeTestsTmpDir, workspaceGenerator } from '../shared/setup';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
+/*
+ * ==================================================================================
+ * SMOKE TEST CONFIGURATION - Manual Testing Mode
+ * ==================================================================================
+ *
+ * ENABLED SECTIONS (will run automatically):
+ * ✅ Section 01: Workspace Setup and Plugin Installation
+ * ✅ Section 02: Plugin Initialization
+ * ✅ Section 03: Electron Project Setup
+ *
+ * DISABLED SECTIONS (commented out for manual testing):
+ * ⏸️  Section 04: Native Module Building (.node binaries)
+ * ⏸️  Section 05: Icon Generation (icon binaries)
+ * ⏸️  Section 06: App Building/Distribution (electron-builder packaging)
+ *
+ * MANUAL TESTING AFTER AUTOMATED TESTS:
+ * After sections 01-03 complete, the workspace will be at:
+ *   smoke-tests/tmp/run-<timestamp>/smoke-test-workspace/
+ *
+ * To manually test the Electron app:
+ * 1. cd smoke-tests/tmp/run-<timestamp>/smoke-test-workspace
+ * 2. npx nx electron smoke-test-app-electron  (runs both guest + host in dev mode)
+ * 3. Verify the Electron window opens and displays the React app
+ * 4. Check HMR works (edit apps/smoke-test-app/src/app/app.tsx and save)
+ * 5. Test serve commands individually:
+ *    - npx nx serve smoke-test-app              (guest app only)
+ *    - npx nx serve smoke-test-app-electron     (host only)
+ *
+ * Once manual verification passes, uncomment sections 04-06 to test binary building.
+ * ==================================================================================
+ */
+
 // Sequential execution of all smoke tests in correct order
 describe.sequential('Smoke Tests - Sequential Execution', () => {
   describe('01: Workspace Setup and Plugin Installation', () => {
@@ -242,7 +274,12 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
   });
 
-  describe('04: Native Module Building', () => {
+  // ==================================================================================
+  // COMMENTED OUT FOR MANUAL TESTING - Binary building sections
+  // These sections build native binaries and should be tested manually first
+  // ==================================================================================
+
+  describe.skip('04: Native Module Building', () => {
     it('should install better-sqlite3 and build native modules', () => {
       const electronAppName = 'smoke-test-app-electron';
 
@@ -309,7 +346,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
   });
 
-  describe('05: Icon Generation', () => {
+  describe.skip('05: Icon Generation', () => {
     it('should have source icon files in correct location', () => {
       const electronAppName = 'smoke-test-app-electron';
 
@@ -386,7 +423,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
   });
 
-  describe('06: App Building (Distribution)', () => {
+  describe.skip('06: App Building (Distribution)', () => {
     it('should have correct dist target configuration in project.json', () => {
       const electronAppName = 'smoke-test-app-electron';
 

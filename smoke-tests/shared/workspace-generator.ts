@@ -50,6 +50,7 @@ export interface WorkspaceOptions {
 
 export class WorkspaceGenerator {
   private tmpDir: string;
+  private packageManager: 'npm' | 'yarn' | 'pnpm' = 'npm';
 
   constructor(
     tmpDirNameOrPath: string = 'tmp-smoke-test',
@@ -75,6 +76,9 @@ export class WorkspaceGenerator {
       directory = options.directory || process.cwd(),
     } = options;
 
+    // Store package manager for later use
+    this.packageManager = packageManager;
+
     // Only clean up if the directory already exists and we're creating a new workspace
     if (existsSync(this.tmpDir)) {
       await safeRemoveDir(this.tmpDir);
@@ -88,7 +92,7 @@ export class WorkspaceGenerator {
       preset === 'empty' ? '--workspaceType=integrated' : '';
 
     const nxVersion = getNxVersionFromWorkspace();
-    const createCommand = `npx --yes create-nx-workspace@${nxVersion} --name=${name} --preset=${preset} ${workspaceTypeFlag} ${nxCloudFlag} --package-manager=npm ${skipGitFlag} --interactive=false --verbose`;
+    const createCommand = `npx --yes create-nx-workspace@${nxVersion} --name=${name} --preset=${preset} ${workspaceTypeFlag} ${nxCloudFlag} --package-manager=${packageManager} ${skipGitFlag} --interactive=false --verbose`;
 
     try {
       execSync(createCommand, {
@@ -170,8 +174,8 @@ export class WorkspaceGenerator {
       // Write back the modified package.json
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-      // Install the dependency with npm
-      this.execCommand('npm install');
+      // Install the dependency with the configured package manager
+      this.execCommand(`${this.packageManager} install`);
     } catch (error) {
       throw error;
     }
@@ -250,6 +254,10 @@ export class WorkspaceGenerator {
       cwd: this.tmpDir,
       stdio,
       encoding: 'utf8',
+      env: {
+        ...process.env,
+        NX_DAEMON: 'false', // Disable Nx daemon to avoid conflicts with parent workspace
+      },
     });
   }
 
