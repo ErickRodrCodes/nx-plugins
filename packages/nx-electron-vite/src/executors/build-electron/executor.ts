@@ -30,9 +30,8 @@ export default async function electronBuildExecutor(
 ===============================
 ⚠️ ⚠️ ⚠️  Important ⚠️ ⚠️ ⚠️
 
-NEVER run this executor in parallel with other nx-electron-vite builders or a custom electron build.
-It will write the package.json of the workspace to define the main js target file for your project.
-Our advice is to run multiple nx-electron-vite projects in sequence to prevent undesired side effects.
+This executor uses a temporary electron-builder configuration file.
+Multiple builds can run in sequence, but ensure each build completes before starting another.
 
 The dist folder will be cleaned while running this executor.
 ===============================
