@@ -7,7 +7,7 @@ export const versionLibraries = {
   png2icons: '2.0.1',
   suggestedNode: 'v22.21.1',
   waitOn: '9.0.1',
-  node: '22.21.1',
+  node: '22.20.0',
   vitest: '3.2.4',
   electronIsDev: '3.0.1',
   electronLog: '5.4.3',

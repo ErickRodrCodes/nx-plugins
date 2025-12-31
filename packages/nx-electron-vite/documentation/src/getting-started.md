@@ -8,7 +8,7 @@ This guide will walk you through setting up your first Electron application usin
 
 Before you begin, ensure you have the following:
 
-1.  Node.js version 22 or higher. It is strongly recommended to use the Node.js version that matches the Electron release included with this plugin (currently targeting Node.js v22.21.1 to match Electron v39.2.7). You can check the [Electron release page](https://releases.electronjs.org/) for more details.
+1.  To ensure true compatibility with the latest Electron version (at the time of writing is v39.2.7, which is the latest stable version), it is recommended to use Node.js v22.21.1. (you can check the release table for stable versions of electron [here](https://releases.electronjs.org/)) While it is possible to use a greater version, it is not recommended as it may cause compatibility issues with some of the dependencies used by the plugin.
 2.  An **Nx Workspace** using **v20 or newer** as a **monorepo** where applications and libraries are segregated in individual directories.
 3.  A frontend **application project** within your workspace that you want to wrap with Electron. This could be a React, Angular, Vue, or any other framework application managed by Nx.
 
