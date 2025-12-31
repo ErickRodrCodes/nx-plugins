@@ -146,4 +146,39 @@ describe('initGenerator', () => {
       expect(formatSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe('.gitignore update', () => {
+    it('should add electron-builder.*.temp.json to .gitignore if present', async () => {
+      tree.write('.gitignore', '# Existing entries\nnode_modules\n');
+
+      await initGenerator(tree, { skipFormat: true });
+
+      const gitIgnoreContent = tree.read('.gitignore', 'utf-8');
+      expect(gitIgnoreContent).toContain('electron-builder.*.temp.json');
+    });
+
+    it('should not add electron-builder.*.temp.json if already present', async () => {
+      const initialContent =
+        '# Existing entries\nelectron-builder.*.temp.json\n';
+      tree.write('.gitignore', initialContent);
+
+      await initGenerator(tree, { skipFormat: true });
+
+      const gitIgnoreContent = tree.read('.gitignore', 'utf-8');
+      // Count occurrences
+      const occurrences = (
+        gitIgnoreContent.match(/electron-builder\.\*\.temp\.json/g) || []
+      ).length;
+      expect(occurrences).toBe(1);
+    });
+
+    it('should do nothing if .gitignore does not exist', async () => {
+      // Ensure .gitignore does not exist (it doesn't by default in createTreeWithEmptyWorkspace)
+      expect(tree.exists('.gitignore')).toBe(false);
+
+      await initGenerator(tree, { skipFormat: true });
+
+      expect(tree.exists('.gitignore')).toBe(false);
+    });
+  });
 });

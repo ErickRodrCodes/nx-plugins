@@ -48,7 +48,10 @@ The dist folder will be cleaned while running this executor.
     'electron-builder.yml'
   );
 
-  const tempConfigPath = path.join(workspace, 'electron-builder.temp.json');
+  const tempConfigPath = path.join(
+    workspace,
+    `electron-builder.${hostProject}.temp.json`
+  );
 
   const tempConfig = {
     extends: resolveConfigFile,

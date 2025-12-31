@@ -12,8 +12,10 @@ asarUnpack:
   - resources/**
 win:
   executableName:  <%= executableName %>
+  publisherName: "<%= author %>"
   icon: <%= outputDistFolderIcons %>/icon.ico
-  # publisherName: "<%= author %>"  # Removed - not supported in electron-builder 26+
+  # IMPORTANT: publisherName must match the CommonName (CN) of your code signing certificate
+  # This prevents "Unknown Publisher" warnings and is required for auto-updates
   # Uncomment the following lines if you will include certification
   # information on this file (change accordingly):
   # certificateFile: <%= directoryResources %>/certificate/Self.pfx

@@ -13,7 +13,7 @@ The `nx-electron-vite` plugin is engineered to provide a first-class developer e
 - **Vite Integration**: Utilizes Vite for both the main and renderer processes, enabling Hot Module Replacement (HMR) for a faster development cycle.
 - **Simplified Monorepo Management**: The plugin leverages the Nx project graph to seamlessly connect your Electron host application to its corresponding frontend guest application. This allows you to manage multiple, independent Electron apps within a single monorepo, each tied to a specific frontend project, without complex configuration.
 - **Effortless Debugging**: Debug both the main and renderer processes directly from your IDE. The setup is configured out-of-the-box to attach debuggers (like the one in VS Code), allowing you to set breakpoints and inspect code with ease.
-- **Easy implementation of Native Modules**: Through the executor `build-native` it creates the right flow for your `.node` files without creating complex implementations on your codebase at the moment of build.
+- **Easy implementation of Native Modules**: Through the generator `build-native` it creates the right flow for your `.node` files without creating complex implementations on your codebase at the moment of build.
 
 ## Performance
 

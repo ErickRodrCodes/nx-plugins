@@ -128,6 +128,38 @@ The plugin's `build-native` generator provides an explicit, traceable workflow: 
 
 This represents a fundamental shift from **reactive problem-solving** (bundler exclusions, runtime guards, manual build scripts) to **proactive architectural prevention**. Rather than detecting and handling native module conflicts when they occur, the distributed architecture makes them structurally impossible, providing a clear, maintainable, and reliable path for native dependency management.
 
+### Workspace Integrity Architecture
+
+A critical but often overlooked architectural consideration in Electron development is **workspace integrity**—how the build process interacts with your workspace's root configuration files. Traditional Electron boilerplates and build tools frequently modify the workspace `package.json` during the build process, creating several architectural problems:
+
+**Problems with Traditional Approaches:**
+
+- **Build-Time Mutation**: Many electron-builder setups temporarily inject `main` entry points, `author`, `name`, and `version` fields directly into the workspace `package.json`, then attempt to restore the file afterward. This creates race conditions when multiple builds run simultaneously and risks permanent file corruption if builds fail unexpectedly
+- **Git Status Pollution**: Developers frequently see uncommitted changes to `package.json` after builds, leading to accidental commits of build artifacts or confusion about what actually changed in the workspace
+- **CI/CD Fragility**: Build pipelines that modify workspace files must implement careful cleanup logic, and any interruption (timeout, cancellation, failure) can leave the workspace in an inconsistent state that breaks subsequent builds
+- **Monorepo Conflicts**: In workspaces with multiple Electron applications, parallel builds competing to modify the same `package.json` create unpredictable failures and require complex locking mechanisms
+
+**`nx-electron-vite`'s Architectural Solution:**
+
+Rather than modifying workspace files, `nx-electron-vite` implements a **temporary configuration composition pattern** that preserves complete workspace integrity:
+
+1. **Isolated Configuration Generation**: During the build process, a temporary `electron-builder.{projectName}.temp.json` file is created at the workspace root. Each project gets its own uniquely-named temp file, enabling true parallel builds. This file uses electron-builder's `extends` feature to inherit from your project's `electron-builder.yml` while injecting build-specific metadata through `extraMetadata`
+
+2. **Metadata Injection Without Mutation**: Application metadata (`name`, `version`, `author`, `description`, `main` entry point) is passed through the temporary configuration rather than being injected into workspace files. The original `package.json` and project configurations remain completely untouched
+
+3. **Guaranteed Cleanup**: The temporary configuration file is automatically deleted after build completion, regardless of success or failure. This ensures the workspace is always in a clean state, with no residual build artifacts or uncommitted changes
+
+4. **Parallel Build Safety**: Because each build operates through temporary files that extend project-specific configurations, multiple Electron applications in the same workspace can build simultaneously without conflicts or coordination requirements
+
+**Architectural Significance:**
+
+This approach embodies the distributed architecture's core principle of **explicit boundaries and isolated concerns**. Just as the host/guest separation prevents unintended coupling between Electron shell logic and frontend code, the temporary configuration pattern prevents the build process from coupling with workspace state. The workspace remains a stable, read-only reference during builds, enabling:
+
+- **Predictable CI/CD Pipelines**: Builds are truly stateless with no cleanup requirements or failure recovery logic
+- **Clean Development Workflow**: `git status` never shows build-related modifications to workspace files
+- **True Parallelization**: Multiple `nx dist` targets can execute simultaneously without coordination
+- **Reliable Incremental Builds**: Nx's caching works correctly because workspace files don't change between builds
+
 ## Architectural Integration with Nx
 
 The architectural patterns described above—host/guest separation, explicit contracts, and native module isolation—are not just conceptual designs but are actively enforced and optimized by Nx's workspace orchestration capabilities.

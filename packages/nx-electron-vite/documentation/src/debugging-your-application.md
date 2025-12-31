@@ -124,7 +124,11 @@ The `endsPattern` tells VS Code when your application is fully ready for debuggi
 
 1. **VS Code waits** for this pattern to appear in the terminal output
 2. **Only then** does it attach the debuggers to both processes
-3. **If the pattern is wrong**, debuggers may attach before your app is ready, causing connection failures
+3. **If the pattern is wrong**, debuggers won't attach before your app is ready, causing connection failures
+
+::: warning
+Note that the following patterns might change in the future, so it is recommended to check the output consoles of your frontend application to find the correct pattern.
+:::
 
 **Choose the correct pattern for your frontend framework**:
 
