@@ -5,8 +5,10 @@ import {
   localIconLoader,
 } from 'vitepress-plugin-group-icons';
 
+import { withMermaid } from 'vitepress-plugin-mermaid';
+
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+const expConfig = defineConfig({
   title: 'Nx Electron Vite',
   description:
     'A Plugin for Nx to create Electron applications with the power of Vite',
@@ -96,4 +98,9 @@ export default defineConfig({
       }) as any,
     ],
   },
+  mermaid: {
+    legacyMathML: false,
+  },
 });
+
+export default withMermaid(expConfig);

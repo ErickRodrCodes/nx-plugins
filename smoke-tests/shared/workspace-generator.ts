@@ -143,12 +143,9 @@ export class WorkspaceGenerator {
    */
   generateReactApp(appName: string = 'guest-app', directory?: string): void {
     const dirFlag = directory ? `--directory=${directory}` : '';
-    const command = `npx nx g @nx/react:app ${appName} ${dirFlag} --style=tailwind --bundler=vite --unitTestRunner=vitest --e2eTestRunner=none --linter=eslint --no-interactive --verbose`;
+    const command = `pnpm exec nx g @nx/react:app ${appName} ${dirFlag} --style=tailwind --bundler=vite --unitTestRunner=vitest --e2eTestRunner=none --linter=eslint --no-interactive --verbose`;
 
-    execSync(command, {
-      cwd: this.tmpDir,
-      stdio: 'inherit',
-    });
+    this.execCommand(command);
   }
 
   /**
@@ -245,9 +242,10 @@ export class WorkspaceGenerator {
     command: string,
     options: { stdio?: 'inherit' | 'pipe' } = {}
   ): string {
-    const { stdio = 'inherit' } = options;
+    const { stdio = 'pipe' } = options;
     let cmd = command;
-    if (/npx\s+nx\s+/.test(command)) {
+
+    if (/npx\s+nx\s+|pnpm\s+exec\s+nx\s+/.test(command)) {
       if (!/--verbose/.test(command)) {
         cmd = command + ' --verbose';
       }
@@ -255,15 +253,28 @@ export class WorkspaceGenerator {
         cmd = cmd + ' --skip-nx-cache';
       }
     }
-    return execSync(cmd, {
-      cwd: this.tmpDir,
-      stdio,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        NX_DAEMON: 'false', // Disable Nx daemon to avoid conflicts with parent workspace
-      },
-    });
+
+    try {
+      return execSync(cmd, {
+        cwd: this.tmpDir,
+        stdio,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          NX_DAEMON: 'false', // Disable Nx daemon to avoid conflicts with parent workspace
+        },
+      });
+    } catch (error) {
+      const execError = error as any;
+      console.error(`❌ Command failed: ${cmd}`);
+      if (execError.stdout) {
+        console.error(`📄 stdout: ${execError.stdout.toString()}`);
+      }
+      if (execError.stderr) {
+        console.error(`📄 stderr: ${execError.stderr.toString()}`);
+      }
+      throw error;
+    }
   }
 
   /**

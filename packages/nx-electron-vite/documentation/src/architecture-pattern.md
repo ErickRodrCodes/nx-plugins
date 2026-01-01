@@ -30,6 +30,23 @@ Traditional approaches force developers into complex bundler configurations and 
 
 ### Traditional Monolithic Electron Architecture
 
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '12px' }}}%%
+flowchart TB
+    M_PKG["package.json"] --> M_ALL["All Code Mixed"]
+    M_ALL --> M_MAIN["Main Process"]
+    M_ALL --> M_RENDER["Renderer Process"]
+    M_ALL --> M_PRELOAD["Preload Scripts"]
+    M_ALL --> M_NATIVE["Native Modules"]
+    M_ALL --> M_BUILD["Build Config"]
+
+    M_MAIN <-.->|"implicit coupling"| M_RENDER
+    M_RENDER <-.->|"shared deps"| M_NATIVE
+
+    style M_PKG fill:#fee2e2,stroke:#dc2626
+    style M_ALL fill:#fecaca,stroke:#dc2626
+```
+
 Most Electron development approaches follow an **ad-hoc monolithic pattern** where architectural decisions emerge organically rather than from principled design:
 
 - **Script-Driven Development**: Projects rely heavily on npm scripts that accumulate over time (`start`, `package`, `make`, `publish`, plus variants for different platforms, architectures, and development modes). These scripts often become complex shell commands that embed build logic, making the development workflow opaque and difficult to maintain or debug
@@ -52,6 +69,36 @@ While this approach can work for simple scenarios, it creates fundamental archit
 ### Distributed Architecture (`nx-electron-vite`)
 
 `nx-electron-vite` implements a **distributed architecture** with explicit project boundaries:
+
+<div style="display: flex; justify-content: center;">
+
+```mermaid
+flowchart TB
+    NX["Nx Project Graph"]
+
+    NX --> Host
+    NX --> Guest
+
+    subgraph Host["Host Project - Electron Shell"]
+        H_MAIN["Main Process"]
+        H_PRELOAD["Preload Script"]
+        H_NATIVE["Native Modules"]
+    end
+
+    subgraph Guest["Guest Project - Frontend"]
+        G_APP["Your App"]
+        G_BUILD["Vite Build"]
+    end
+
+    Host -->|"API Contract"| Guest
+    Guest -.->|"Build Output"| Host
+
+    style Host fill:#dcfce7,stroke:#16a34a
+    style Guest fill:#dbeafe,stroke:#2563eb
+    style NX fill:#f3e8ff,stroke:#9333ea
+```
+
+</div>
 
 **Core Architectural Patterns:**
 
@@ -85,6 +132,41 @@ While this approach can work for simple scenarios, it creates fundamental archit
 
 The fundamental architectural pattern is the **Host/Guest separation**:
 
+```mermaid
+flowchart TB
+    subgraph Host["🖥️ HOST - Electron Shell"]
+        MAIN["main.ts"]
+        NATIVE[".node binaries"]
+        PRELOAD["preload.ts"]
+        IPC_MAIN["IPC Main"]
+        MAIN --> NATIVE
+        MAIN --> PRELOAD
+        MAIN --> IPC_MAIN
+    end
+
+    subgraph Contract["📜 API Contract"]
+        API1["openFile()"]
+        API2["saveFile()"]
+        API3["notify()"]
+    end
+
+    subgraph Guest["🌍 GUEST - Frontend App"]
+        APP["Your App"]
+        RENDERER["Renderer Process"]
+        IPC_RENDERER["IPC Renderer"]
+        APP --> RENDERER
+        RENDERER --> IPC_RENDERER
+    end
+
+    PRELOAD -->|"contextBridge"| Contract
+    Contract -->|"window.electronAPI"| APP
+    IPC_MAIN <-->|"Secure IPC"| IPC_RENDERER
+
+    style Host fill:#1e3a5f,stroke:#0d253f,color:#fff
+    style Guest fill:#2d5016,stroke:#1a3009,color:#fff
+    style Contract fill:#7c2d12,stroke:#451a03,color:#fff
+```
+
 - **Guest Project**: This is your existing, standard frontend application that runs as the renderer process. While architecturally decoupled from Electron, it may optionally interact with Electron-specific functionality through the well-defined APIs exposed by the preload script
 - **Host Project**: This is a new application, created by the plugin's `setup-project` generator. It acts as the Electron shell, responsible for creating the application window, running the main process logic, and exposing controlled APIs to the guest project through the preload script
 - **Communication Layer**: The "contract" between the two applications is clearly defined through the preload script, which prevents unintended coupling and makes the integration points explicit
@@ -93,9 +175,26 @@ The fundamental architectural pattern is the **Host/Guest separation**:
 
 1.  **Truly Framework Agnostic & Reusable Frontend - The Revolutionary Approach**: Your frontend application remains **completely framework-native and deployment-agnostic**—this is the game-changing differentiator. It can be developed, tested, and served as a standalone web application using your framework's standard tooling without any Electron-specific code or dependencies. The same codebase can be deployed to web, mobile (via Capacitor), and desktop targets without architectural modifications.
 
-    **What makes this truly agnostic**: Unlike traditional Electron tools that claim framework support but require framework-specific templates, build configurations, or Electron-aware adaptations, `nx-electron-vite` treats your frontend application as a **completely independent entity**. Whether you're using React hooks, Angular services, Vue composition API, Svelte stores, or SolidJS signals—your application code remains **100% framework-pure** with zero Electron knowledge.
+    ```mermaid
+    %%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '12px' }}}%%
+    flowchart LR
+        CODE["Your Frontend"] --> WEB["Web"]
+        CODE --> MOBILE["Mobile"]
+        CODE --> DESKTOP["Desktop"]
 
-    **Optional Desktop Integration**: When desktop-specific functionality is needed (file system access, native notifications, system APIs), the Electron host can optionally expose these capabilities through a preload script that injects APIs into the global `window` object. This integration is completely optional and framework-agnostic—whether your guest application is built with React, Angular, Vue, Svelte, or any other framework, it can access these APIs through standard JavaScript:
+        WEB --> W_OUT["CDN / Vercel"]
+        MOBILE --> M_OUT["App Stores"]
+        DESKTOP --> D_OUT[".exe .dmg .AppImage"]
+
+        style CODE fill:#dcfce7,stroke:#16a34a
+        style WEB fill:#dbeafe,stroke:#2563eb
+        style MOBILE fill:#fef3c7,stroke:#d97706
+        style DESKTOP fill:#f3e8ff,stroke:#9333ea
+    ```
+
+    **What makes this truly agnostic**: Unlike traditional Electron tools that require framework-specific templates, build configurations, or Electron-aware adaptations baked into your codebase, `nx-electron-vite` treats your frontend application as a **completely independent entity**. Whether you're using React hooks, Angular services, Vue composition API, Svelte stores, or SolidJS signals—your core application code remains **framework-pure** without Electron-specific build tooling or dependencies. However, to leverage desktop-specific features, you'll need a basic understanding of Electron's IPC pattern to communicate with the main process and react to native events.
+
+    **Understanding the Integration Layer**: The preload script exposes APIs to the `window` object, and your frontend code calls these APIs when needed. This is a minimal but intentional integration point:
 
     ::: code-group
 
@@ -124,9 +223,36 @@ The fundamental architectural pattern is the **Host/Guest separation**:
 
 Unlike monolithic Electron projects that typically rely on complex bundler configurations, runtime checks, and fragile workarounds to prevent native module conflicts, `nx-electron-vite` implements a **structurally sound solution** through architectural design.
 
+```mermaid
+flowchart TB
+    subgraph Generator["build-native generator"]
+        NPM["npm package"] --> REBUILD["rebuild"]
+        REBUILD --> COPY["copy .node"]
+    end
+
+    COPY --> HOST
+
+    subgraph HOST["Host Project"]
+        NATIVE["src/main/native/*.node"]
+        MAIN["Main Process"]
+        NATIVE --> MAIN
+    end
+
+    subgraph GUEST["Guest Project"]
+        FRONTEND["Frontend Code"]
+        BLOCKED["No native access"]
+    end
+
+    HOST -.->|"Nx boundary"| BLOCKED
+
+    style Generator fill:#eff6ff,stroke:#3b82f6
+    style HOST fill:#dcfce7,stroke:#16a34a
+    style GUEST fill:#fef3c7,stroke:#d97706
+```
+
 The plugin's `build-native` generator provides an explicit, traceable workflow: it uses the official `@electron/rebuild` tool to compile native modules against the correct Electron ABI, then copies the resulting `.node` binary directly into the host application's source tree at `src/main/native/`. This approach eliminates the common anti-pattern where renderer processes accidentally import Node.js modules by making such imports architecturally impossible—the guest application has no access to the host project's dependency tree.
 
-This represents a fundamental shift from **reactive problem-solving** (bundler exclusions, runtime guards, manual build scripts) to **proactive architectural prevention**. Rather than detecting and handling native module conflicts when they occur, the distributed architecture makes them structurally impossible, providing a clear, maintainable, and reliable path for native dependency management.
+This represents a fundamental shift from **reactive problem-solving** (bundler exclusions, runtime guards, manual build scripts) to **proactive architectural prevention**. Rather than detecting and handling native module conflicts when they occur, the distributed architecture prevents unnecessary workarounds: the guest project exists in a separate Nx project with its own `package.json` and `node_modules`, meaning it literally cannot `import` or `require` native modules that only exist in the host project's dependency tree. Nx keeps separation of concerns clear, providing a maintainable and reliable path for native dependency management.
 
 ### Workspace Integrity Architecture
 
@@ -142,6 +268,31 @@ A critical but often overlooked architectural consideration in Electron developm
 **`nx-electron-vite`'s Architectural Solution:**
 
 Rather than modifying workspace files, `nx-electron-vite` implements a **temporary configuration composition pattern** that preserves complete workspace integrity:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Dev as Developer
+    participant Nx as Nx Executor
+    participant FS as File System
+    participant EB as electron-builder
+
+    Dev->>Nx: nx dist my-app-electron
+
+    Note over Nx,FS: 1. Temporary Config Creation
+    Nx->>FS: Create temp.json with extends + extraMetadata
+
+    Note over Nx,EB: 2. Build Execution
+    Nx->>EB: Run with --config=temp.json
+    EB->>EB: Build distributable
+    EB-->>Nx: Build complete
+
+    Note over Nx,FS: 3. Guaranteed Cleanup
+    Nx->>FS: Delete temp.json (always, even on failure)
+
+    Nx-->>Dev: Build artifacts ready
+    Note over FS: workspace package.json is NEVER modified
+```
 
 1. **Isolated Configuration Generation**: During the build process, a temporary `electron-builder.{projectName}.temp.json` file is created at the workspace root. Each project gets its own uniquely-named temp file, enabling true parallel builds. This file uses electron-builder's `extends` feature to inherit from your project's `electron-builder.yml` while injecting build-specific metadata through `extraMetadata`
 
@@ -168,6 +319,38 @@ The architectural patterns described above—host/guest separation, explicit con
 
 Nx's project graph transforms the distributed architecture from a manual coordination challenge into an automated build orchestration system:
 
+```mermaid
+flowchart TB
+    subgraph Libs["Shared Libs"]
+        UI["ui-components"]
+        UTILS["shared-utils"]
+    end
+
+    subgraph Apps["Guest Apps"]
+        REACT["my-react-app"]
+        ANGULAR["admin-panel"]
+    end
+
+    subgraph Hosts["Electron Hosts"]
+        REACT_E["my-react-app-electron"]
+        ANGULAR_E["admin-panel-electron"]
+    end
+
+    UI --> REACT
+    UI --> ANGULAR
+    UTILS --> REACT
+    UTILS --> ANGULAR
+    REACT -->|"depends on"| REACT_E
+    ANGULAR -->|"depends on"| ANGULAR_E
+
+    NX["⚡ Nx: affected + cache + parallel"]
+    Hosts --> NX
+
+    style Libs fill:#dbeafe,stroke:#2563eb
+    style Apps fill:#fef3c7,stroke:#d97706
+    style Hosts fill:#f3e8ff,stroke:#9333ea
+```
+
 - **Dependency-Aware Builds**: Nx understands that the Electron host project depends on the guest application's build output. When you modify the frontend, Nx automatically rebuilds the guest project before building the host, ensuring the Electron app always consumes the latest frontend assets
 - **Affected Command Intelligence**: Changes to shared libraries automatically trigger rebuilds of only the affected Electron applications and their dependencies, rather than rebuilding the entire workspace
 - **Cross-Project Caching**: Build artifacts, test results, and lint outputs are cached across the entire dependency graph. A clean frontend build that hasn't changed can be restored from cache in seconds, dramatically improving iteration speed
@@ -183,6 +366,32 @@ The architectural separation enables workspace-level capabilities that would be 
 ## Architectural Trade-offs
 
 The choice between distributed and monolithic architectures fundamentally depends on project complexity and the need for separation of concerns across moving pieces.
+
+```mermaid
+flowchart TB
+    subgraph Distributed["Distributed Architecture - nx-electron-vite"]
+        D1["Multi-platform App"]
+        D2["Enterprise Desktop"]
+        D3["Team Project"]
+        D4["Native-heavy App"]
+    end
+
+    subgraph Monolithic["Monolithic Architecture - Quick Start"]
+        M1["Prototype"]
+        M2["MVP"]
+        M3["Learning Project"]
+        M4["Single-purpose Tool"]
+    end
+
+    DECIDE{"Project Complexity?"}
+
+    DECIDE -->|"Simple + Short-term"| Monolithic
+    DECIDE -->|"Complex + Long-term"| Distributed
+
+    style Distributed fill:#dcfce7,stroke:#16a34a
+    style Monolithic fill:#fee2e2,stroke:#dc2626
+    style DECIDE fill:#fef3c7,stroke:#d97706
+```
 
 ### When Distributed Architecture (`nx-electron-vite`) Excels
 

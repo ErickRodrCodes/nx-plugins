@@ -168,5 +168,9 @@
     }
   },
   "useLegacyCache": false,
-  "nxCloudId": "69061b12b43dd482385f6d70"
+  "nxCloudId": "69061b12b43dd482385f6d70",
+  "tui": {
+    "enabled": true,
+    "autoExit": 3
+  }
 }

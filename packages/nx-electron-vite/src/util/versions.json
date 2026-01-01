@@ -1,6 +1,6 @@
 {
-  "electronBuilder": "^26.0.2",
-  "electronRebuild": "^4.0.1",
+  "electronBuilder": "^26.4.0",
+  "electronRebuild": "^4.0.2",
   "electron": "^39.2.7",
   "vitePluginElectronRenderer": "^0.14.6",
   "vitePluginElectron": "^0.29.0",

@@ -15,6 +15,11 @@ export interface SetupProjectSchema {
   guestProjectName?: string;
 
   /**
+   * The uppercase name of the guest project for environment variables
+   */
+  guestProjectUpperCase?: string;
+
+  /**
    * The name of the project in human language
    */
   name: string;

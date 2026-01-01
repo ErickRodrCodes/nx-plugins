@@ -100,9 +100,11 @@ export async function initGenerator(tree: Tree, schema: initSchema) {
       )
     );
 
-    tasks.push(() => {
-      installPackagesTask(tree, true);
-    });
+    if (!schema.skipInstallPluginDependencies) {
+      tasks.push(() => {
+        installPackagesTask(tree, true);
+      });
+    }
   }
 
   if (!schema.skipFormat) {
