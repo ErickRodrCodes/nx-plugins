@@ -1,4 +1,4 @@
-import { existsSync } from 'fs';
+import { existsSync } from 'node:fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';

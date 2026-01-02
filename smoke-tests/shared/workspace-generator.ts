@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'path';
 import { rimraf } from 'rimraf';
 import { fileURLToPath } from 'url';

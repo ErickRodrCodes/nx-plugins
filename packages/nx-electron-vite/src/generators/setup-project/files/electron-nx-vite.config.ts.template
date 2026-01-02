@@ -3,7 +3,7 @@ import { startup } from 'vite-plugin-electron';
 import electron from 'vite-plugin-electron/simple';
 import waitOn from 'wait-on';
 
-import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'path';
 import { Plugin, UserConfig, createLogger } from 'vite';
 
