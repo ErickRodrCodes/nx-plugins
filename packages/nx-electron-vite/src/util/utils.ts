@@ -15,8 +15,8 @@ import {
 import { rebuild } from '@electron/rebuild';
 
 import { determineProjectNameAndRootOptions } from '@nx/devkit/src/generators/project-name-and-root-utils';
-import { ChildProcess, exec } from 'child_process';
 import { mkdir, rm, writeFile } from 'fs/promises';
+import { ChildProcess, exec } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import * as path from 'node:path';
