@@ -73,10 +73,11 @@ const expConfig = defineConfig({
       // },
       { text: 'Architecture Pattern', link: '/architecture-pattern' },
       { text: 'Troubleshooting', link: '/troubleshooting' },
+      { text: 'License', link: '/license' },
     ],
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2025-present Erick Rodriguez',
+      copyright: 'Copyright © 2024-present Erick Rodriguez',
     },
 
     socialLinks: [

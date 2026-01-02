@@ -26,4 +26,16 @@ Authored by Erick Rodriguez
 
 ## License
 
-Copyright (c) 2024-present Erick Rodriguez. Licensed under the MIT License (MIT)
+Copyright (c) 2024-present Erick Rodriguez. Licensed under the [MIT License](LICENSE).
+
+### Disclaimer
+
+All plugins provided in this repository are distributed under the MIT License. By using any plugin from this project, you acknowledge and agree that:
+
+- **AS-IS Basis**: The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement.
+
+- **No Liability**: In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
+
+- **User Responsibility**: The user is solely responsible for determining the appropriateness of using or redistributing the software and assumes all risks associated with the exercise of permissions under this license, including but not limited to the risks and costs of program errors, compliance with applicable laws, damage to or loss of data, programs or equipment, and unavailability or interruption of operations.
+
+For the full license text, see the [LICENSE](LICENSE) file.
