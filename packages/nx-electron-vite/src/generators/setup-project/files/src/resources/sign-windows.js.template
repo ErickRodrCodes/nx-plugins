@@ -99,20 +99,20 @@ exports.default = async function (configuration) {
       console.log(`Signing with timestamp server: ${timestampServer}`);
       
       // Build argument array for secure execution without shell
-      const signArgs = [
-        'sign',
-        '/f', certPath,
+      const signArgs = ['sign', '/f', certPath];
+      
+      // Add password argument if provided
+      if (certPassword) {
+        signArgs.push('/p', certPassword);
+      }
+      
+      signArgs.push(
         '/tr', timestampServer,
         '/td', hash || 'sha256',
         '/fd', hash || 'sha256',
         '/v',
         filePath
-      ];
-      
-      // Add password argument if provided
-      if (certPassword) {
-        signArgs.splice(3, 0, '/p', certPassword);
-      }
+      );
       
       // Log command with password redacted for security
       const redactedArgs = signArgs.map((arg, index) => {
@@ -134,10 +134,11 @@ exports.default = async function (configuration) {
       
     } catch (error) {
       // Redact password from error message to prevent leaking in CI logs
-      // Match various password formats in error messages
       let redactedError = error.message || 'Unknown error';
-      if (certPassword && redactedError.includes(certPassword)) {
-        redactedError = redactedError.replace(new RegExp(certPassword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[REDACTED]');
+      // Replace the actual password value with a placeholder if it appears anywhere
+      if (certPassword) {
+        // Split and rebuild to avoid regex special character issues
+        redactedError = redactedError.split(certPassword).join('[REDACTED]');
       }
       console.warn(`Failed with ${timestampServer}:`, redactedError);
       // Try next timestamp server
