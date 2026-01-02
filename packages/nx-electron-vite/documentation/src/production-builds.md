@@ -79,11 +79,52 @@ files:
 
 ### Important Build Behavior
 
-::: warning Package.json Modification
-The build process temporarily modifies your workspace's `package.json` to configure the main entry point for `electron-builder`. The file is automatically restored after the build completes.
+::: info Build Process Improvements
+The build process uses a **temporary configuration file** (`electron-builder.{projectName}.temp.json`) that extends your project's `electron-builder.yml`. This temporary file is automatically created at the workspace root and cleaned up after the build completes.
 
-**Never run multiple `dist` targets in parallel** - this can cause conflicts with the package.json modifications.
+**Key Benefits**:
+
+- ✅ Your workspace `package.json` is **never modified**
+- ✅ Multiple builds can run safely in parallel
+- ✅ Cleaner git status and safer CI/CD pipelines
+- ✅ Application metadata (`name`, `version`, `author`, `description`) is injected via `extraMetadata`
+
+The temporary config file is automatically deleted after build completion (success or failure).
 :::
+
+## How the Build Process Works
+
+The `build-electron` executor uses a sophisticated approach to package your application without modifying your workspace:
+
+### Temporary Configuration Approach
+
+1. **Temporary Config Creation**: A `electron-builder.{projectName}.temp.json` file is created at the workspace root (e.g., `electron-builder.my-app-electron.temp.json`)
+2. **Config Extension**: This temporary config extends your project's `electron-builder.yml`
+3. **Metadata Injection**: Application metadata is injected via `extraMetadata`:
+   - `name`: Your Electron host project name
+   - `version`: Set to `0.0.0` (override in your `electron-builder.yml` if needed)
+   - `author`: From your project setup
+   - `description`: From your project setup
+   - `main`: Path to your built main process file
+4. **Build Execution**: `electron-builder` runs with the temporary config
+5. **Automatic Cleanup**: The temporary config file is deleted (even if build fails)
+
+**Example of Generated Temporary Config**:
+
+```json
+{
+  "extends": "apps/my-app-electron/src/electron-builder.yml",
+  "extraMetadata": {
+    "main": "dist/apps/my-app-electron/main.cjs",
+    "author": "Your Name",
+    "description": "Your app description",
+    "name": "my-app-electron",
+    "version": "0.0.0"
+  }
+}
+```
+
+This approach ensures your workspace remains clean and builds are isolated.
 
 ## Output Structure
 
@@ -195,38 +236,12 @@ nx dist your-project --configuration=production
 
 ## Troubleshooting
 
-### Common Build Issues
+Encountering issues with production builds? See the [Troubleshooting](/troubleshooting#production-build-issues) page for solutions to common problems including:
 
-**Build Fails with "Package.json not found"**
-
-- Ensure your guest project builds successfully first: `nx build <guest-project>`
-- Verify the guest project's build output path matches the `files` section in `electron-builder.yml`
-
-**Icons Missing in Final Package**
-
-- Verify icon source files exist: `src/resources/icon/source/icon.png` and `src/resources/icon/source/setup.png`
-- Run icons generation manually: `nx nx-electron-icons <your-electron-project>`
-- Check that generated icons exist in `dist/apps/<your-electron-project>-icons/`
-
-**Large Bundle Size**
-
-- Review the `files` section in `electron-builder.yml`
-- Exclude unnecessary files and directories
-
-**Platform-Specific Issues**
-
-- Windows: Ensure Node.js and npm/pnpm are properly installed
-- macOS: Check Xcode command line tools are available
-- Linux: Verify required system packages are installed
-
-### Build Validation
-
-Before distributing, test your build:
-
-1. **Install locally**: Test the generated installer
-2. **Run on clean system**: Verify all dependencies are included
-3. **Check file associations**: Ensure proper file type handling
-4. **Test auto-updater**: If enabled, verify update mechanism works
+- Build failures and missing dependencies
+- Icon generation issues
+- Platform-specific problems
+- Bundle size optimization
 
 ## Next Steps
 

@@ -1,88 +1,110 @@
-import { defineConfig } from 'vitepress'
-import { groupIconMdPlugin, groupIconVitePlugin, localIconLoader } from 'vitepress-plugin-group-icons'
+import { defineConfig } from 'vitepress';
+import {
+  groupIconMdPlugin,
+  groupIconVitePlugin,
+  localIconLoader,
+} from 'vitepress-plugin-group-icons';
+
+import { withMermaid } from 'vitepress-plugin-mermaid';
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
-  title: "Nx Electron Vite",
-  description: "A Plugin for Nx to create Electron applications with the power of Vite",
+const expConfig = defineConfig({
+  title: 'Nx Electron Vite',
+  description:
+    'A Plugin for Nx to create Electron applications with the power of Vite',
+  // Base URL for GitHub Pages deployment
+  // Use '/nx-plugins/' for https://erickrodrcodes.github.io/nx-plugins/
+  base: '/nx-plugins/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/introduction' }
+      { text: 'Guide', link: '/introduction' },
     ],
 
     sidebar: [
       {
         text: 'Introduction',
         items: [
-          { text: 'What is Nx Electron Vite?', link: '/what-is-nx-electron-vite' },
+          {
+            text: 'What is Nx Electron Vite?',
+            link: '/what-is-nx-electron-vite',
+          },
           { text: 'Getting Started', link: '/getting-started' },
-        ]
+        ],
       },
       {
         text: 'Working with Nx Electron Vite',
         items: [
           { text: 'Scaffolding a Project', link: '/scaffolding-a-project' },
           { text: 'Development Workflow', link: '/development-workflow' },
-          { text: 'Debugging Your Application', link: '/debugging-your-application' },
+          {
+            text: 'Debugging Your Application',
+            link: '/debugging-your-application',
+          },
           { text: 'Generating Icons', link: '/generating-icons' },
           { text: 'Digital Signing Applications', link: '/digital-signing' },
           { text: 'Production Builds', link: '/production-builds' },
-        ]
+        ],
       },
       {
         text: 'Executors and Generators',
         items: [
           {
             text: 'Generators',
-            items:[
+            items: [
               { text: 'init', link: '/generators/init' },
               { text: 'setup-project', link: '/generators/setup-project' },
               { text: 'build-native', link: '/generators/build-native' },
-            ]
+            ],
           },
           {
             text: 'Executors',
-            items:[
+            items: [
               { text: 'build-electron', link: '/executors/build-electron' },
               { text: 'build-icon', link: '/executors/build-icon' },
-            ]
+            ],
           },
-        ]
+        ],
       },
-      {
-        text: 'API Reference',
-        link: '/api-reference'
-      },
+      // {
+      //   text: 'API Reference',
+      //   link: '/api-reference'
+      // },
       { text: 'Architecture Pattern', link: '/architecture-pattern' },
+      { text: 'Troubleshooting', link: '/troubleshooting' },
     ],
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2025-present Erick Rodriguez'
+      copyright: 'Copyright © 2025-present Erick Rodriguez',
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/ErickRodrCodes/nx-plugins' }
+      { icon: 'github', link: 'https://github.com/ErickRodrCodes/nx-plugins' },
     ],
     search: {
-      provider: 'local'
+      provider: 'local',
     },
   },
   markdown: {
     config: (md) => {
-      md.use(groupIconMdPlugin)
-    }
+      md.use(groupIconMdPlugin);
+    },
   },
   vite: {
     plugins: [
       groupIconVitePlugin({
         customIcon: {
-          'nx': localIconLoader(import.meta.url, 'assets/nx.svg'),
-          'nx global': localIconLoader(import.meta.url, 'assets/nx.svg')
-        }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      }) as any
-    ]
-  }
-})
+          nx: localIconLoader(import.meta.url, 'assets/nx.svg'),
+          'nx global': localIconLoader(import.meta.url, 'assets/nx.svg'),
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any,
+    ],
+  },
+  mermaid: {
+    legacyMathML: false,
+  },
+});
+
+export default withMermaid(expConfig);

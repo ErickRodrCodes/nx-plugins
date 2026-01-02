@@ -1,0 +1,161 @@
+/**
+ * Credits: https://github.com/itsacoffee/aura-video-studio/blob/main/Aura.Desktop/scripts/sign-windows.js
+ * Custom Windows Code Signing Script for Electron Builder
+ * 
+ * This script is called by electron-builder to sign the Windows installer.
+ * It checks for environment variables and uses signtool if a certificate is available.
+ * 
+ * Environment Variables:
+ * - WIN_<%= guestProjectUpperCase %>_PFX_PATH: Path to PFX certificate or base64-encoded certificate
+ * - WIN_<%= guestProjectUpperCase %>_CERT_PASSWD: Certificate password
+ */
+
+const { execFileSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * Sign Windows executable or installer
+ * 
+ * @param {Object} configuration - Electron builder configuration
+ */
+exports.default = async function (configuration) {
+  const { path: filePath, hash } = configuration;
+  
+  console.log('Custom signing script called');
+  console.log('  File:', filePath);
+  console.log('  Hash algorithm:', hash);
+  
+  // Check for certificate
+  const certLink = process.env.WIN_<%= guestProjectUpperCase %>_PFX_PATH;
+  const certPassword = process.env.WIN_<%= guestProjectUpperCase %>_CERT_PASSWD;
+  
+  if (!certLink) {
+    console.warn('⚠ No code signing certificate found (WIN_<%= guestProjectUpperCase %>_PFX_PATH not set)');
+    console.warn('  Installer will be unsigned - users will see security warnings');
+    return;
+  }
+  
+  console.log('✓ Code signing certificate found');
+  
+  // Determine certificate path
+  let certPath = certLink;
+  
+  // If certificate is base64-encoded, decode it
+  if (certLink.length > 500 && !certLink.includes('\\') && !certLink.includes('/')) {
+    console.log('  Decoding base64 certificate...');
+    try {
+      const certBytes = Buffer.from(certLink, 'base64');
+      certPath = path.join(process.cwd(), 'temp-cert.pfx');
+      fs.writeFileSync(certPath, certBytes);
+      console.log('  Certificate saved to:', certPath);
+    } catch (error) {
+      console.error('Failed to decode certificate:', error.message);
+      return;
+    }
+  }
+  
+  // Verify certificate file exists
+  if (!fs.existsSync(certPath)) {
+    console.error('Certificate file not found:', certPath);
+    return;
+  }
+  
+  // Find signtool
+  const signtoolPaths = [
+    'C:\\Program Files (x86)\\Windows Kits\\10\\bin\\x64\\signtool.exe',
+    'C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22621.0\\x64\\signtool.exe',
+    'C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22000.0\\x64\\signtool.exe',
+    'C:\\Program Files (x86)\\Windows Kits\\10\\App Certification Kit\\signtool.exe'
+  ];
+  
+  let signtoolPath = null;
+  for (const candidatePath of signtoolPaths) {
+    if (fs.existsSync(candidatePath)) {
+      signtoolPath = candidatePath;
+      break;
+    }
+  }
+  
+  if (!signtoolPath) {
+    console.warn('⚠ signtool.exe not found - cannot sign installer');
+    console.warn('  Install Windows SDK to enable code signing');
+    return;
+  }
+  
+  console.log('✓ signtool found:', signtoolPath);
+  
+  // Build signtool command
+  const timestampServers = [
+    'http://timestamp.digicert.com',
+    'http://timestamp.sectigo.com',
+    'http://timestamp.globalsign.com'
+  ];
+  
+  let signed = false;
+  
+  for (const timestampServer of timestampServers) {
+    try {
+      console.log(`Signing with timestamp server: ${timestampServer}`);
+      
+      // Build argument array for secure execution without shell
+      const signArgs = ['sign', '/f', certPath];
+      
+      // Add password argument if provided
+      if (certPassword) {
+        signArgs.push('/p', certPassword);
+      }
+      
+      signArgs.push(
+        '/tr', timestampServer,
+        '/td', hash || 'sha256',
+        '/fd', hash || 'sha256',
+        '/v',
+        filePath
+      );
+      
+      // Log command with password redacted for security
+      const redactedArgs = signArgs.map((arg, index) => {
+        if (index > 0 && signArgs[index - 1] === '/p') {
+          return '[REDACTED]';
+        }
+        return arg;
+      });
+      console.log('Executing:', signtoolPath, redactedArgs.join(' '));
+      
+      execFileSync(signtoolPath, signArgs, { 
+        stdio: 'inherit',
+        windowsHide: true 
+      });
+      
+      console.log('✓ Successfully signed:', path.basename(filePath));
+      signed = true;
+      break;
+      
+    } catch (error) {
+      // Redact password from error message to prevent leaking in CI logs
+      let redactedError = error.message || 'Unknown error';
+      // Replace the actual password value with a placeholder if it appears anywhere
+      if (certPassword) {
+        // Split and rebuild to avoid regex special character issues
+        redactedError = redactedError.split(certPassword).join('[REDACTED]');
+      }
+      console.warn(`Failed with ${timestampServer}:`, redactedError);
+      // Try next timestamp server
+    }
+  }
+  
+  if (!signed) {
+    throw new Error('Failed to sign installer with any timestamp server');
+  }
+  
+  // Clean up temporary certificate
+  if (certPath !== certLink && fs.existsSync(certPath)) {
+    try {
+      fs.unlinkSync(certPath);
+      console.log('Cleaned up temporary certificate');
+    } catch (error) {
+      console.warn('Failed to clean up temporary certificate:', error.message);
+    }
+  }
+};

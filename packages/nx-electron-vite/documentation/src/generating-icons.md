@@ -174,37 +174,11 @@ The icon generator uses the `png2icons` library, which automatically creates all
 
 ## Troubleshooting
 
-### Common Issues
+Encountering issues with icon generation? See the [Troubleshooting](/troubleshooting#icon-generation-issues) page for solutions to common problems including:
 
-**Icon Generation Fails**
-
-- Check that source PNG files exist in the correct location
-- Verify file permissions on source images
-- Ensure PNG files are valid and not corrupted
-
-**Poor Quality at Small Sizes**
-
-- Use higher resolution source images
-- Simplify the design for better small-size visibility
-- Test generated icons at actual display sizes
-
-**Icons Not Updating in Built App**
-
-- Clear the `dist/` folder and rebuild
-- Check that electron-builder is using the correct icon paths
-- Verify the build process includes the icon generation step
-
-### Debug Icon Generation
-
-To see detailed output during icon generation:
-
-::: code-group
-
-```bash [Verbose Output]
-nx nx-electron-icons [your-electron-project] --verbose
-```
-
-:::
+- Icon generation failures
+- Quality issues at small sizes
+- Icons not updating in builds
 
 ## Next Steps
 

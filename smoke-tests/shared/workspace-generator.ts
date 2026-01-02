@@ -50,9 +50,26 @@ export interface WorkspaceOptions {
 
 export class WorkspaceGenerator {
   private tmpDir: string;
+  private packageManager: 'npm' | 'yarn' | 'pnpm' = 'npm';
 
-  constructor(tmpDirName: string = 'tmp-smoke-test') {
-    this.tmpDir = join(smokeTestsDir, 'tmp', tmpDirName);
+  private constructor(tmpDir: string) {
+    this.tmpDir = tmpDir;
+  }
+
+  /**
+   * Creates a WorkspaceGenerator with an absolute path
+   */
+  static fromAbsolutePath(absolutePath: string): WorkspaceGenerator {
+    return new WorkspaceGenerator(absolutePath);
+  }
+
+  /**
+   * Creates a WorkspaceGenerator with a path relative to smoke-tests/tmp/
+   */
+  static fromRelativePath(
+    relativeDirName: string = 'tmp-smoke-test'
+  ): WorkspaceGenerator {
+    return new WorkspaceGenerator(join(smokeTestsDir, 'tmp', relativeDirName));
   }
 
   /**
@@ -68,6 +85,9 @@ export class WorkspaceGenerator {
       directory = options.directory || process.cwd(),
     } = options;
 
+    // Store package manager for later use
+    this.packageManager = packageManager;
+
     // Only clean up if the directory already exists and we're creating a new workspace
     if (existsSync(this.tmpDir)) {
       await safeRemoveDir(this.tmpDir);
@@ -81,7 +101,7 @@ export class WorkspaceGenerator {
       preset === 'empty' ? '--workspaceType=integrated' : '';
 
     const nxVersion = getNxVersionFromWorkspace();
-    const createCommand = `npx --yes create-nx-workspace@${nxVersion} --name=${name} --preset=${preset} ${workspaceTypeFlag} ${nxCloudFlag} --package-manager=npm ${skipGitFlag} --interactive=false --verbose`;
+    const createCommand = `npx --yes create-nx-workspace@${nxVersion} --name=${name} --preset=${preset} ${workspaceTypeFlag} ${nxCloudFlag} --package-manager=${packageManager} ${skipGitFlag} --interactive=false --verbose`;
 
     try {
       execSync(createCommand, {
@@ -132,12 +152,9 @@ export class WorkspaceGenerator {
    */
   generateReactApp(appName: string = 'guest-app', directory?: string): void {
     const dirFlag = directory ? `--directory=${directory}` : '';
-    const command = `npx nx g @nx/react:app ${appName} ${dirFlag} --verbose`;
+    const command = `pnpm exec nx g @nx/react:app ${appName} ${dirFlag} --style=tailwind --bundler=vite --unitTestRunner=vitest --e2eTestRunner=none --linter=eslint --no-interactive --verbose`;
 
-    execSync(command, {
-      cwd: this.tmpDir,
-      stdio: 'inherit',
-    });
+    this.execCommand(command);
   }
 
   /**
@@ -163,8 +180,8 @@ export class WorkspaceGenerator {
       // Write back the modified package.json
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-      // Install the dependency with npm
-      this.execCommand('npm install');
+      // Install the dependency with the configured package manager
+      this.execCommand(`${this.packageManager} install`);
     } catch (error) {
       throw error;
     }
@@ -205,7 +222,8 @@ export class WorkspaceGenerator {
    * Copies the plugin tar.gz file to the workspace
    */
   copyPluginTarGz(): void {
-    const sourceTarGzPath = join(__dirname, '../tmp/nx-electron-vite.tar.gz');
+    // The tarball is in the parent directory of the workspace (which is the unique run dir)
+    const sourceTarGzPath = join(this.tmpDir, '../nx-electron-vite.tar.gz');
     const targetTarGzPath = join(this.tmpDir, 'nx-electron-vite.tar.gz');
 
     const fs = require('fs');
@@ -233,16 +251,39 @@ export class WorkspaceGenerator {
     command: string,
     options: { stdio?: 'inherit' | 'pipe' } = {}
   ): string {
-    const { stdio = 'inherit' } = options;
+    const { stdio = 'pipe' } = options;
     let cmd = command;
-    if (/npx\s+nx\s+/.test(command) && !/--verbose/.test(command)) {
-      cmd = command + ' --verbose';
+
+    if (/npx\s+nx\s+|pnpm\s+exec\s+nx\s+/.test(command)) {
+      if (!/--verbose/.test(command)) {
+        cmd = command + ' --verbose';
+      }
+      if (!/--skip-nx-cache/.test(command)) {
+        cmd = cmd + ' --skip-nx-cache';
+      }
     }
-    return execSync(cmd, {
-      cwd: this.tmpDir,
-      stdio,
-      encoding: 'utf8',
-    });
+
+    try {
+      return execSync(cmd, {
+        cwd: this.tmpDir,
+        stdio,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          NX_DAEMON: 'false', // Disable Nx daemon to avoid conflicts with parent workspace
+        },
+      });
+    } catch (error) {
+      const execError = error as any;
+      console.error(`❌ Command failed: ${cmd}`);
+      if (execError.stdout) {
+        console.error(`📄 stdout: ${execError.stdout.toString()}`);
+      }
+      if (execError.stderr) {
+        console.error(`📄 stderr: ${execError.stderr.toString()}`);
+      }
+      throw error;
+    }
   }
 
   /**

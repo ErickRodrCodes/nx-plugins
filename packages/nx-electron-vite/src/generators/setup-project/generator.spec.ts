@@ -4,6 +4,7 @@ import {
   runTasksInSerial,
   Tree,
 } from '@nx/devkit';
+import { vi, type Mock } from 'vitest';
 import {
   cleanupDependencies,
   installDependencies,
@@ -14,17 +15,17 @@ import { updateDependencies } from './generator';
 import { SetupProjectSchema } from './schema';
 
 // --- Mocks for external dependencies ---
-jest.mock('@nx/devkit', () => ({
-  addProjectConfiguration: jest.fn(),
-  formatFiles: jest.fn().mockResolvedValue(undefined),
-  generateFiles: jest.fn(),
-  runTasksInSerial: jest.fn(),
+vi.mock('@nx/devkit', () => ({
+  addProjectConfiguration: vi.fn(),
+  formatFiles: vi.fn().mockResolvedValue(undefined),
+  generateFiles: vi.fn(),
+  runTasksInSerial: vi.fn(),
 }));
-jest.mock('../../util/utils', () => ({
-  cleanupDependencies: jest.fn(),
-  installDependencies: jest.fn(),
-  isApplication: jest.fn(),
-  normalizeOptions: jest.fn(),
+vi.mock('../../util/utils', () => ({
+  cleanupDependencies: vi.fn(),
+  installDependencies: vi.fn(),
+  isApplication: vi.fn(),
+  normalizeOptions: vi.fn(),
 }));
 
 // Add after the imports
@@ -55,10 +56,10 @@ describe('updateDependencies', () => {
     };
 
     beforeEach(() => {
-      tree = { delete: jest.fn() } as unknown as Tree;
+      tree = { delete: vi.fn() } as unknown as Tree;
       schema = { guestProject: 'non-app' } as SetupProjectSchema;
-      (normalizeOptions as jest.Mock).mockResolvedValue(fakeOptions);
-      (isApplication as jest.Mock).mockResolvedValue(false);
+      (normalizeOptions as any).mockResolvedValue(fakeOptions);
+      (isApplication as any).mockResolvedValue(false);
     });
 
     it('should throw an error if project is not an application', async () => {
@@ -74,16 +75,16 @@ describe('setupProjectGenerator', () => {
   let tree: Tree;
   let schema: SetupProjectSchema;
   let fakeOptions: NormalizedOptions;
-  let cleanupTask: jest.Mock;
-  let installTask: jest.Mock;
+  let cleanupTask: Mock<any, any>;
+  let installTask: Mock<any, any>;
   const tasksResult = 'tasksCompleted';
 
   beforeEach(async () => {
     tree = {
-      delete: jest.fn(),
-      exists: jest.fn().mockReturnValue(true),
-      read: jest.fn(),
-      write: jest.fn(),
+      delete: vi.fn(),
+      exists: vi.fn().mockReturnValue(true),
+      read: vi.fn(),
+      write: vi.fn(),
     } as unknown as Tree;
 
     schema = {
@@ -104,18 +105,18 @@ describe('setupProjectGenerator', () => {
       description: 'Test Description',
     };
 
-    cleanupTask = jest.fn();
-    installTask = jest.fn();
+    cleanupTask = vi.fn();
+    installTask = vi.fn();
 
-    (normalizeOptions as jest.Mock).mockResolvedValue(fakeOptions);
-    (isApplication as jest.Mock).mockResolvedValue(true);
-    (cleanupDependencies as jest.Mock).mockResolvedValue(cleanupTask);
-    (installDependencies as jest.Mock).mockResolvedValue(installTask);
-    (runTasksInSerial as jest.Mock).mockReturnValue(tasksResult);
+    (normalizeOptions as Mock<any, any>).mockResolvedValue(fakeOptions);
+    (isApplication as Mock<any, any>).mockResolvedValue(true);
+    (cleanupDependencies as Mock<any, any>).mockResolvedValue(cleanupTask);
+    (installDependencies as Mock<any, any>).mockResolvedValue(installTask);
+    (runTasksInSerial as Mock<any, any>).mockReturnValue(tasksResult);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Project Configuration', () => {
@@ -138,7 +139,7 @@ describe('setupProjectGenerator', () => {
     it('should configure build target correctly', async () => {
       await updateDependencies(tree, schema);
 
-      const configCall = (addProjectConfiguration as jest.Mock).mock
+      const configCall = (addProjectConfiguration as Mock<any, any>).mock
         .calls[0][2];
       expect(configCall.targets.build).toEqual({
         dependsOn: [{ projects: [fakeOptions.guestProject], target: 'build' }],
@@ -152,7 +153,7 @@ describe('setupProjectGenerator', () => {
     it('should configure electron target with correct serve and build configurations', async () => {
       await updateDependencies(tree, schema);
 
-      const configCall = (addProjectConfiguration as jest.Mock).mock
+      const configCall = (addProjectConfiguration as Mock<any, any>).mock
         .calls[0][2];
       expect(configCall.targets.electron).toEqual({
         configurations: {
@@ -187,8 +188,7 @@ describe('setupProjectGenerator', () => {
     it('should configure icon target with all modes', async () => {
       await updateDependencies(tree, schema);
 
-      const configCall = (addProjectConfiguration as jest.Mock).mock
-        .calls[0][2];
+      const configCall = (addProjectConfiguration as Mock).mock.calls[0][2];
       expect(configCall.targets['nx-electron-icons']).toEqual({
         executor: '@erickrodrcodes/nx-electron-vite:build-icon',
         defaultConfiguration: 'default',
@@ -210,8 +210,7 @@ describe('setupProjectGenerator', () => {
     it('should configure dist target with correct dependencies', async () => {
       await updateDependencies(tree, schema);
 
-      const configCall = (addProjectConfiguration as jest.Mock).mock
-        .calls[0][2];
+      const configCall = (addProjectConfiguration as Mock).mock.calls[0][2];
       expect(configCall.targets.dist).toEqual({
         dependsOn: [
           { projects: [fakeOptions.nameProject], target: 'nx-electron-icons' },
@@ -222,7 +221,7 @@ describe('setupProjectGenerator', () => {
           guestProject: fakeOptions.guestProject,
           hostProjectRoot: '{projectRoot}',
           mainOutputPath: fakeOptions.outputDistFolder,
-          mainOutputFilename: 'main.js',
+          mainOutputFilename: 'main.cjs',
           author: fakeOptions.author,
           description: fakeOptions.description,
         },
@@ -255,7 +254,7 @@ describe('setupProjectGenerator', () => {
 
   describe('Error Handling', () => {
     it('should throw error for non-application guest project', async () => {
-      (isApplication as jest.Mock).mockResolvedValue(false);
+      (isApplication as Mock).mockResolvedValue(false);
 
       await expect(updateDependencies(tree, schema)).rejects.toThrow(
         'The selected project is not an application'

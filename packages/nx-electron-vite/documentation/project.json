@@ -9,7 +9,8 @@
       "executor": "nx:run-commands",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "command": "pnpm exec vitepress build packages/nx-electron-vite/documentation/src"
+        "command": "pnpm exec vitepress build packages/nx-electron-vite/documentation/src",
+        "outputPath": "packages/nx-electron-vite/documentation/src/.vitepress/dist"
       }
     },
     "serve": {

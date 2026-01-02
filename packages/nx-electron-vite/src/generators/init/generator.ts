@@ -44,6 +44,22 @@ function ensureVitePlugin(tree: Tree) {
   }
 }
 
+function updateGitIgnore(tree: Tree) {
+  const gitIgnorePath = '.gitignore';
+  const entry = 'electron-builder.*.temp.json';
+
+  if (!tree.exists(gitIgnorePath)) {
+    return;
+  }
+
+  let content = tree.read(gitIgnorePath, 'utf-8');
+
+  if (!content.includes(entry)) {
+    content += `\n${entry}\n`;
+    tree.write(gitIgnorePath, content);
+  }
+}
+
 export async function initGenerator(tree: Tree, schema: initSchema) {
   const tasks: GeneratorCallback[] = [];
 
@@ -53,6 +69,9 @@ export async function initGenerator(tree: Tree, schema: initSchema) {
 
   // Ensure Vite plugin is configured
   ensureVitePlugin(tree);
+
+  // Ensure .gitignore is updated
+  updateGitIgnore(tree);
 
   if (!schema.skipPackageJson) {
     // Remove existing dependencies to ensure clean state
@@ -73,16 +92,17 @@ export async function initGenerator(tree: Tree, schema: initSchema) {
           'vite-plugin-electron': versionLibraries.vitePluginElectron,
           png2icons: versionLibraries.png2icons,
           'wait-on': versionLibraries.waitOn,
-          vitest: versionLibraries.vitest,
           'electron-is-dev': versionLibraries.electronIsDev,
           'electron-log': versionLibraries.electronLog,
         }
       )
     );
 
-    tasks.push(() => {
-      installPackagesTask(tree, true);
-    });
+    if (!schema.skipInstallPluginDependencies) {
+      tasks.push(() => {
+        installPackagesTask(tree, true);
+      });
+    }
   }
 
   if (!schema.skipFormat) {

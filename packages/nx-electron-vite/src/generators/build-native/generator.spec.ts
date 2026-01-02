@@ -1,3 +1,26 @@
+import { vi, type Mock } from 'vitest';
+
+vi.mock('../../util/utils', () => ({
+  rebuildNativeModules: vi.fn(),
+}));
+
+vi.mock('@nx/devkit', async () => {
+  const actual = await vi.importActual('@nx/devkit');
+  return {
+    ...actual,
+    readProjectConfiguration: vi.fn(),
+    formatFiles: vi.fn(),
+    logger: {
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+    },
+  };
+});
+
+vi.mock('fs');
+
 import {
   Tree,
   formatFiles,
@@ -6,27 +29,11 @@ import {
 } from '@nx/devkit';
 import * as fs from 'fs';
 import { rebuildNativeModules } from '../../util/utils';
-
-jest.mock('../../util/utils', () => ({
-  rebuildNativeModules: jest.fn(),
-}));
-
-jest.mock('@nx/devkit', () => ({
-  ...jest.requireActual('@nx/devkit'),
-  readProjectConfiguration: jest.fn(),
-  formatFiles: jest.fn(),
-  logger: {
-    error: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-  },
-}));
-
-jest.mock('fs');
+import { _buildNativeGenerator, buildNativeGenerator } from './generator';
 
 describe('_buildNativeGenerator', () => {
   let tree: Tree;
+
   const mockSchemaWithHostProject = {
     hostProject: 'test-project',
     npmPackageName: 'test-package',
@@ -37,34 +44,31 @@ describe('_buildNativeGenerator', () => {
     pathTarget: 'custom/path/native',
   };
 
-  // Import the function locally in each describe block
-  const { _buildNativeGenerator } = require('./generator');
-
   // Add mock for process.exit
-  const mockExit = jest.spyOn(process, 'exit').mockImplementation((number) => {
+  const mockExit = vi.spyOn(process, 'exit').mockImplementation((number) => {
     throw new Error('process.exit: ' + number);
   });
 
   beforeEach(() => {
     tree = {
       // Mock the Tree methods you need
-      children: jest.fn().mockReturnValue(['electron-nx-vite.config.ts']),
-      exists: jest.fn().mockReturnValue(false),
-      write: jest.fn(),
+      children: vi.fn().mockReturnValue(['electron-nx-vite.config.ts']),
+      exists: vi.fn().mockReturnValue(false),
+      write: vi.fn(),
     } as unknown as Tree;
 
     // Reset the mock for readProjectConfiguration before each test
-    (readProjectConfiguration as jest.Mock).mockReset();
+    (readProjectConfiguration as Mock).mockReset();
     // Reset the process.exit mock
     mockExit.mockClear();
 
     // Reset logger mocks
-    (logger.error as jest.Mock).mockClear();
-    (logger.info as jest.Mock).mockClear();
-    (logger.warn as jest.Mock).mockClear();
-    (logger.debug as jest.Mock).mockClear();
+    (logger.error as Mock).mockClear();
+    (logger.info as Mock).mockClear();
+    (logger.warn as Mock).mockClear();
+    (logger.debug as Mock).mockClear();
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterAll(() => {
@@ -72,7 +76,11 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should exit with error if the host project does not exist', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue(undefined);
+    (readProjectConfiguration as Mock).mockReturnValue(undefined);
+
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation((number) => {
+      throw new Error('process.exit: ' + number);
+    });
 
     await expect(
       _buildNativeGenerator(tree, {
@@ -88,30 +96,34 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should throw error if neither hostProject nor pathTarget is provided', async () => {
-    await expect(_buildNativeGenerator(tree, {
-      npmPackageName: 'test-package',
-    })).rejects.toThrow(
+    await expect(
+      _buildNativeGenerator(tree, {
+        npmPackageName: 'test-package',
+      })
+    ).rejects.toThrow(
       'You must provide either a hostProject or a pathTarget. Aborting.'
     );
   });
 
   it('should throw error if sourceRoot is not defined for hostProject', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
       root: 'apps/test-project',
       // No sourceRoot defined
     });
 
-    await expect(_buildNativeGenerator(tree, mockSchemaWithHostProject)).rejects.toThrow(
+    await expect(
+      _buildNativeGenerator(tree, mockSchemaWithHostProject)
+    ).rejects.toThrow(
       'The project test-project does not have a sourceRoot defined. Aborting.'
     );
   });
 
   it('should call rebuildNativeModules with the correct packages using hostProject', async () => {
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [],
       failed: [],
     });
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
       root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     }); // Simulate existing project with sourceRoot
@@ -120,7 +132,7 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should call rebuildNativeModules with the correct packages using pathTarget', async () => {
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [],
       failed: [],
     });
@@ -129,25 +141,31 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should process packages with comma separation and trimming', async () => {
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [],
       failed: [],
     });
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
       root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     });
 
     await _buildNativeGenerator(tree, {
       ...mockSchemaWithHostProject,
-      npmPackageName: 'package1, package2,package3 , package4'
+      npmPackageName: 'package1, package2,package3 , package4',
     });
 
-    expect(rebuildNativeModules).toHaveBeenCalledWith(['package1', 'package2', 'package3', 'package4']);
+    expect(rebuildNativeModules).toHaveBeenCalledWith([
+      'package1',
+      'package2',
+      'package3',
+      'package4',
+    ]);
   });
 
   it('should log an error for each failed native module', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
+      root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     }); // Simulate existing project with sourceRoot
 
@@ -166,7 +184,7 @@ describe('_buildNativeGenerator', () => {
       },
     ];
 
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [],
       failed: failedModules,
     });
@@ -179,11 +197,12 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should log success for successfully built modules with hostProject', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
+      root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     }); // Simulate existing project with sourceRoot
 
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [
         {
           moduleName: 'test-package',
@@ -202,7 +221,7 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should log success for successfully built modules with pathTarget', async () => {
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [
         {
           moduleName: 'test-package',
@@ -224,7 +243,8 @@ describe('_buildNativeGenerator', () => {
     const originalArgv = process.argv;
     process.argv = [...process.argv, '--dry-run'];
 
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
+      root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     });
 
@@ -239,19 +259,21 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should throw error if electron-nx-vite.config.ts is missing when using hostProject', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
       root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     });
-    (tree.children as jest.Mock).mockReturnValue(['some-other-file.ts']); // Config file missing
+    (tree.children as Mock).mockReturnValue(['some-other-file.ts']); // Config file missing
 
-    await expect(_buildNativeGenerator(tree, mockSchemaWithHostProject)).rejects.toThrow(
+    await expect(
+      _buildNativeGenerator(tree, mockSchemaWithHostProject)
+    ).rejects.toThrow(
       'The selected project is not an @erickrodrcodes/nx-electron-vite host project. Aborting.'
     );
   });
 
   it('should throw error if npmPackageName is empty', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
       root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     });
@@ -267,7 +289,7 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should throw error if npmPackageName contains only whitespace', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
       root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     });
@@ -283,7 +305,8 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should copy successful build modules to the project tree when using hostProject', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
+      root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     });
 
@@ -292,15 +315,13 @@ describe('_buildNativeGenerator', () => {
       nativeFilePath: 'path/to/native/module.node',
     };
 
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [successfulModule],
       failed: [],
     });
 
     // Mock fs.readFileSync to return a Buffer
-    (fs.readFileSync as jest.Mock).mockReturnValue(
-      Buffer.from('mocked content')
-    );
+    (fs.readFileSync as Mock).mockReturnValue(Buffer.from('mocked content'));
 
     await _buildNativeGenerator(tree, mockSchemaWithHostProject);
 
@@ -323,15 +344,13 @@ describe('_buildNativeGenerator', () => {
       nativeFilePath: 'path/to/native/module.node',
     };
 
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [successfulModule],
       failed: [],
     });
 
     // Mock fs.readFileSync to return a Buffer
-    (fs.readFileSync as jest.Mock).mockReturnValue(
-      Buffer.from('mocked content')
-    );
+    (fs.readFileSync as Mock).mockReturnValue(Buffer.from('mocked content'));
 
     await _buildNativeGenerator(tree, mockSchemaWithPathTarget);
 
@@ -346,7 +365,8 @@ describe('_buildNativeGenerator', () => {
   });
 
   it('should handle errors when copying native modules', async () => {
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
+      root: 'apps/test-project',
       sourceRoot: 'apps/test-project/src',
     });
 
@@ -355,18 +375,16 @@ describe('_buildNativeGenerator', () => {
       nativeFilePath: 'path/to/native/module.node',
     };
 
-    (rebuildNativeModules as jest.Mock).mockResolvedValue({
+    (rebuildNativeModules as Mock).mockResolvedValue({
       successful: [successfulModule],
       failed: [],
     });
 
     // Mock fs.readFileSync to return a Buffer
-    (fs.readFileSync as jest.Mock).mockReturnValue(
-      Buffer.from('mocked content')
-    );
+    (fs.readFileSync as Mock).mockReturnValue(Buffer.from('mocked content'));
 
     // Mock tree.write to throw error for the module file, but not for directory creation
-    (tree.write as jest.Mock).mockImplementation((path, content) => {
+    (tree.write as Mock).mockImplementation((path, content) => {
       // Only throw for the actual module file (the last call)
       if (path.endsWith('test-package.node')) {
         throw new Error('Resource busy or locked');
@@ -386,18 +404,18 @@ describe('buildNativeGenerator', () => {
   const originalArgv = process.argv;
 
   // Add mock for process.exit in this describe block too
-  const mockExit = jest.spyOn(process, 'exit').mockImplementation((number) => {
+  const mockExit = vi.spyOn(process, 'exit').mockImplementation((number) => {
     throw new Error('process.exit: ' + number);
   });
 
   beforeEach(() => {
     tree = {
-      children: jest.fn().mockReturnValue(['electron-nx-vite.config.ts']),
-      exists: jest.fn().mockReturnValue(false),
-      write: jest.fn(),
+      children: vi.fn().mockReturnValue(['electron-nx-vite.config.ts']),
+      exists: vi.fn().mockReturnValue(false),
+      write: vi.fn(),
     } as unknown as Tree;
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockExit.mockClear();
   });
 
@@ -411,13 +429,10 @@ describe('buildNativeGenerator', () => {
 
   it('should call _buildNativeGenerator and formatFiles', async () => {
     // Mock readProjectConfiguration to return valid project config
-    (readProjectConfiguration as jest.Mock).mockReturnValue({
+    (readProjectConfiguration as Mock).mockReturnValue({
       root: 'apps/test-project',
-      sourceRoot: 'apps/test-project/src'
+      sourceRoot: 'apps/test-project/src',
     });
-
-    // Import the real functions - no need to mock the module
-    const { buildNativeGenerator } = require('./generator');
 
     const mockSchema = {
       hostProject: 'test-project',

@@ -17,10 +17,14 @@ node_modules
 .settings/
 *.sublime-workspace
 
+# AI Assistance
+.claude
+
 # IDE - VSCode
 .vscode/*
 .vscode/settings.json
 !.vscode/tasks.json
+!.vscode/mcp.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
@@ -58,3 +62,4 @@ vitest.config.*.timestamp*
 electron-builder-output/
 release/
 electron-dist/
+smoke-tests/test-results.json

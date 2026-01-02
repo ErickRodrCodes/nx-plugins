@@ -57,6 +57,7 @@ export interface RebuildResult {
 
 /**
  * Retrieves the output directory for a specified project.
+ * Uses Nx's official API to get outputs from the build target configuration.
  * @param {Tree} tree - Represents the file system.
  * @param {string} projectName - The name of the project.
  * @returns {Promise<string>} - The output directory path for the project.
@@ -65,19 +66,45 @@ export async function getProjectOutputDirectory(
   tree: Tree,
   projectName: string
 ): Promise<string> {
-  const options = readProjectConfiguration(tree, projectName);
-  if (options.targets?.build?.options?.outputPath) {
-    return options.targets.build.options.outputPath.replace(/\.\.\//g, '');
-  } else {
-    const viteOutputPath = await getViteOutputPath(tree, projectName);
-    if (viteOutputPath !== '') {
-      return viteOutputPath;
+  const projectConfig = readProjectConfiguration(tree, projectName);
+
+  // 1. Try to get outputs from build target configuration
+  if (projectConfig.targets?.build?.outputs) {
+    const outputs = projectConfig.targets.build.outputs;
+    if (outputs.length > 0) {
+      // Replace placeholders like {projectRoot} or {workspaceRoot}
+      const outputPath = outputs[0]
+        .replace(/\{projectRoot\}/g, projectConfig.root)
+        .replace(/\{workspaceRoot\}\/?/g, '')
+        .replace(/\.\.\//g, '');
+
+      logger.info(
+        `Resolved output path for project ${projectName} from build target outputs: ${outputPath}`
+      );
+      return outputPath;
     }
-    logger.warn(
-      `Could not find the output path for project ${projectName}. The value 'OUTPUT_DIST_GUEST_PROJECT' will be used for you to change manually on the generated files.`
-    );
-    return 'OUTPUT_DIST_GUEST_PROJECT';
   }
+
+  // 2. Try explicit outputPath from project.json build options
+  if (projectConfig.targets?.build?.options?.outputPath) {
+    return projectConfig.targets.build.options.outputPath.replace(
+      /\.\.\//g,
+      ''
+    );
+  }
+
+  // 3. Try to parse from Vite config
+  const viteOutputPath = await getViteOutputPath(tree, projectName);
+  if (viteOutputPath !== '') {
+    return viteOutputPath;
+  }
+
+  // 4. Last resort: Throw error instead of guessing
+  throw new Error(
+    `Could not determine output path for project ${projectName}. ` +
+      `Please ensure the project has a build target with outputs configured, ` +
+      `or explicitly set outputPath in project.json, or have a vite.config.ts with outDir specified.`
+  );
 }
 
 /**
@@ -85,31 +112,46 @@ export async function getProjectOutputDirectory(
  * @param {Tree} tree - Represents the file system.
  * @param {string} projectName - The name of the project.
  * @returns {Promise<string>} - The output path specified in the Vite configuration.
- * @throws {Error} If the Vite configuration file cannot be read.
  */
 export async function getViteOutputPath(
   tree: Tree,
   projectName: string
 ): Promise<string> {
   const projectConfig = readProjectConfiguration(tree, projectName);
-  const viteConfigPath = path.posix.join(projectConfig.root, 'vite.config.ts');
 
-  if (!tree.exists(viteConfigPath)) {
+  // Find any Vite config file (vite.config.{ts,mts,js,mjs})
+  const viteConfigFiles = tree
+    .children(projectConfig.root)
+    .filter((file) => /^vite\.config\.(m?[tj]s)$/.test(file));
+
+  if (viteConfigFiles.length === 0) {
     return '';
   }
 
+  const viteConfigPath = path.posix.join(
+    projectConfig.root,
+    viteConfigFiles[0]
+  );
   const viteConfigContent = tree.read(viteConfigPath, 'utf-8');
-  if (!viteConfigContent) {
-    throw new Error(
-      `Unable to read Vite configuration file: ${viteConfigPath}`
-    );
-  }
-  const viteConfig = await import(path.resolve(viteConfigPath));
 
-  // Dynamically import the Vite config file
-  if (viteConfig?.default?.build?.outDir) {
-    const outputPath = viteConfig.default.build.outDir;
-    return outputPath.replace(/\.\.\//g, '');
+  if (!viteConfigContent) {
+    return '';
+  }
+
+  // Parse the vite config content to extract outDir using regex
+  // Match: outDir: './dist' or outDir: "./dist" or outDir: '../../dist/apps/something'
+  const outDirMatch = viteConfigContent.match(/outDir:\s*['"]([^'"]+)['"]/);
+
+  if (outDirMatch && outDirMatch?.[1]) {
+    const outputPath = outDirMatch[1];
+    // Join project root with the outDir to get full path from workspace root
+    const fullPath = path.posix.join(projectConfig.root, outputPath);
+    logger.info(
+      `Resolved output path for project ${projectName} from ${
+        viteConfigFiles[0]
+      }: ${fullPath.replace(/\.\.\//g, '')}`
+    );
+    return fullPath.replace(/\.\.\//g, '');
   }
   return '';
 }
@@ -132,13 +174,11 @@ export async function normalizeOptions(
       ? `${schema.guestProject}-electron`
       : schema.nameProject;
 
-  // Get the workspace layout to determine where applications should go
-  const workspaceLayout = getWorkspaceLayout(tree);
-
-  // If directory is undefined, empty, or just whitespace, use the workspace default
+  // If directory is undefined, empty, or just whitespace, use workspace layout default
+  const { appsDir } = getWorkspaceLayout(tree);
   const directory =
     !schema.directory || schema.directory.trim() === ''
-      ? workspaceLayout.appsDir
+      ? appsDir
       : schema.directory.trim();
 
   // Let Nx determine the final project name and root directory
@@ -148,8 +188,8 @@ export async function normalizeOptions(
     directory: directory,
   });
 
-  // Ensure the directory path is correctly constructed
-  const projectDirectory = path.posix.join(directory, projectName);
+  // Use Nx-determined project root instead of manually constructing
+  const projectDirectory = newProject.projectRoot;
 
   const outputGuestDirectory = await getProjectOutputDirectory(
     tree,
@@ -160,6 +200,7 @@ export async function normalizeOptions(
     directory: projectDirectory,
     directoryRoot: path.posix.join(projectDirectory, 'src'),
     guestProject: schema.guestProject,
+    guestProjectUpperCase: schema.guestProject.toUpperCase().replace(/-/g, '_'),
     nameProject: newProject.projectName,
     name: schema.name,
     author: schema.author,
@@ -172,7 +213,9 @@ export async function normalizeOptions(
     outputDistFolder: `dist/${projectDirectory}`,
     directoryResources: path.posix.join(projectDirectory, 'src/resources'),
     offsetFromRoot: offsetFromRoot(projectDirectory),
-    rootTsConfigPath: `${offsetFromRoot(projectDirectory)}${getRootTsConfigPath()}`,
+    rootTsConfigPath: `${offsetFromRoot(
+      projectDirectory
+    )}${getRootTsConfigPath()}`,
     nsisExtraFilePath: path.posix.join(projectDirectory, 'src/installer.nsh'),
   };
 
@@ -442,7 +485,7 @@ async function validateModule(moduleName: string): Promise<boolean> {
   try {
     require.resolve(`${moduleName}/package.json`);
     return true;
-  } catch (error) {
+  } catch {
     logger.error(`❌ Module "${moduleName}" not found in node_modules`);
     return false;
   }

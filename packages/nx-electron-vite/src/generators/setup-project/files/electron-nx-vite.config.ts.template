@@ -3,7 +3,7 @@ import { startup } from 'vite-plugin-electron';
 import electron from 'vite-plugin-electron/simple';
 import waitOn from 'wait-on';
 
-import { copyFileSync, existsSync, readFileSync, rmSync } from 'fs';
+import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs';
 import { basename, join, resolve } from 'path';
 import { Plugin, UserConfig, createLogger } from 'vite';
 
@@ -16,14 +16,72 @@ const logger = createLogger('info', {
 const pkg =  JSON.parse(readFileSync(resolve(workspaceRoot, 'package.json'), 'utf-8'));
 const dependencies = Object.keys('dependencies' in pkg ? pkg.dependencies : {});
 
+function renameToCommonJS(): Plugin {
+  let isProductionBuild = false;
+  return {
+    name: 'rename-to-commonjs',
+    configResolved(config) {
+      isProductionBuild = config.mode === 'production' && !config.build.watch;
+    },
+    closeBundle() {
+      if (!isProductionBuild) return;
+
+      const distPath = resolve(workspaceRoot, '<%= outputDistFolder %>');
+      const fs = require('fs');
+      const path = require('path');
+
+      // Rename .js files to .cjs for CommonJS compatibility
+      const filesToRename = ['main.js', 'preload.js'];
+      filesToRename.forEach(fileName => {
+        const jsPath = path.join(distPath, fileName);
+        const cjsPath = path.join(distPath, fileName.replace('.js', '.cjs'));
+        if (fs.existsSync(jsPath)) {
+          fs.renameSync(jsPath, cjsPath);
+          logger.info(`✅ Renamed ${fileName} to ${fileName.replace('.js', '.cjs')} for CommonJS compatibility`);
+        }
+      });
+    }
+  };
+}
+
 function cleanDist(): Plugin {
+  let isProductionBuild = false;
   return {
     name: 'build-start-task',
+    configResolved(config) {
+      // Detect production build: mode is 'production' AND not in watch mode
+      isProductionBuild = config.mode === 'production' && !config.build.watch;
+      console.log('🔍 Build mode detection:', {
+        mode: config.mode,
+        watch: config.build.watch,
+        isProductionBuild
+      });
+    },
     buildStart() {
       // here a example of code you can use to execute something at the start of the build process
       logger.info('⚠️ Started Vite Build Start lifecycle')
     },
     closeBundle(){
+      // Copy package.json to dist
+      const distPath = resolve(workspaceRoot, '<%= outputDistFolder %>');
+      const pkgJsonSource = resolve(projectRoot, 'package.json');
+      const pkgJsonDest = resolve(distPath, 'package.json');
+      try {
+        const pkgJson = JSON.parse(readFileSync(pkgJsonSource, 'utf-8'));
+
+        // For production builds, add type: "module" and update main entry
+        if (isProductionBuild) {
+          pkgJson.type = 'module';
+          pkgJson.main = './main.cjs';
+          logger.info('✅ Copied package.json to dist with type: "module" and main: "./main.cjs"');
+        } else {
+          logger.info('✅ Copied package.json to dist (development mode - no type modification)');
+        }
+
+        writeFileSync(pkgJsonDest, JSON.stringify(pkgJson, null, 2));
+      } catch (e) {
+        logger.warn('⚠️  Failed to copy package.json to dist');
+      }
       // here a example of code you can use to execute something at the start of the build process
       logger.info('⚠️ Started Vite Build close bundle lifecycle')
     }
@@ -105,6 +163,111 @@ function copyNative(natives: { pathReference: string }): Plugin {
   };
 }
 
+function fixGuestHtmlBaseHref(): Plugin {
+  let isProductionBuild = false;
+  return {
+    name: 'fix-guest-html-base-href',
+    configResolved(config) {
+      isProductionBuild = config.mode === 'production' && !config.build.watch;
+    },
+    closeBundle() {
+      if (!isProductionBuild) return;
+
+      const guestDistPath = resolve(workspaceRoot, '<%= guestDistFolder %>');
+
+      if (!existsSync(guestDistPath)) {
+        logger.warn(
+          `⚠️ Guest project dist folder not found: ${guestDistPath}. Skipping HTML base href fix.`
+        );
+        return;
+      }
+
+      // Recursively find all HTML files in the guest dist folder
+      const htmlFiles: string[] = [];
+      function findHtmlFiles(dir: string) {
+        const entries = readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = join(dir, entry.name);
+          if (entry.isDirectory()) {
+            findHtmlFiles(fullPath);
+          } else if (entry.isFile() && entry.name.endsWith('.html')) {
+            htmlFiles.push(fullPath);
+          }
+        }
+      }
+
+      findHtmlFiles(guestDistPath);
+
+      if (htmlFiles.length === 0) {
+        logger.warn(
+          `⚠️ No HTML files found in guest project dist folder: ${guestDistPath}`
+        );
+        return;
+      }
+
+      if (htmlFiles.length > 1) {
+        logger.warn(
+          `⚠️ Found ${htmlFiles.length} HTML files in guest project dist folder. Expected only one (usually index.html). Files: ${htmlFiles.map(f => basename(f)).join(', ')}`
+        );
+      }
+
+      // Process each HTML file
+      for (const htmlFile of htmlFiles) {
+        try {
+          let htmlContent = readFileSync(htmlFile, 'utf-8');
+          let modified = false;
+
+          // 1. Add/update base href
+          const baseHrefRegex = /<base\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>/i;
+          const hasBaseHref = baseHrefRegex.test(htmlContent);
+
+          if (!hasBaseHref) {
+            // Insert <base href="./" /> right after <head> tag
+            htmlContent = htmlContent.replace(
+              /(<head[^>]*>)/i,
+              `$1\n    <base href="./" />`
+            );
+            modified = true;
+            logger.info(
+              `✅ Added <base href="./" /> to ${basename(htmlFile)}`
+            );
+          } else {
+            // Update existing base href to "./"
+            htmlContent = htmlContent.replace(
+              baseHrefRegex,
+              '<base href="./" />'
+            );
+            modified = true;
+            logger.info(
+              `✅ Updated <base href> to "./" in ${basename(htmlFile)}`
+            );
+          }
+
+          // 2. Convert absolute paths to relative paths in href and src attributes
+          // If href="/..." → change to href="./..."
+          // If src="/..." → change to src="./..."
+          htmlContent = htmlContent.replace(
+            /(href|src)=(["'])\//g,
+            '$1=$2./'
+          );
+          modified = true;
+          logger.info(
+            `✅ Converted absolute paths to relative in ${basename(htmlFile)}`
+          );
+
+          if (modified) {
+            writeFileSync(htmlFile, htmlContent, 'utf-8');
+          }
+        } catch (error) {
+          logger.error(
+            `❌ Failed to process HTML file ${htmlFile}: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    },
+  };
+}
+
 export async function electronNxViteConfig() {
   return await electron({
     main: {
@@ -171,6 +334,8 @@ export async function electronNxViteConfig() {
               'src/main/native/reference.json'
             ),
           }),
+          renameToCommonJS(),
+          fixGuestHtmlBaseHref(),
         ],
       },
     },
@@ -192,7 +357,7 @@ export async function electronNxViteConfig() {
             },
           },
         },
-        plugins: [],
+        plugins: [renameToCommonJS()],
       }),
     },
     // Ployfill the Electron and Node.js API for Renderer process.

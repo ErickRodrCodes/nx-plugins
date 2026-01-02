@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from 'electron'
-import { createRequire } from 'node:module'
+// import { createRequire } from 'node:module' // Uncomment if you need to require CommonJS modules in ESM
 import { fileURLToPath } from 'node:url'
 import { join } from 'path'
 
@@ -32,7 +32,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: join(__dirname, 'preload.js'),
+      preload: join(__dirname, process.env.NODE_ENV === 'development' ? 'preload.js' : 'preload.cjs'),
       sandbox: false
     },
   })

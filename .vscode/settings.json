@@ -73,5 +73,9 @@
     "**/electron-builder-output/**": true,
     "**/release/**": true,
     "**/electron-dist/**": true
+  },
+  "sonarlint.connectedMode.project": {
+    "connectionId": "erickrodrcodes",
+    "projectKey": "ErickRodrCodes_nx-plugins"
   }
 }

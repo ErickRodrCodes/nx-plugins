@@ -124,7 +124,11 @@ The `endsPattern` tells VS Code when your application is fully ready for debuggi
 
 1. **VS Code waits** for this pattern to appear in the terminal output
 2. **Only then** does it attach the debuggers to both processes
-3. **If the pattern is wrong**, debuggers may attach before your app is ready, causing connection failures
+3. **If the pattern is wrong**, debuggers won't attach before your app is ready, causing connection failures
+
+::: warning
+Note that the following patterns might change in the future, so it is recommended to check the output consoles of your frontend application to find the correct pattern.
+:::
 
 **Choose the correct pattern for your frontend framework**:
 
@@ -259,32 +263,11 @@ if (process.env.NODE_ENV === 'development') {
 
 ## Troubleshooting
 
-### Common Issues
+Encountering debugging issues? See the [Troubleshooting](/troubleshooting#debugging-issues) page for solutions to common problems including:
 
-**Port Already in Use**
-
-- Check if another process is using the debugging ports
-- Change the ports in your configuration files
-
-**Debugger Won't Attach**
-
-- Ensure the Electron app is running in development mode
-- Verify the ports match between your app and VS Code configuration
-- Check that the debugging flags are enabled in your Vite configuration
-
-**Breakpoints Not Hitting**
-
-- Ensure source maps are enabled in development
-- Verify the file paths in your debugger configuration
-- Check that you're debugging the correct process (main vs renderer)
-
-### Key Configuration Files
-
-The debugging setup involves these files in your project:
-
-- **`debugme.md`** - Project-specific debugging guide with exact configurations (start here!)
-- **`electron-nx-vite.config.ts`** - Main Electron configuration including debug port settings
-- **`.env`** - Environment variables for customizing debug ports
+- Debugger not attaching
+- Breakpoints not hitting
+- Port conflicts
 
 ## Next Steps
 

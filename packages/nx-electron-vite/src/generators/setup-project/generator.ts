@@ -151,7 +151,7 @@ export async function updateDependencies(
           guestProject: options.guestProject,
           hostProjectRoot: '{projectRoot}',
           mainOutputPath: options.outputDistFolder,
-          mainOutputFilename: 'main.js',
+          mainOutputFilename: 'main.cjs',
           author: options.author,
           description: options.description,
         },

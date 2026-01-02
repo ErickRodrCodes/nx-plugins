@@ -41,4 +41,5 @@ The generator creates a complete Electron project structure:
 - `package.json` - Project-specific package configuration
 - `index.html` - Renderer process entry HTML
 - `debugme.md` - Project-specific debugging setup guide
+- `src/resources/sign-windows.js` - Windows code signing script
 - TypeScript configurations (`tsconfig.json`, `tsconfig.app.json`, `tsconfig.spec.json`)

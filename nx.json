@@ -35,39 +35,64 @@
     "@nx/jest:jest": {
       "cache": true,
       "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js"],
-      "options": { "passWithNoTests": true },
-      "configurations": { "ci": { "ci": true, "codeCoverage": true } }
+      "options": {
+        "passWithNoTests": true
+      },
+      "configurations": {
+        "ci": {
+          "ci": true,
+          "codeCoverage": true
+        }
+      }
     },
     "@angular-devkit/build-angular:application": {
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "e2e-ci--**/*": { "dependsOn": ["^build"] },
+    "e2e-ci--**/*": {
+      "dependsOn": ["^build"]
+    },
     "@nx/esbuild:esbuild": {
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "publish-package": { "dependsOn": ["build", "test"] },
+    "publish-package": {
+      "dependsOn": ["build", "test"]
+    },
     "nx-release-publish": {
-      "options": { "packageRoot": "dist/packages/{projectName}" }
+      "options": {
+        "packageRoot": "dist/packages/{projectName}"
+      }
     }
   },
   "plugins": [
-    { "plugin": "@nx/playwright/plugin", "options": { "targetName": "e2e" } },
+    {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e"
+      }
+    },
     {
       "plugin": "@nx/eslint/plugin",
-      "options": { "targetName": "eslint:lint" }
+      "options": {
+        "targetName": "eslint:lint"
+      }
     },
     {
       "plugin": "@nx/vite/plugin",
       "options": {
         "buildTargetName": "build",
-        "testTargetName": "test",
         "serveTargetName": "serve",
         "previewTargetName": "preview",
         "serveStaticTargetName": "serve-static"
+      }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "options": {
+        "testTargetName": "test"
       }
     }
   ],
@@ -85,10 +110,17 @@
         "linter": "eslint",
         "bundler": "vite"
       },
-      "component": { "style": "css" },
-      "library": { "style": "css", "linter": "eslint" }
+      "component": {
+        "style": "css"
+      },
+      "library": {
+        "style": "css",
+        "linter": "eslint"
+      }
     },
-    "@nx/angular:component": { "style": "css" },
+    "@nx/angular:component": {
+      "style": "css"
+    },
     "@nx/web:application": {
       "style": "css",
       "linter": "eslint",
@@ -100,8 +132,14 @@
     "projects": ["packages/*"],
     "projectsRelationship": "independent",
     "releaseTagPattern": "{projectName}/v{version}",
-    "git": { "commitMessage": "chore(release): 🚀 release packages [skip ci]" },
-    "changelog": { "projectChangelogs": { "createRelease": "github" } },
+    "git": {
+      "commitMessage": "chore(release): 🚀 release packages [skip ci]"
+    },
+    "changelog": {
+      "projectChangelogs": {
+        "createRelease": "github"
+      }
+    },
     "version": {
       "preVersionCommand": "pnpm nx run-many -t build --skip-nx-cache --parallel 4",
       "conventionalCommits": true,
@@ -120,8 +158,19 @@
       }
     }
   },
-  "workspaceLayout": { "appsDir": "e2e", "libsDir": "packages" },
-  "pluginsConfig": { "@nx/js": { "analyzeSourceFiles": true } },
+  "workspaceLayout": {
+    "appsDir": "e2e",
+    "libsDir": "packages"
+  },
+  "pluginsConfig": {
+    "@nx/js": {
+      "analyzeSourceFiles": true
+    }
+  },
   "useLegacyCache": false,
-  "nxCloudId": "69061b12b43dd482385f6d70"
+  "nxCloudId": "69061b12b43dd482385f6d70",
+  "tui": {
+    "enabled": true,
+    "autoExit": 3
+  }
 }
