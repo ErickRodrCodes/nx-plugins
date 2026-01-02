@@ -49,7 +49,7 @@ export interface WorkspaceOptions {
 }
 
 export class WorkspaceGenerator {
-  private tmpDir: string;
+  private readonly tmpDir: string;
   private packageManager: 'npm' | 'yarn' | 'pnpm' = 'npm';
 
   private constructor(tmpDir: string) {
