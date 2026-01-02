@@ -142,7 +142,7 @@ export async function getViteOutputPath(
   // Match: outDir: './dist' or outDir: "./dist" or outDir: '../../dist/apps/something'
   const outDirMatch = viteConfigContent.match(/outDir:\s*['"]([^'"]+)['"]/);
 
-  if (outDirMatch && outDirMatch?.[1]) {
+  if (outDirMatch?.[1]) {
     const outputPath = outDirMatch[1];
     // Join project root with the outDir to get full path from workspace root
     const fullPath = path.posix.join(projectConfig.root, outputPath);
