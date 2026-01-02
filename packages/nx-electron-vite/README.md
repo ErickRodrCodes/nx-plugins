@@ -23,4 +23,8 @@
 
 ## License
 
-Copyright (c) 2024-present Erick Rodriguez. Licensed under the MIT License (MIT)
+Copyright (c) 2024-present Erick Rodriguez. Licensed under the [MIT License](LICENSE).
+
+### Disclaimer
+
+This software is provided "as is", without warranty of any kind. The user is solely responsible for the execution and use of this code. The authors shall not be liable for any damages arising from the use of this software. See the [LICENSE](LICENSE) file for full terms.
