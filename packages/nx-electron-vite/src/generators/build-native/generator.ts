@@ -7,7 +7,7 @@ import {
   Tree,
 } from '@nx/devkit';
 import * as fs from 'node:fs';
-import * as path from 'path';
+import * as path from 'node:path';
 import { rebuildNativeModules } from '../../util/utils';
 import { buldNativeSchema } from './schema';
 

@@ -4,7 +4,7 @@ import electron from 'vite-plugin-electron/simple';
 import waitOn from 'wait-on';
 
 import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { basename, join, resolve } from 'path';
+import { basename, join, resolve } from 'node:path';
 import { Plugin, UserConfig, createLogger } from 'vite';
 
 const workspaceRoot = process.cwd();
