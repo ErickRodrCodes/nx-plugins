@@ -24,7 +24,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: -Dsonar.test.exclusions=packages/**/*.spec.ts
+          args: -Dsonar.test.exclusions=packages/**/*.spec.ts;smoke-tests/**/*.spec.ts
 
       # Check the Quality Gate status.
       - name: SonarQube Quality Gate check
