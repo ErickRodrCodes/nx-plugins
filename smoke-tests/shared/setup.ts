@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { mkdirSync } from 'fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { afterAll, beforeAll } from 'vitest';
@@ -55,7 +55,7 @@ beforeAll(async () => {
   // Step 3: Create workspace
   console.log('Creating workspace...');
   const workspacePath = join(smokeTestsTmpDir, 'smoke-test-workspace');
-  workspaceGenerator = new WorkspaceGenerator(workspacePath, true);
+  workspaceGenerator = WorkspaceGenerator.fromAbsolutePath(workspacePath);
   await workspaceGenerator.createWorkspace({
     name: 'smoke-test-workspace',
     preset: 'apps',

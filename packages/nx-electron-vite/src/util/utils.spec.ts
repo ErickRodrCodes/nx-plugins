@@ -9,34 +9,8 @@ import { normalizeOptions } from './utils';
 // Helper function to normalize paths for cross-platform testing
 const normalizePath = (p: string) => p.split(path.sep).join('/');
 
-// TODO: Fix Vitest 4 mocking - these mocks cause syntax errors in Vitest 4
-// Need to refactor to use spies or actual implementations
-/*
-vi.mock('@nx/devkit', async (importOriginal) => {
-  const actual: any = await importOriginal();
-  return {
-    ...actual,
-    getWorkspaceLayout: vi.fn().mockReturnValue({ appsDir: 'apps' }),
-    readProjectConfiguration: vi.fn().mockReturnValue({
-      targets: {
-        build: {
-          options: {
-            outputPath: 'dist/apps/test-app',
-          },
-        },
-      },
-    }),
-    offsetFromRoot: vi.fn().mockReturnValue('../'),
-  };
-});
-
-vi.mock('@nx/devkit/src/generators/project-name-and-root-utils', () => ({
-  determineProjectNameAndRootOptions: vi.fn(),
-}));
-*/
-
 // TODO: Fix Vitest 4 mocking issues - these tests need to be refactored to work with Vitest 4's stricter mocking
-describe.skip('utils', () => {
+describe('utils', () => {
   let tree: Tree;
 
   beforeEach(() => {
@@ -393,7 +367,7 @@ describe.skip('utils', () => {
     vi.mocked(devkit.determineProjectNameAndRootOptions).mockResolvedValue({
       projectName: 'foo-electron',
       projectRoot: 'apps/foo-electron',
-    });
+    } as devkit.ProjectNameAndRootOptions);
 
     const schema: SetupProjectSchema = {
       guestProject: 'foo',
@@ -429,7 +403,7 @@ describe.skip('utils', () => {
     vi.mocked(devkit.determineProjectNameAndRootOptions).mockResolvedValue({
       projectName: 'custom-name',
       projectRoot: 'apps/custom-name',
-    });
+    } as devkit.ProjectNameAndRootOptions);
 
     const schema: SetupProjectSchema = {
       guestProject: 'foo',

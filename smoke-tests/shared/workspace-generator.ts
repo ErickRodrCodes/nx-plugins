@@ -52,15 +52,24 @@ export class WorkspaceGenerator {
   private tmpDir: string;
   private packageManager: 'npm' | 'yarn' | 'pnpm' = 'npm';
 
-  constructor(
-    tmpDirNameOrPath: string = 'tmp-smoke-test',
-    isAbsolute: boolean = false
-  ) {
-    if (isAbsolute) {
-      this.tmpDir = tmpDirNameOrPath;
-    } else {
-      this.tmpDir = join(smokeTestsDir, 'tmp', tmpDirNameOrPath);
-    }
+  private constructor(tmpDir: string) {
+    this.tmpDir = tmpDir;
+  }
+
+  /**
+   * Creates a WorkspaceGenerator with an absolute path
+   */
+  static fromAbsolutePath(absolutePath: string): WorkspaceGenerator {
+    return new WorkspaceGenerator(absolutePath);
+  }
+
+  /**
+   * Creates a WorkspaceGenerator with a path relative to smoke-tests/tmp/
+   */
+  static fromRelativePath(
+    relativeDirName: string = 'tmp-smoke-test'
+  ): WorkspaceGenerator {
+    return new WorkspaceGenerator(join(smokeTestsDir, 'tmp', relativeDirName));
   }
 
   /**
