@@ -1,21 +1,16 @@
 import {
   ExecutorContext,
-  workspaceRoot,
-  logger,
-  runExecutor,
   getPackageManagerCommand,
+  logger,
+  workspaceRoot,
 } from '@nx/devkit';
-import { readFileSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
+
+import { unlink, writeFile } from 'node:fs/promises';
 import * as path from 'node:path/posix';
 
-import { BuildElectronExecutorSchema } from './schema';
-import {
-  deleteDirectory,
-  restorePackageJson,
-  runCommandUntil,
-} from '../../util/utils';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { BuildElectronExecutorSchema } from './schema';
 
 export default async function electronBuildExecutor(
   options: BuildElectronExecutorSchema,
@@ -30,96 +25,88 @@ export default async function electronBuildExecutor(
     description,
   } = options;
 
-  logger.warn(
-    `
-===============================
-⚠️ ⚠️ ⚠️  Important ⚠️ ⚠️ ⚠️
-
-NEVER run this executor in parallel with other nx-electron-vite builders or a custom electron build.
-It will write the package.json of the workspace to define the main js target file for your project.
-Our advice is to run multiple nx-electron-vite projects in sequence to prevent undesired side effects.
-
-The dist folder will be cleaned while running this executor.
-===============================
-  `
+  logger.info(
+    `🧪 Starting distribution task via Nx dist for electron application for host project ${hostProject}...`
   );
-
-  await deleteDirectory('./dist');
 
   const workspace = workspaceRoot;
-  const packageJson = readFileSync(
-    path.join(workspace, 'package.json'),
-    'utf-8'
-  );
-  const originalPackageJson = JSON.parse(packageJson);
-  const parsedPackageJson = JSON.parse(packageJson);
-  parsedPackageJson.main = path.join(mainOutputPath, mainOutputFilename);
-  parsedPackageJson.author = author;
-  parsedPackageJson.description = description;
-  // TODO: add author and description to package.json
 
-  logger.warn(`🧪 Updating package.json to be used on the build process.`);
-  await writeFile(
-    path.join(workspace, 'package.json'),
-    JSON.stringify(parsedPackageJson, null, 2)
+  // Create a temporary configuration file that extends the original one
+  // and adds the necessary metadata overrides
+  const resolveConfigFile = join(
+    hostProjectRoot,
+    'src',
+    'electron-builder.yml'
   );
 
-  logger.warn(`🧪 Running nx run ${hostProject}:build to generate nx-electron-vite build files...
-`);
+  const tempConfigPath = path.join(
+    workspace,
+    `electron-builder.${hostProject}.temp.json`
+  );
 
-  for await (const result of await runExecutor(
-    { project: hostProject, target: 'build' },
-    {},
-    context
-  )) {
-    if (!result.success) {
-      logger.error('Build failed.');
-      await restorePackageJson(workspace, originalPackageJson);
-      return { success: false };
-    }
-  }
+  const tempConfig = {
+    extends: resolveConfigFile,
+    extraMetadata: {
+      main: path.join(mainOutputPath, mainOutputFilename),
+      author: author,
+      description: description,
+      // Add name and version to avoid electron-builder looking up the workspace package.json
+      name: hostProject,
+      version: '0.0.0',
+    },
+  };
 
-  logger.warn(`🧪 Running nx run ${hostProject}:nx-electron-icons to generate to generate the set of icons for application and setup files...
-`);
-
-  for await (const result of await runExecutor(
-    { project: hostProject, target: 'nx-electron-icons' },
-    {},
-    context
-  )) {
-    if (!result.success) {
-      logger.error('Build failed.');
-      await restorePackageJson(workspace, originalPackageJson);
-      return { success: false };
-    }
-  }
+  logger.warn(
+    `🧪 Creating temporary electron-builder config at ${tempConfigPath}`
+  );
+  await writeFile(tempConfigPath, JSON.stringify(tempConfig, null, 2));
 
   logger.warn(`
 🧪 Building Electron App with electron-builder from built files from ${hostProject}...
 `);
 
-  const resolveConfigFile = join(
-    hostProjectRoot,
-    'electron',
-    'electron-builder.yml'
-  );
-  const commandLine = `${
-    getPackageManagerCommand().exec
-  } electron-builder --config=${resolveConfigFile}`;
+  // Use spawnSync with shell: false for security (avoids shell injection)
+  // Note: On Windows, we need shell: true for .cmd scripts (npx.cmd, pnpm.cmd)
+  // The security risk is mitigated by using fixed arguments (no user input in command)
+  const pmc = getPackageManagerCommand();
+  const isWindows = process.platform === 'win32';
+
+  // Build the command as an array of arguments for security
+  const execCommand = pmc.exec.split(' ')[0]; // e.g., 'npx', 'pnpm', 'yarn'
+  const execArgs = [
+    ...pmc.exec.split(' ').slice(1), // Additional args from package manager (e.g., 'exec' for pnpm)
+    'electron-builder',
+    `--config=${tempConfigPath}`,
+  ].filter(Boolean);
 
   try {
-    await runCommandUntil(commandLine, (criteria) =>
-      criteria.includes('building block map')
-    );
+    const result = spawnSync(execCommand, execArgs, {
+      cwd: workspaceRoot,
+      stdio: 'inherit',
+      encoding: 'utf-8',
+      // Windows requires shell: true for .cmd scripts
+      // Security is maintained because all arguments are fixed/controlled values
+      shell: isWindows,
+    });
+
+    if (result.status !== 0) {
+      logger.error('Electron build failed.');
+      return { success: false };
+    }
   } catch (error) {
     logger.error('Electron build failed.');
-    await restorePackageJson(workspace, originalPackageJson);
     return { success: false };
+  } finally {
+    try {
+      await unlink(tempConfigPath);
+      logger.info('🧹 Cleaned up temporary config file.');
+    } catch (e) {
+      logger.warn('⚠️ Failed to clean up temporary config file.');
+    }
   }
 
   logger.warn(`
-✅ Electron build completed. Restoring package.json...`);
-  await restorePackageJson(workspace, originalPackageJson);
+✅ Electron build completed.`);
 
   return {
     success: true,

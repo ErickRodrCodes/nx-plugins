@@ -1,50 +1,82 @@
-import { BuildIconsExecutorSchema } from './schema';
 import {
-  osPlatform,
+  CommandParams,
   resolveIconCommand,
-  resolveIconCommandParams,
+  ResolveIconCommandParams,
   runCommandUntil,
 } from '../../util/utils';
+import { BuildIconsExecutorSchema } from './schema';
 
-export default async function runExecutor(options: BuildIconsExecutorSchema) {
+export const generateAppIcon = async (options: BuildIconsExecutorSchema) =>
+  runIconGenerator(options, 'icon');
+export const generateAppSetup = async (options: BuildIconsExecutorSchema) =>
+  runIconGenerator(options, 'setup');
+
+async function runIconGenerator(
+  options: BuildIconsExecutorSchema,
+  type: 'icon' | 'setup'
+) {
   const successString = 'png2icons done';
   const { hostProject, hostProjectRoot, iconOutputPath } = options;
 
-  const generalParams = {
+  const generalParams: CommandParams = {
     hostProject,
     hostProjectRoot,
+    osPlatform: process.platform,
     iconOutputPath,
-    osPlatform,
   };
 
-  const paramIcon: resolveIconCommandParams = {
+  const paramIcon: ResolveIconCommandParams = {
     ...generalParams,
-    type: 'icon',
-  };
-  const paramSetup: resolveIconCommandParams = {
-    ...generalParams,
-    type: 'setup',
+    type,
   };
 
-  const iconAppCommand = await resolveIconCommand(paramIcon);
-  const iconSetupCommand = await resolveIconCommand(paramSetup);
+  const appCommand = await resolveIconCommand(paramIcon);
 
-  const responseIcon = await runCommandUntil(iconAppCommand, (criteria) => {
-    return criteria.includes(successString);
-  });
+  const response = await runCommandUntil(appCommand, (criteria) =>
+    criteria.includes(successString)
+  );
 
-  const responseSetup = await runCommandUntil(iconSetupCommand, (criteria) => {
-    return criteria.includes(successString);
-  });
-
-  if (!responseSetup || !responseIcon) {
+  if (!response) {
     return {
       success: false,
-      message: 'Error while generating icons',
+      message: `Error while generating icons for ${type}`,
     };
   }
 
   return {
     success: true,
   };
+}
+
+// The main executor function for nx
+export default async function runExecutor(options: BuildIconsExecutorSchema) {
+  // Dispatch based on the provided mode:
+  switch (options.mode) {
+    case 'app': {
+      return await generateAppIcon(options);
+    }
+    case 'setup': {
+      return await generateAppSetup(options);
+    }
+    case 'composite': {
+      // Run the app icon generation first.
+      const appResult = await generateAppIcon(options);
+      if (!appResult.success) {
+        return appResult;
+      }
+      // Then run the setup icon generation.
+      const setupResult = await generateAppSetup(options);
+      if (!setupResult.success) {
+        return setupResult;
+      }
+      return { success: true };
+    }
+    default: {
+      return {
+        success: false,
+        message:
+          'Invalid mode provided. Valid values are "app", "setup", or "composite".',
+      };
+    }
+  }
 }

@@ -1,0 +1,38 @@
+// https://vitepress.dev/guide/custom-theme
+import 'virtual:group-icons.css';
+import DefaultTheme from 'vitepress/theme';
+import { h } from 'vue';
+import './style.css';
+
+import 'viewerjs/dist/viewer.min.css';
+import { useRoute } from 'vitepress';
+import imageViewer from 'vitepress-plugin-image-viewer';
+// @ts-expect-error - vImageViewer is not typed
+import vImageViewer from 'vitepress-plugin-image-viewer/lib/vImageViewer.vue';
+import { withMermaid } from 'vitepress-plugin-mermaid';
+
+export default withMermaid({
+  // @ts-expect-error - DefaultTheme is not typed
+  extends: DefaultTheme,
+  Layout: () => {
+    return h(DefaultTheme.Layout, null, {
+      // https://vitepress.dev/guide/extending-default-theme#layout-slots - Layout slots
+    });
+  },
+  enhanceApp(ctx) {
+    DefaultTheme.enhanceApp(ctx);
+    // Register global components, if you don't want to use it, you don't need to add it
+    ctx.app.component('vImageViewer', vImageViewer);
+    // ...
+  },
+  setup() {
+    // Get route
+    const route = useRoute();
+    // Using
+    imageViewer(route);
+  },
+  mermaid: {},
+  mermaidPlugin: {
+    class: 'mermaid my-class', // set additional css classes for parent container - Mermaid plugin
+  },
+});

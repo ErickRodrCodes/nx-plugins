@@ -1,6 +1,28 @@
-export const electronBuilderVersion = '^24.13.3';
-export const electronVersion = '^30.0.2';
-export const vitePluginElectronRendererVersion = '^0.14.5';
-export const vitePluginElectronVersion = '^0.28.6';
-export const png2iconsVersion = '^2.0.1';
-export const suggestedNodeVersion = 'v18.18.0';
+export const versionLibraries = {
+  electronBuilder: '26.4.0',
+  electronRebuild: '4.0.2',
+  electron: '39.2.7',
+  vitePluginElectronRenderer: '0.14.6',
+  vitePluginElectron: '0.29.0',
+  png2icons: '2.0.1',
+  suggestedNode: 'v22.21.1',
+  waitOn: '9.0.1',
+  node: '22.20.0',
+  vitest: '4.0.0',
+  electronIsDev: '3.0.1',
+  electronLog: '5.4.3',
+};
+
+export const devDependencies: string[] = [
+  '@nx/vite',
+  'electron-builder',
+  '@electron/rebuild',
+  'electron',
+  'vite-plugin-electron-renderer',
+  'vite-plugin-electron',
+  'png2icons',
+  'wait-on',
+  'vitest',
+  'electron-is-dev',
+  'electron-log',
+];

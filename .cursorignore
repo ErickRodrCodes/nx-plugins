@@ -1,0 +1,25 @@
+# Electron application archives
+*.asar
+
+# Build and distribution files
+dist/
+tmp/
+build/
+out/
+
+# Electron specific build artifacts
+electron-builder-output/
+release/
+electron-dist/
+
+# Native modules built for Electron
+*.node
+
+# Coverage and test results
+coverage/
+test-results/
+*.lcov
+
+# Temporary files
+.tmp/
+temp/

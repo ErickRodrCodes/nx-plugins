@@ -1,36 +1,439 @@
 // Nx Electron plugin for vite
-import electron from 'vite-plugin-electron/simple';
 import { startup } from 'vite-plugin-electron';
+import electron from 'vite-plugin-electron/simple';
+import waitOn from 'wait-on';
 
-export default function electronNxViteConfig() {
-  return electron({
+import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs';
+import { basename, join, resolve } from 'path';
+import { Plugin, UserConfig, createLogger } from 'vite';
+
+const workspaceRoot = process.cwd();
+const projectRoot = __dirname;
+const logger = createLogger('info', {
+  prefix: '[Nx Electron Vite Plugin]',
+});
+
+const pkg =  JSON.parse(readFileSync(resolve(workspaceRoot, 'package.json'), 'utf-8'));
+const dependencies = Object.keys('dependencies' in pkg ? pkg.dependencies : {});
+
+function renameToCommonJS(): Plugin {
+  let isProductionBuild = false;
+  return {
+    name: 'rename-to-commonjs',
+    configResolved(config) {
+      isProductionBuild = config.mode === 'production' && !config.build.watch;
+    },
+    closeBundle() {
+      if (!isProductionBuild) return;
+
+      const distPath = resolve(workspaceRoot, '<%= outputDistFolder %>');
+      const fs = require('fs');
+      const path = require('path');
+
+      // Rename .js files to .cjs for CommonJS compatibility
+      const filesToRename = ['main.js', 'preload.js'];
+      filesToRename.forEach(fileName => {
+        const jsPath = path.join(distPath, fileName);
+        const cjsPath = path.join(distPath, fileName.replace('.js', '.cjs'));
+        if (fs.existsSync(jsPath)) {
+          fs.renameSync(jsPath, cjsPath);
+          logger.info(`✅ Renamed ${fileName} to ${fileName.replace('.js', '.cjs')} for CommonJS compatibility`);
+        }
+      });
+    }
+  };
+}
+
+function cleanDist(): Plugin {
+  let isProductionBuild = false;
+  return {
+    name: 'build-start-task',
+    configResolved(config) {
+      // Detect production build: mode is 'production' AND not in watch mode
+      isProductionBuild = config.mode === 'production' && !config.build.watch;
+      console.log('🔍 Build mode detection:', {
+        mode: config.mode,
+        watch: config.build.watch,
+        isProductionBuild
+      });
+    },
+    buildStart() {
+      // here a example of code you can use to execute something at the start of the build process
+      logger.info('⚠️ Started Vite Build Start lifecycle')
+    },
+    closeBundle(){
+      // Copy package.json to dist
+      const distPath = resolve(workspaceRoot, '<%= outputDistFolder %>');
+      const pkgJsonSource = resolve(projectRoot, 'package.json');
+      const pkgJsonDest = resolve(distPath, 'package.json');
+      try {
+        const pkgJson = JSON.parse(readFileSync(pkgJsonSource, 'utf-8'));
+
+        // For production builds, add type: "module" and update main entry
+        if (isProductionBuild) {
+          pkgJson.type = 'module';
+          pkgJson.main = './main.cjs';
+          logger.info('✅ Copied package.json to dist with type: "module" and main: "./main.cjs"');
+        } else {
+          logger.info('✅ Copied package.json to dist (development mode - no type modification)');
+        }
+
+        writeFileSync(pkgJsonDest, JSON.stringify(pkgJson, null, 2));
+      } catch (e) {
+        logger.warn('⚠️  Failed to copy package.json to dist');
+      }
+      // here a example of code you can use to execute something at the start of the build process
+      logger.info('⚠️ Started Vite Build close bundle lifecycle')
+    }
+  };
+}
+
+function copyNative(natives: { pathReference: string }): Plugin {
+  return {
+    name: 'copy-native',
+    closeBundle() {
+      const referenceFile = resolve(natives.pathReference);
+      const referenceFileContent: {
+        [key: string]: { path: string; version: string };
+      } = JSON.parse(readFileSync(referenceFile, 'utf-8'));
+      const nativesToCopy = Object.keys(referenceFileContent);
+      const results: { native: string; distPath: string; version: string }[] =
+        [];
+      const alreadyCopied: string[] = [];
+
+      for (const native of nativesToCopy) {
+        const distPath = resolve(workspaceRoot, '<%= outputDistFolder %>');
+        const nativePath = resolve(
+          projectRoot,
+          'src/main/native',
+          referenceFileContent[native].path
+        );
+
+        const getFileNameFromNativePath = basename(nativePath);
+        try {
+          copyFileSync(nativePath, `${distPath}/${getFileNameFromNativePath}`);
+          results.push({
+            native,
+            distPath,
+            version: referenceFileContent[native].version,
+          });
+        } catch (e) {
+          logger.error(
+            `⛔ Native module ${native} is being used at the moment. More likely it is already copied.`,
+            {
+              timestamp: true,
+            }
+          );
+          alreadyCopied.push(native);
+        }
+      }
+      if (results.length > 0) {
+        logger.info('Native modules copied:', {
+          timestamp: true,
+        });
+        results.forEach((result) => {
+          logger.info(
+            `📦 ${result.native} (${result.version}) → ${result.distPath}`,
+            {
+              timestamp: true,
+            }
+          );
+        });
+        logger.info(`📜 Total: ${results.length} modules`, {
+          timestamp: true,
+        });
+      } else if (alreadyCopied.length > 0) {
+        alreadyCopied.forEach((result) => {
+          logger.info(
+            `⚠️  Native module ${result} was already copied. skipping...`,
+            {
+              timestamp: true,
+            }
+          );
+        });
+      } else {
+        logger.warn(
+          '✅  No native modules found in reference file, continuing...',
+          {
+            timestamp: true,
+          }
+        );
+      }
+    },
+  };
+}
+
+function fixGuestHtmlBaseHref(): Plugin {
+  let isProductionBuild = false;
+  return {
+    name: 'fix-guest-html-base-href',
+    configResolved(config) {
+      isProductionBuild = config.mode === 'production' && !config.build.watch;
+    },
+    closeBundle() {
+      if (!isProductionBuild) return;
+
+      const guestDistPath = resolve(workspaceRoot, '<%= guestDistFolder %>');
+
+      if (!existsSync(guestDistPath)) {
+        logger.warn(
+          `⚠️ Guest project dist folder not found: ${guestDistPath}. Skipping HTML base href fix.`
+        );
+        return;
+      }
+
+      // Recursively find all HTML files in the guest dist folder
+      const htmlFiles: string[] = [];
+      function findHtmlFiles(dir: string) {
+        const entries = readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = join(dir, entry.name);
+          if (entry.isDirectory()) {
+            findHtmlFiles(fullPath);
+          } else if (entry.isFile() && entry.name.endsWith('.html')) {
+            htmlFiles.push(fullPath);
+          }
+        }
+      }
+
+      findHtmlFiles(guestDistPath);
+
+      if (htmlFiles.length === 0) {
+        logger.warn(
+          `⚠️ No HTML files found in guest project dist folder: ${guestDistPath}`
+        );
+        return;
+      }
+
+      if (htmlFiles.length > 1) {
+        logger.warn(
+          `⚠️ Found ${htmlFiles.length} HTML files in guest project dist folder. Expected only one (usually index.html). Files: ${htmlFiles.map(f => basename(f)).join(', ')}`
+        );
+      }
+
+      // Process each HTML file
+      for (const htmlFile of htmlFiles) {
+        try {
+          let htmlContent = readFileSync(htmlFile, 'utf-8');
+          let modified = false;
+
+          // 1. Add/update base href
+          const baseHrefRegex = /<base\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>/i;
+          const hasBaseHref = baseHrefRegex.test(htmlContent);
+
+          if (!hasBaseHref) {
+            // Insert <base href="./" /> right after <head> tag
+            htmlContent = htmlContent.replace(
+              /(<head[^>]*>)/i,
+              `$1\n    <base href="./" />`
+            );
+            modified = true;
+            logger.info(
+              `✅ Added <base href="./" /> to ${basename(htmlFile)}`
+            );
+          } else {
+            // Update existing base href to "./"
+            htmlContent = htmlContent.replace(
+              baseHrefRegex,
+              '<base href="./" />'
+            );
+            modified = true;
+            logger.info(
+              `✅ Updated <base href> to "./" in ${basename(htmlFile)}`
+            );
+          }
+
+          // 2. Convert absolute paths to relative paths in href and src attributes
+          // If href="/..." → change to href="./..."
+          // If src="/..." → change to src="./..."
+          htmlContent = htmlContent.replace(
+            /(href|src)=(["'])\//g,
+            '$1=$2./'
+          );
+          modified = true;
+          logger.info(
+            `✅ Converted absolute paths to relative in ${basename(htmlFile)}`
+          );
+
+          if (modified) {
+            writeFileSync(htmlFile, htmlContent, 'utf-8');
+          }
+        } catch (error) {
+          logger.error(
+            `❌ Failed to process HTML file ${htmlFile}: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    },
+  };
+}
+
+export async function electronNxViteConfig() {
+  return await electron({
     main: {
-      entry: 'electron/main/main.ts',
+      entry: resolve(projectRoot, 'src/main/main.ts'),
       onstart: () => {
-        startup(['--inspect=5858,'../../dist/apps/<%= hostProject %>-electron/main.js']);
+        const mainPath = resolve(
+          workspaceRoot,
+          '<%= outputDistFolder %>/main.js'
+        );
+        const debugPortMain = process.env['DEBUG_PORT_MAIN'] ?? 5858
+        const debugPortRenderer = process.env['DEBUG_PORT_RENDERER'] ?? 4975
+        logger.info('🚀 Starting Electron with main path: ' + mainPath, {
+          timestamp: true,
+        });
+        startup(
+          [
+            /**
+             * port to debug the main process
+             */
+            `--inspect=${debugPortMain}`,
+            /**
+             * port to debug the renderer process
+             */
+            `--remote-debugging-port=${debugPortRenderer}`,
+            /**
+             * additional flags
+             */
+            '--enable-logging',
+            '--log-level=0',
+            mainPath,
+          ],
+          {
+            cwd: workspaceRoot,
+            env: {
+              ...process.env,
+              ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+              NODE_ENV: 'development',
+            },
+          }
+        );
       },
       vite: {
+        logLevel: 'info',
         build: {
-          outDir: '../../dist/apps/<%= hostProject %>-electron',
+          commonjsOptions: {
+            ignoreDynamicRequires: true,
+          },
+          outDir: resolve(workspaceRoot, '<%= outputDistFolder %>'),
+          sourcemap: true,
+          minify: false,
+          rollupOptions: {
+            external: dependencies,
+            output: {
+              entryFileNames: '[name].js',
+              chunkFileNames: '[name].js',
+            },
+          },
         },
+        plugins: [
+          cleanDist(),
+          copyNative({
+            pathReference: resolve(
+              projectRoot,
+              'src/main/native/reference.json'
+            ),
+          }),
+          renameToCommonJS(),
+          fixGuestHtmlBaseHref(),
+        ],
       },
     },
     preload: {
-      vite: {
+      input: resolve(projectRoot, 'src/preload/preload.ts'),
+      vite: withDebug({
+        logLevel: 'info',
         build: {
-          outDir: '../../dist/apps/<%= hostProject %>-electron',
+          outDir: resolve(workspaceRoot, '<%= outputDistFolder %>'),
+          sourcemap: 'inline',
+          rollupOptions: {
+            /**
+             * use the dependencies declared on the package.json
+             */
+            external: dependencies,
+            output: {
+              entryFileNames: '[name].js',
+              chunkFileNames: '[name].js',
+            },
+          },
         },
-      },
-      input: 'electron/preload/preload.ts',
+        plugins: [renameToCommonJS()],
+      }),
     },
     // Ployfill the Electron and Node.js API for Renderer process.
     // If you want use Node.js in Renderer process, the `nodeIntegration` needs to be enabled in the Main process.
     // See 👉 https://github.com/electron-vite/vite-plugin-electron-renderer
-    renderer:
-      process.env.NODE_ENV === 'test'
-        ? // https://github.com/electron-vite/vite-plugin-electron-renderer/issues/78#issuecomment-2053600808
-          undefined
-        : {},
+    renderer: process.env.NODE_ENV === 'test' ? undefined : {},
   });
 }
 
+/**
+ * This function will redirect the electron window to the given URL when it is available.
+ * @param url the url of the guest frontend application
+ * @param timeout a timeout to wait for the application to be available. Default is 50000ms
+ */
+export function redirectWhenAvailable(url: string, timeout = 50000) {
+  return {
+    name: 'redirect-middleware',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async configureServer(server: any) {
+      try {
+        await waitOn({
+          resources: [`${url}`],
+          timeout,
+          log: false,
+          validateStatus: (status) => status === 200,
+        });
+        logger.info(
+          `🚀 Frontend application ${url} is available. Preparing electron to host Target Project.`
+        );
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        logger.error(`Error: unable to perform operation:`, err.message);
+        process.exit(1);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      server.middlewares.use((req: any, res: any, next: any) => {
+        if (
+          req?.url?.startsWith('/__vite_ping') ||
+          req?.url?.startsWith('/@vite')
+        ) {
+          return next();
+        }
+        res.writeHead(302, { Location: `${url}${req.url}` });
+        res.end();
+      });
+    },
+  };
+}
+
+/**
+ * A function that enabled debugging capabilities
+ */
+export function withDebug(config: UserConfig): UserConfig {
+  const debugFile = join(__dirname, 'node_modules/.electron-vite-debug');
+  const isDebug = existsSync(debugFile);
+
+  if (isDebug) {
+    // Ensure config.build is defined
+    config.build = config.build || {};
+    config.build.sourcemap = true;
+    config.plugins = (config.plugins || []).concat({
+      name: 'electron-vite-debug',
+      configResolved(config) {
+        // TODO: when the next version of `vite-plugine-electron` is released, use the config hook.
+        const index = config.plugins.findIndex(
+          (p) => p.name === 'electron-main-watcher'
+        );
+        if (index !== -1) {
+          (config.plugins as Plugin[]).splice(index, 1);
+        }
+        rmSync(debugFile);
+      },
+    });
+  }
+
+  return config;
+}
+
+export default electronNxViteConfig;

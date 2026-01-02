@@ -1,0 +1,1305 @@
+---
+alwaysApply: true
+---
+
+# nx-electron-vite Knowledge Base
+
+> **Critical**: This file must be used EVERY TIME when working on nx-electron-vite project documentation, development, or support. It contains the complete architectural and technical understanding required for accurate work.
+
+## Project Overview
+
+**nx-electron-vite** is an Nx plugin that enables desktop application development by wrapping existing frontend applications in Electron shells within Nx monorepos. The plugin follows a distributed architecture pattern with explicit separation between "host" (Electron shell) and "guest" (frontend application) projects.
+
+### Core Identity
+
+- **Package Name**: `@erickrodrcodes/nx-electron-vite`
+- **Purpose**: Nx Plugin to develop, package and build Electron projects inside Nx workspaces
+- **Author**: Erick Rodriguez
+- **License**: MIT
+- **Repository**: https://github.com/ErickRodrCodes/nx-plugins
+
+### Key Differentiators
+
+- **True Framework Agnosticism**: Works with ANY framework supported by Nx (React, Angular, Vue, Svelte, SolidJS, etc.)
+- **Distributed Architecture**: Host/Guest separation enforced by Nx project boundaries
+- **Monorepo-First Design**: Built specifically for Nx monorepo environments
+- **Vite Integration**: Uses Vite for both main and renderer processes with HMR
+- **Native Module Isolation**: Architectural solution to native dependency conflicts
+
+## Architectural Philosophy
+
+### Distributed vs Monolithic Architecture
+
+**Traditional Monolithic Electron Architecture Problems:**
+
+- Script-driven development with accumulated npm scripts
+- Implicit coupling between main/renderer/preload processes
+- Configuration drift and project-specific complexity
+- Reactive problem-solving leading to technical debt
+- Framework lock-in despite claims of broad support
+- Poor native module handling
+- Inefficient build cycles
+
+**nx-electron-vite Distributed Architecture Benefits:**
+
+- **Principled Separation with Enforced Boundaries**: Nx project graph enforces architectural boundaries at tooling level
+- **Multi-Target Deployment**: Guest applications can use different Nx executors for web, mobile, and desktop
+- **Architectural Native Module Isolation**: Native modules contained within host project dependency tree
+- **Monorepo-Scale Applications**: Multiple Electron apps sharing common libraries
+- **True Framework Agnosticism**: Guest exists as independent Nx project using any framework
+- **Standardized Development Patterns**: Generator-driven workflow ensures consistency
+
+### Host/Guest Model
+
+**Guest Project (Frontend Application):**
+
+- Standard frontend application running as renderer process
+- Completely framework-native and deployment-agnostic
+- Can be developed, tested, and served as standalone web application
+- Optional desktop integration through preload script APIs
+- 100% framework-pure with zero Electron knowledge
+
+**Host Project (Electron Shell):**
+
+- New application created by `setup-project` generator
+- Responsible for application window and main process logic
+- Exposes controlled APIs to guest through preload script
+- Contains native modules and desktop-specific functionality
+
+**Communication Layer:**
+
+- Well-defined contract through preload script
+- Prevents unintended coupling
+- Makes integration points explicit and testable
+
+## Technical Architecture
+
+### Plugin Structure
+
+```
+packages/nx-electron-vite/
+├── src/
+│   ├── generators/          # Code generation tools
+│   │   ├── init/           # Plugin initialization
+│   │   ├── setup-project/  # Electron project scaffolding
+│   │   └── build-native/   # Native module integration
+│   ├── executors/          # Build and deployment tools
+│   │   ├── build-electron/ # Electron app building
+│   │   └── build-icons/    # Icon generation
+│   └── util/              # Shared utilities and versions
+├── generators.json         # Generator definitions
+├── executors.json         # Executor definitions
+└── documentation/         # Comprehensive documentation
+```
+
+### Core Dependencies
+
+```json
+{
+  "electron": "^30.0.2",
+  "electron-builder": "^24.13.3",
+  "@electron/rebuild": "^3.7.1",
+  "vite-plugin-electron": "^0.28.6",
+  "vite-plugin-electron-renderer": "^0.14.5",
+  "png2icons": "^2.0.1",
+  "wait-on": "8.0.0",
+  "vitest": "^3.0.1",
+  "electron-is-dev": "^2.0.0",
+  "electron-log": "^5.4.1"
+}
+```
+
+## Generators
+
+### 1. init Generator
+
+**Purpose**: Initialize the plugin in workspace
+**Files**: `src/generators/init/`
+**Key Functions**:
+
+- Ensures Vite plugin configuration in nx.json
+- Adds required dependencies to package.json
+- Calls Nx Vite init generator
+- Sets up development dependencies
+
+**Schema Properties**:
+
+- `skipPackageJson`: boolean - Skip package.json updates
+- `skipFormat`: boolean - Skip file formatting
+
+### 2. setup-project Generator
+
+**Purpose**: Create new Electron application wrapping existing frontend
+**Files**: `src/generators/setup-project/`
+**Key Functions**:
+
+- Creates host project structure
+- Generates all required configuration files
+- Sets up Nx project configuration with proper targets
+- Establishes dependency relationships
+
+**Schema Properties** (all required except test and updater):
+
+- `guestProject`: string - Name of existing frontend project to wrap
+- `name`: string - Human-readable app name for window title
+- `nameProject`: string - Nx project name (defaults to `${guestProject}-electron`)
+- `author`: string - Application author
+- `description`: string - Application description
+- `executableName`: string - Executable file name (lowercase, dashes only)
+- `directory`: string - Project directory path
+- `updater`: boolean - Add auto-updater script (default: false)
+- `test`: "none" | "vitest" - Testing framework (default: "none")
+
+**Generated Files**:
+
+- `electron-nx-vite.config.ts` - Main Electron configuration
+- `vite.config.ts` - Vite configuration
+- `src/main/main.ts` - Main process entry point
+- `src/preload/preload.ts` - Preload script for IPC
+- `src/electron-builder.yml` - Electron builder configuration
+- `package.json` - Project package configuration
+- TypeScript configurations (tsconfig.json, tsconfig.app.json, tsconfig.spec.json)
+- `debugme.md` - Project-specific debugging guide
+- `index.html` - Renderer process entry HTML
+
+### 3. build-native Generator
+
+**Purpose**: Build and integrate native Node.js modules for Electron
+**Files**: `src/generators/build-native/`
+**Key Functions**:
+
+- Uses `@electron/rebuild` to compile native modules against Electron ABI
+- Copies `.node` binaries to `src/main/native/` directory
+- Updates reference.json for build-time copying
+
+**Schema Properties**:
+
+- `npmPackageName`: string (required) - NPM package containing native module
+- `hostProject`: string - Target Electron host project
+- `pathTarget`: string - Custom path for .node binary
+
+## Executors
+
+### 1. build-electron Executor
+
+**Purpose**: Build distributable Electron application using electron-builder
+**Files**: `src/executors/build-electron/`
+**Key Functions**:
+
+- Temporarily modifies workspace package.json for electron-builder
+- Executes electron-builder with project-specific configuration
+- Restores package.json after build
+- Handles build dependencies and output paths
+
+**Schema Properties**:
+
+- `hostProject`: string (required) - Host project name
+- `hostProjectRoot`: string (required) - Host project root path
+- `mainOutputPath`: string (required) - Main process output directory
+- `mainOutputFilename`: string (required) - Main process file name
+- `author`: string - Application author
+- `description`: string - Application description
+
+**⚠️ Critical Warning**: Never run in parallel with other nx-electron-vite builders due to package.json modifications.
+
+### 2. build-icons Executor
+
+**Purpose**: Generate platform-specific application icons
+**Files**: `src/executors/build-icons/`
+**Key Functions**:
+
+- Uses png2icons to convert source PNG to platform formats
+- Generates ICO (Windows), ICNS (macOS), and PNG (Linux) icons
+- Supports app icons and setup installer icons
+
+**Schema Properties**:
+
+- `hostProject`: string (required) - Host project name
+- `hostProjectRoot`: string (required) - Host project root path
+- `iconOutputPath`: string (required) - Icon output directory
+- `mode`: "app" | "setup" | "composite" (required) - Icon generation mode
+
+**Source Files Expected**:
+
+- `src/resources/icon/source/icon.png` - Application icon source
+- `src/resources/icon/source/setup.png` - Installer icon source
+
+## Development Workflow
+
+### Primary Development Commands
+
+```bash
+# Main development command (runs both frontend and Electron)
+nx electron <electron-project-name>
+
+# Host-only development (Electron main process only)
+nx serve <electron-project-name>
+
+# Frontend-only development
+nx serve <guest-project-name>
+```
+
+### Development Features
+
+- **Hot Module Replacement**: Vite HMR for renderer process
+- **Main Process Restart**: Automatic restart on main process changes
+- **Parallel Development**: Frontend and Electron servers run simultaneously
+- **Framework-Native Experience**: Frontend dev tools work normally
+- **IDE Debugging**: VS Code debugging for both processes
+
+### Target Configuration
+
+Each generated Electron project includes these targets:
+
+**build**: Uses `@nx/vite:build` with guest project dependency
+**serve**: Uses `@nx/vite:dev-server` for main process
+**electron**: Uses `nx:run-commands` to run both guest and host in parallel
+**nx-electron-icons**: Uses `build-icons` executor for icon generation
+**dist**: Uses `build-electron` executor for production builds
+**test**: Uses `@nx/vite:test` for testing (if vitest selected)
+
+## Debugging Configuration
+
+### VS Code Setup
+
+**Debug Ports**:
+
+- Main Process: 5858 (configurable via DEBUG_PORT_MAIN)
+- Renderer Process: 4975 (configurable via DEBUG_PORT_RENDERER)
+
+**Launch Configuration** (example for project):
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to Electron Main - [project]",
+      "type": "node",
+      "request": "attach",
+      "port": 5858,
+      "restart": true
+    },
+    {
+      "name": "Attach to Electron Renderer - [project]",
+      "type": "pwa-chrome",
+      "request": "attach",
+      "port": 4975,
+      "webRoot": "${workspaceFolder}"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug [project]",
+      "configurations": [
+        "Attach to Electron Main - [project]",
+        "Attach to Electron Renderer - [project]"
+      ],
+      "preLaunchTask": "start-electron-dev"
+    }
+  ]
+}
+```
+
+### Debug Features
+
+- **Integrated Debugging**: Debug both main and renderer simultaneously
+- **Breakpoint Support**: Set breakpoints in TypeScript/JavaScript
+- **Chrome DevTools**: Full renderer process debugging
+- **Node.js Inspector**: Main process debugging
+- **Source Maps**: Full source map support in development
+
+## Native Module Architecture
+
+### Architectural Solution
+
+Unlike monolithic approaches using bundler workarounds, nx-electron-vite provides structural solution:
+
+1. **build-native Generator**: Uses official `@electron/rebuild` tool
+2. **Compilation**: Rebuilds against correct Electron ABI version
+3. **Isolation**: Copies `.node` files to `src/main/native/` in host project
+4. **Build Integration**: Vite plugin copies natives to dist during build
+5. **Reference Tracking**: `reference.json` tracks native modules and versions
+
+### Native Module Workflow
+
+```bash
+# Add native module to host project
+nx g @erickrodrcodes/nx-electron-vite:build-native --hostProject=my-app-electron --npmPackageName=better-sqlite3
+
+# This will:
+# 1. Rebuild better-sqlite3 against Electron
+# 2. Copy .node file to src/main/native/
+# 3. Update reference.json
+# 4. Configure build to include native in dist
+```
+
+### Reference File Structure
+
+```json
+{
+  "better-sqlite3": {
+    "path": "better_sqlite3.node",
+    "version": "8.7.0"
+  }
+}
+```
+
+## Configuration Files
+
+### electron-nx-vite.config.ts
+
+Main configuration file with key functions:
+
+- `electronNxViteConfig()`: Main plugin configuration
+- `redirectWhenAvailable()`: Redirects to guest app when ready
+- `withDebug()`: Enables debugging capabilities
+- `copyNative()`: Copies native modules during build
+- `cleanDist()`: Build lifecycle hooks
+
+**Key Configuration Options**:
+
+```typescript
+{
+  main: {
+    entry: 'src/main/main.ts',
+    onstart: () => { /* Electron startup with debug ports */ }
+  },
+  preload: {
+    input: 'src/preload/preload.ts'
+  },
+  renderer: {} // Vite plugin electron renderer
+}
+```
+
+### Project Targets Structure
+
+```json
+{
+  "build": {
+    "executor": "@nx/vite:build",
+    "dependsOn": [{ "projects": ["guest-project"], "target": "build" }]
+  },
+  "electron": {
+    "executor": "nx:run-commands",
+    "defaultConfiguration": "serve",
+    "configurations": {
+      "serve": {
+        "commands": ["nx run guest-project:serve", "nx run host-project:serve"],
+        "parallel": true
+      }
+    }
+  }
+}
+```
+
+## Testing Strategy
+
+### ⚠️ **CRITICAL TESTING RULE** ⚠️
+
+**NEVER MODIFY PLUGIN SOURCE FILES WHEN FIXING SMOKE TESTS**
+
+This is the **HIGHEST PRIORITY** rule when working on smoke tests:
+
+- **DO NOT** modify any file in `packages/nx-electron-vite/src/`
+- **DO NOT** modify any `.template` file
+- **DO NOT** modify any generator or executor code
+- **DO NOT** modify any schema files
+- Smoke tests must test the plugin **AS IS**, not as you think it should be
+- If tests fail due to plugin behavior, report to the user the malfunction and proceed with a plan to fix either the plugin or the test malfunction.
+- Only modify files in `smoke-tests/` directory
+
+### Smoke Tests (Optimized)
+
+**Location**: `smoke-tests/`
+**Framework**: Vitest
+**Execution Time**: 3-5 minutes (75% faster than traditional)
+
+**Test Coverage**:
+
+Single sequential test file with comprehensive coverage:
+
+- **smoke-tests-sequential.test.ts**: Complete end-to-end testing including:
+  - Workspace structure verification
+  - Plugin initialization testing
+  - Electron project scaffolding
+  - Native module building and integration
+  - Icon generation across platforms
+  - Electron app building process
+  - Configuration validation
+
+**Performance Optimizations**:
+
+- **Shared Workspace Setup**: Single workspace creation for all tests
+- **Vitest Configuration**: Single fork with sequential execution
+- **Sequential Structure**: Guaranteed execution order and shared state
+- **No Redundancy**: Eliminates repeated workspace/plugin installation
+
+### Development Commands
+
+**Running Smoke Tests**:
+
+```bash
+# Standard execution (CI/automated environments)
+nx test smoke-tests
+
+# Development mode (with proper output streaming)
+nx test smoke-tests --output-style=stream-without-prefixes
+```
+
+**⚠️ Important**: For proper real-time test output observation during development, use `--output-style=stream-without-prefixes` flag. This ensures that test console output is displayed correctly without Nx output prefixes that can interfere with test logging.
+
+### Test Architecture Benefits
+
+- **Comprehensive Coverage**: All generators and executors tested
+- **Fast Execution**: Optimized shared setup
+- **Easy Maintenance**: Well-structured and documented
+- **CI/CD Ready**: Perfect for automated testing
+
+## File System Structure
+
+### Generated Project Structure
+
+```
+apps/my-app-electron/
+├── src/
+│   ├── main/
+│   │   ├── main.ts                 # Main process entry
+│   │   ├── native/                 # Native modules directory
+│   │   │   ├── reference.json      # Native module references
+│   │   │   └── *.node             # Native binaries
+│   │   └── electron-env.d.ts      # Electron type definitions
+│   ├── preload/
+│   │   └── preload.ts             # Preload script for IPC
+│   ├── resources/
+│   │   ├── icon/source/           # Source icons
+│   │   ├── certificate/           # Code signing certificates
+│   │   └── entitlements/          # macOS entitlements
+│   ├── electron-builder.yml       # Electron builder config
+│   └── installer.nsh              # Windows installer script
+├── electron-nx-vite.config.ts     # Main plugin configuration
+├── vite.config.ts                 # Vite configuration
+├── package.json                   # Project package.json
+├── index.html                     # Renderer entry HTML
+├── debugme.md                     # Debug setup guide
+└── tsconfig.*.json                # TypeScript configurations
+```
+
+### Output Structure
+
+```
+dist/
+├── apps/my-app-electron/          # Main process build output
+│   ├── main.js                    # Built main process
+│   ├── preload.js                 # Built preload script
+│   └── *.node                     # Native modules
+├── apps/my-app-electron-icons/    # Generated icons
+│   ├── icon.ico                   # Windows icon
+│   ├── icon.icns                  # macOS icon
+│   └── setup.ico                  # Windows installer icon
+└── apps/guest-project/            # Guest app build output
+    └── index.html                 # Guest app files
+```
+
+## Key Utility Functions
+
+### Core Utilities (src/util/utils.ts)
+
+- `normalizeOptions()`: Normalizes project setup options and paths
+- `isApplication()`: Validates project is application type
+- `getProjectOutputDirectory()`: Resolves project output paths
+- `rebuildNativeModules()`: Rebuilds native modules for Electron
+- `resolveIconCommand()`: Generates png2icons commands
+- `runCommandUntil()`: Executes commands with criteria-based completion
+- `restorePackageJson()`: Restores workspace package.json after builds
+- `checkNodeVersion()`: Validates Node.js version compatibility
+
+### Version Management (src/util/versions.json)
+
+Centralized dependency version management:
+
+```json
+{
+  "electron-builder": "^24.13.3",
+  "electron": "^30.0.2",
+  "vite-plugin-electron": "^0.28.6",
+  "node": "20.17.0",
+  "suggested-node": "v18.18.0"
+}
+```
+
+## Windows/PowerShell Considerations
+
+### Command Execution
+
+- Uses `getPackageManagerCommand().exec` for cross-platform package manager detection
+- Supports npm, yarn, pnpm package managers
+- PowerShell-compatible command generation for Windows
+
+### Path Handling
+
+- Uses `path.posix.join()` for consistent cross-platform paths
+- Handles Windows-specific path resolution in utilities
+- Supports Windows-specific electron-builder configurations
+
+### Native Module Building
+
+- `@electron/rebuild` works natively on Windows with Visual Studio Build Tools
+- Handles Windows-specific .node file permissions and copying
+- Supports Windows code signing certificates in electron-builder config
+
+## Best Practices & Guidelines
+
+### Development Workflow
+
+1. **Start with `nx electron <project>`** for full development
+2. **Use individual serves** when focusing on specific processes
+3. **Leverage Nx affected** to run only changed dependencies
+4. **Monitor both terminals** for errors in either process
+
+### Architecture Guidelines
+
+- **Keep guest applications framework-pure** with zero Electron knowledge
+- **Use preload scripts** for secure main/renderer communication
+- **Isolate native modules** in host project only
+- **Leverage Nx project boundaries** to enforce separation
+
+### Performance Optimization
+
+- **Use Nx caching** for development builds
+- **Take advantage of parallel execution** for faster iteration
+- **Selective rebuilds** - only modified projects rebuild
+- **Shared workspace setup** in testing
+
+### Troubleshooting Common Issues
+
+- **Port conflicts**: Frontend and Electron use different ports automatically
+- **Build failures**: Ensure guest project builds successfully first
+- **Hot-reload issues**: Verify both dev servers running in terminal
+- **Native module conflicts**: Use build-native generator for proper isolation
+- **Debug attachment**: Check port configuration matches VS Code launch.json
+
+## Critical Development Notes
+
+### ⚠️ Important Warnings
+
+1. **Never run build-electron executor in parallel** with other nx-electron-vite builders
+2. **Package.json modifications are temporary** during builds and automatically restored
+3. **Native modules must be rebuilt** against Electron ABI using build-native generator
+4. **Guest applications should remain Electron-agnostic** for portability
+
+### Framework Compatibility
+
+**Fully Supported Frameworks** (any Nx-supported framework):
+
+- React (CRA, Vite, Next.js)
+- Angular (CLI, standalone)
+- Vue (2.x, 3.x, Nuxt)
+- Svelte (SvelteKit via @nxext/svelte)
+- SolidJS
+- Qwik
+- Custom setups
+
+### Monorepo Requirements
+
+- **Requires Nx monorepo context** - does not support standalone Nx projects
+- **Minimum Nx version**: 19.x or newer
+- **Node.js version**: 18.18.0 or higher (20.17.0 recommended)
+
+## Documentation Structure
+
+### Main Documentation (packages/nx-electron-vite/documentation/)
+
+- **what-is-nx-electron-vite.md**: Project overview and key features
+- **architecture-pattern.md**: Deep dive into distributed architecture philosophy
+- **getting-started.md**: Installation and setup guide
+- **scaffolding-a-project.md**: Project generation workflow
+- **development-workflow.md**: Development commands and processes
+- **debugging-your-application.md**: IDE debugging setup
+- **production-builds.md**: Building distributable applications
+- **generators/**: Individual generator documentation
+- **executors/**: Individual executor documentation
+
+### Legacy Documentation (packages/nx-electron-vite/docs/)
+
+- **features.md**: High-level feature overview
+- **setup.md**: Basic setup instructions
+- **generators.md**: Generator reference
+- **executors.md**: Executor reference
+- **requirements-and-considerations.md**: Prerequisites and limitations
+
+## Support & Maintenance
+
+### Issue Resolution Process
+
+1. **Check smoke tests** for regression validation
+2. **Review architecture patterns** for design compliance
+3. **Validate Nx compatibility** for version requirements
+4. **Test across frameworks** for framework agnosticism
+5. **Verify native module handling** for complex dependencies
+
+### Future Enhancement Areas
+
+- **E2E Testing**: Browser-based testing with Playwright
+- **Additional Platforms**: Linux packaging optimizations
+- **Performance Monitoring**: Build time and bundle size tracking
+- **Advanced Native Integration**: More complex native module scenarios
+
+---
+
+> **Remember**: This knowledge base must be referenced for ALL nx-electron-vite work to ensure accuracy and consistency with the project's architectural philosophy and technical implementation.
+> description:
+> globs:
+
+## alwaysApply: false
+
+# nx-electron-vite Knowledge Base
+
+> **Critical**: This file must be used EVERY TIME when working on nx-electron-vite project documentation, development, or support. It contains the complete architectural and technical understanding required for accurate work.
+
+## Project Overview
+
+**nx-electron-vite** is an Nx plugin that enables desktop application development by wrapping existing frontend applications in Electron shells within Nx monorepos. The plugin follows a distributed architecture pattern with explicit separation between "host" (Electron shell) and "guest" (frontend application) projects.
+
+### Core Identity
+
+- **Package Name**: `@erickrodrcodes/nx-electron-vite`
+- **Purpose**: Nx Plugin to develop, package and build Electron projects inside Nx workspaces
+- **Author**: Erick Rodriguez
+- **License**: MIT
+- **Repository**: https://github.com/ErickRodrCodes/nx-plugins
+
+### Key Differentiators
+
+- **True Framework Agnosticism**: Works with ANY framework supported by Nx (React, Angular, Vue, Svelte, SolidJS, etc.)
+- **Distributed Architecture**: Host/Guest separation enforced by Nx project boundaries
+- **Monorepo-First Design**: Built specifically for Nx monorepo environments
+- **Vite Integration**: Uses Vite for both main and renderer processes with HMR
+- **Native Module Isolation**: Architectural solution to native dependency conflicts
+
+## Architectural Philosophy
+
+### Distributed vs Monolithic Architecture
+
+**Traditional Monolithic Electron Architecture Problems:**
+
+- Script-driven development with accumulated npm scripts
+- Implicit coupling between main/renderer/preload processes
+- Configuration drift and project-specific complexity
+- Reactive problem-solving leading to technical debt
+- Framework lock-in despite claims of broad support
+- Poor native module handling
+- Inefficient build cycles
+
+**nx-electron-vite Distributed Architecture Benefits:**
+
+- **Principled Separation with Enforced Boundaries**: Nx project graph enforces architectural boundaries at tooling level
+- **Multi-Target Deployment**: Guest applications can use different Nx executors for web, mobile, and desktop
+- **Architectural Native Module Isolation**: Native modules contained within host project dependency tree
+- **Monorepo-Scale Applications**: Multiple Electron apps sharing common libraries
+- **True Framework Agnosticism**: Guest exists as independent Nx project using any framework
+- **Standardized Development Patterns**: Generator-driven workflow ensures consistency
+
+### Host/Guest Model
+
+**Guest Project (Frontend Application):**
+
+- Standard frontend application running as renderer process
+- Completely framework-native and deployment-agnostic
+- Can be developed, tested, and served as standalone web application
+- Optional desktop integration through preload script APIs
+- 100% framework-pure with zero Electron knowledge
+
+**Host Project (Electron Shell):**
+
+- New application created by `setup-project` generator
+- Responsible for application window and main process logic
+- Exposes controlled APIs to guest through preload script
+- Contains native modules and desktop-specific functionality
+
+**Communication Layer:**
+
+- Well-defined contract through preload script
+- Prevents unintended coupling
+- Makes integration points explicit and testable
+
+## Technical Architecture
+
+### Plugin Structure
+
+```
+packages/nx-electron-vite/
+├── src/
+│   ├── generators/          # Code generation tools
+│   │   ├── init/           # Plugin initialization
+│   │   ├── setup-project/  # Electron project scaffolding
+│   │   └── build-native/   # Native module integration
+│   ├── executors/          # Build and deployment tools
+│   │   ├── build-electron/ # Electron app building
+│   │   └── build-icons/    # Icon generation
+│   └── util/              # Shared utilities and versions
+├── generators.json         # Generator definitions
+├── executors.json         # Executor definitions
+└── documentation/         # Comprehensive documentation
+```
+
+### Core Dependencies
+
+```json
+{
+  "electron": "^30.0.2",
+  "electron-builder": "^24.13.3",
+  "@electron/rebuild": "^3.7.1",
+  "vite-plugin-electron": "^0.28.6",
+  "vite-plugin-electron-renderer": "^0.14.5",
+  "png2icons": "^2.0.1",
+  "wait-on": "8.0.0",
+  "vitest": "^3.0.1",
+  "electron-is-dev": "^2.0.0",
+  "electron-log": "^5.4.1"
+}
+```
+
+## Generators
+
+### 1. init Generator
+
+**Purpose**: Initialize the plugin in workspace
+**Files**: `src/generators/init/`
+**Key Functions**:
+
+- Ensures Vite plugin configuration in nx.json
+- Adds required dependencies to package.json
+- Calls Nx Vite init generator
+- Sets up development dependencies
+
+**Schema Properties**:
+
+- `skipPackageJson`: boolean - Skip package.json updates
+- `skipFormat`: boolean - Skip file formatting
+
+### 2. setup-project Generator
+
+**Purpose**: Create new Electron application wrapping existing frontend
+**Files**: `src/generators/setup-project/`
+**Key Functions**:
+
+- Creates host project structure
+- Generates all required configuration files
+- Sets up Nx project configuration with proper targets
+- Establishes dependency relationships
+
+**Schema Properties** (all required except test and updater):
+
+- `guestProject`: string - Name of existing frontend project to wrap
+- `name`: string - Human-readable app name for window title
+- `nameProject`: string - Nx project name (defaults to `${guestProject}-electron`)
+- `author`: string - Application author
+- `description`: string - Application description
+- `executableName`: string - Executable file name (lowercase, dashes only)
+- `directory`: string - Project directory path
+- `updater`: boolean - Add auto-updater script (default: false)
+- `test`: "none" | "vitest" - Testing framework (default: "none")
+
+**Generated Files**:
+
+- `electron-nx-vite.config.ts` - Main Electron configuration
+- `vite.config.ts` - Vite configuration
+- `src/main/main.ts` - Main process entry point
+- `src/preload/preload.ts` - Preload script for IPC
+- `src/electron-builder.yml` - Electron builder configuration
+- `package.json` - Project package configuration
+- TypeScript configurations (tsconfig.json, tsconfig.app.json, tsconfig.spec.json)
+- `debugme.md` - Project-specific debugging guide
+- `index.html` - Renderer process entry HTML
+
+### 3. build-native Generator
+
+**Purpose**: Build and integrate native Node.js modules for Electron
+**Files**: `src/generators/build-native/`
+**Key Functions**:
+
+- Uses `@electron/rebuild` to compile native modules against Electron ABI
+- Copies `.node` binaries to `src/main/native/` directory
+- Updates reference.json for build-time copying
+
+**Schema Properties**:
+
+- `npmPackageName`: string (required) - NPM package containing native module
+- `hostProject`: string - Target Electron host project
+- `pathTarget`: string - Custom path for .node binary
+
+## Executors
+
+### 1. build-electron Executor
+
+**Purpose**: Build distributable Electron application using electron-builder
+**Files**: `src/executors/build-electron/`
+**Key Functions**:
+
+- Temporarily modifies workspace package.json for electron-builder
+- Executes electron-builder with project-specific configuration
+- Restores package.json after build
+- Handles build dependencies and output paths
+
+**Schema Properties**:
+
+- `hostProject`: string (required) - Host project name
+- `hostProjectRoot`: string (required) - Host project root path
+- `mainOutputPath`: string (required) - Main process output directory
+- `mainOutputFilename`: string (required) - Main process file name
+- `author`: string - Application author
+- `description`: string - Application description
+
+**⚠️ Critical Warning**: Never run in parallel with other nx-electron-vite builders due to package.json modifications.
+
+### 2. build-icons Executor
+
+**Purpose**: Generate platform-specific application icons
+**Files**: `src/executors/build-icons/`
+**Key Functions**:
+
+- Uses png2icons to convert source PNG to platform formats
+- Generates ICO (Windows), ICNS (macOS), and PNG (Linux) icons
+- Supports app icons and setup installer icons
+
+**Schema Properties**:
+
+- `hostProject`: string (required) - Host project name
+- `hostProjectRoot`: string (required) - Host project root path
+- `iconOutputPath`: string (required) - Icon output directory
+- `mode`: "app" | "setup" | "composite" (required) - Icon generation mode
+
+**Source Files Expected**:
+
+- `src/resources/icon/source/icon.png` - Application icon source
+- `src/resources/icon/source/setup.png` - Installer icon source
+
+## Development Workflow
+
+### Primary Development Commands
+
+```bash
+# Main development command (runs both frontend and Electron)
+nx electron <electron-project-name>
+
+# Host-only development (Electron main process only)
+nx serve <electron-project-name>
+
+# Frontend-only development
+nx serve <guest-project-name>
+```
+
+### Development Features
+
+- **Hot Module Replacement**: Vite HMR for renderer process
+- **Main Process Restart**: Automatic restart on main process changes
+- **Parallel Development**: Frontend and Electron servers run simultaneously
+- **Framework-Native Experience**: Frontend dev tools work normally
+- **IDE Debugging**: VS Code debugging for both processes
+
+### Target Configuration
+
+Each generated Electron project includes these targets:
+
+**build**: Uses `@nx/vite:build` with guest project dependency
+**serve**: Uses `@nx/vite:dev-server` for main process
+**electron**: Uses `nx:run-commands` to run both guest and host in parallel
+**nx-electron-icons**: Uses `build-icons` executor for icon generation
+**dist**: Uses `build-electron` executor for production builds
+**test**: Uses `@nx/vite:test` for testing (if vitest selected)
+
+## Debugging Configuration
+
+### VS Code Setup
+
+**Debug Ports**:
+
+- Main Process: 5858 (configurable via DEBUG_PORT_MAIN)
+- Renderer Process: 4975 (configurable via DEBUG_PORT_RENDERER)
+
+**Launch Configuration** (example for project):
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to Electron Main - [project]",
+      "type": "node",
+      "request": "attach",
+      "port": 5858,
+      "restart": true
+    },
+    {
+      "name": "Attach to Electron Renderer - [project]",
+      "type": "pwa-chrome",
+      "request": "attach",
+      "port": 4975,
+      "webRoot": "${workspaceFolder}"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug [project]",
+      "configurations": [
+        "Attach to Electron Main - [project]",
+        "Attach to Electron Renderer - [project]"
+      ],
+      "preLaunchTask": "start-electron-dev"
+    }
+  ]
+}
+```
+
+### Debug Features
+
+- **Integrated Debugging**: Debug both main and renderer simultaneously
+- **Breakpoint Support**: Set breakpoints in TypeScript/JavaScript
+- **Chrome DevTools**: Full renderer process debugging
+- **Node.js Inspector**: Main process debugging
+- **Source Maps**: Full source map support in development
+
+## Native Module Architecture
+
+### Architectural Solution
+
+Unlike monolithic approaches using bundler workarounds, nx-electron-vite provides structural solution:
+
+1. **build-native Generator**: Uses official `@electron/rebuild` tool
+2. **Compilation**: Rebuilds against correct Electron ABI version
+3. **Isolation**: Copies `.node` files to `src/main/native/` in host project
+4. **Build Integration**: Vite plugin copies natives to dist during build
+5. **Reference Tracking**: `reference.json` tracks native modules and versions
+
+### Native Module Workflow
+
+```bash
+# Add native module to host project
+nx g @erickrodrcodes/nx-electron-vite:build-native --hostProject=my-app-electron --npmPackageName=better-sqlite3
+
+# This will:
+# 1. Rebuild better-sqlite3 against Electron
+# 2. Copy .node file to src/main/native/
+# 3. Update reference.json
+# 4. Configure build to include native in dist
+```
+
+### Reference File Structure
+
+```json
+{
+  "better-sqlite3": {
+    "path": "better_sqlite3.node",
+    "version": "8.7.0"
+  }
+}
+```
+
+## Configuration Files
+
+### electron-nx-vite.config.ts
+
+Main configuration file with key functions:
+
+- `electronNxViteConfig()`: Main plugin configuration
+- `redirectWhenAvailable()`: Redirects to guest app when ready
+- `withDebug()`: Enables debugging capabilities
+- `copyNative()`: Copies native modules during build
+- `cleanDist()`: Build lifecycle hooks
+
+**Key Configuration Options**:
+
+```typescript
+{
+  main: {
+    entry: 'src/main/main.ts',
+    onstart: () => { /* Electron startup with debug ports */ }
+  },
+  preload: {
+    input: 'src/preload/preload.ts'
+  },
+  renderer: {} // Vite plugin electron renderer
+}
+```
+
+### Project Targets Structure
+
+```json
+{
+  "build": {
+    "executor": "@nx/vite:build",
+    "dependsOn": [{ "projects": ["guest-project"], "target": "build" }]
+  },
+  "electron": {
+    "executor": "nx:run-commands",
+    "defaultConfiguration": "serve",
+    "configurations": {
+      "serve": {
+        "commands": ["nx run guest-project:serve", "nx run host-project:serve"],
+        "parallel": true
+      }
+    }
+  }
+}
+```
+
+## Testing Strategy
+
+### ⚠️ **CRITICAL TESTING RULE** ⚠️
+
+**NEVER MODIFY PLUGIN SOURCE FILES WHEN FIXING SMOKE TESTS**
+
+This is the **HIGHEST PRIORITY** rule when working on smoke tests:
+
+- **DO NOT** modify any file in `packages/nx-electron-vite/src/`
+- **DO NOT** modify any `.template` file
+- **DO NOT** modify any generator or executor code
+- **DO NOT** modify any schema files
+- Smoke tests must test the plugin **AS IS**, not as you think it should be
+- If tests fail due to plugin behavior, adjust test expectations, not the plugin
+- Only modify files in `smoke-tests/` directory
+
+### Smoke Tests (Optimized)
+
+**Location**: `smoke-tests/`
+**Framework**: Vitest
+**Execution Time**: 3-5 minutes (75% faster than traditional)
+
+**Test Coverage**:
+
+Single sequential test file with comprehensive coverage:
+
+- **smoke-tests-sequential.test.ts**: Complete end-to-end testing including:
+  - Workspace structure verification
+  - Plugin initialization testing
+  - Electron project scaffolding
+  - Native module building and integration
+  - Icon generation across platforms
+  - Electron app building process
+  - Configuration validation
+
+**Performance Optimizations**:
+
+- **Shared Workspace Setup**: Single workspace creation for all tests
+- **Vitest Configuration**: Single fork with sequential execution
+- **Sequential Structure**: Guaranteed execution order and shared state
+- **No Redundancy**: Eliminates repeated workspace/plugin installation
+
+### Development Commands
+
+**Running Smoke Tests**:
+
+```bash
+# Standard execution (CI/automated environments)
+nx test smoke-tests
+
+# Development mode (with proper output streaming)
+nx test smoke-tests --output-style=stream-without-prefixes
+```
+
+**⚠️ Important**: For proper real-time test output observation during development, use `--output-style=stream-without-prefixes` flag. This ensures that test console output is displayed correctly without Nx output prefixes that can interfere with test logging.
+
+### Test Architecture Benefits
+
+- **Comprehensive Coverage**: All generators and executors tested
+- **Fast Execution**: Optimized shared setup
+- **Easy Maintenance**: Well-structured and documented
+- **CI/CD Ready**: Perfect for automated testing
+
+## File System Structure
+
+### Generated Project Structure
+
+```
+apps/my-app-electron/
+├── src/
+│   ├── main/
+│   │   ├── main.ts                 # Main process entry
+│   │   ├── native/                 # Native modules directory
+│   │   │   ├── reference.json      # Native module references
+│   │   │   └── *.node             # Native binaries
+│   │   └── electron-env.d.ts      # Electron type definitions
+│   ├── preload/
+│   │   └── preload.ts             # Preload script for IPC
+│   ├── resources/
+│   │   ├── icon/source/           # Source icons
+│   │   ├── certificate/           # Code signing certificates
+│   │   └── entitlements/          # macOS entitlements
+│   ├── electron-builder.yml       # Electron builder config
+│   └── installer.nsh              # Windows installer script
+├── electron-nx-vite.config.ts     # Main plugin configuration
+├── vite.config.ts                 # Vite configuration
+├── package.json                   # Project package.json
+├── index.html                     # Renderer entry HTML
+├── debugme.md                     # Debug setup guide
+└── tsconfig.*.json                # TypeScript configurations
+```
+
+### Output Structure
+
+```
+dist/
+├── apps/my-app-electron/          # Main process build output
+│   ├── main.js                    # Built main process
+│   ├── preload.js                 # Built preload script
+│   └── *.node                     # Native modules
+├── apps/my-app-electron-icons/    # Generated icons
+│   ├── icon.ico                   # Windows icon
+│   ├── icon.icns                  # macOS icon
+│   └── setup.ico                  # Windows installer icon
+└── apps/guest-project/            # Guest app build output
+    └── index.html                 # Guest app files
+```
+
+## Key Utility Functions
+
+### Core Utilities (src/util/utils.ts)
+
+- `normalizeOptions()`: Normalizes project setup options and paths
+- `isApplication()`: Validates project is application type
+- `getProjectOutputDirectory()`: Resolves project output paths
+- `rebuildNativeModules()`: Rebuilds native modules for Electron
+- `resolveIconCommand()`: Generates png2icons commands
+- `runCommandUntil()`: Executes commands with criteria-based completion
+- `restorePackageJson()`: Restores workspace package.json after builds
+- `checkNodeVersion()`: Validates Node.js version compatibility
+
+### Version Management (src/util/versions.json)
+
+Centralized dependency version management:
+
+```json
+{
+  "electron-builder": "^24.13.3",
+  "electron": "^30.0.2",
+  "vite-plugin-electron": "^0.28.6",
+  "node": "20.17.0",
+  "suggested-node": "v18.18.0"
+}
+```
+
+## Windows/PowerShell Considerations
+
+### Command Execution
+
+- Uses `getPackageManagerCommand().exec` for cross-platform package manager detection
+- Supports npm, yarn, pnpm package managers
+- PowerShell-compatible command generation for Windows
+
+### Path Handling
+
+- Uses `path.posix.join()` for consistent cross-platform paths
+- Handles Windows-specific path resolution in utilities
+- Supports Windows-specific electron-builder configurations
+
+### Native Module Building
+
+- `@electron/rebuild` works natively on Windows with Visual Studio Build Tools
+- Handles Windows-specific .node file permissions and copying
+- Supports Windows code signing certificates in electron-builder config
+
+## Best Practices & Guidelines
+
+### Development Workflow
+
+1. **Start with `nx electron <project>`** for full development
+2. **Use individual serves** when focusing on specific processes
+3. **Leverage Nx affected** to run only changed dependencies
+4. **Monitor both terminals** for errors in either process
+
+### Architecture Guidelines
+
+- **Keep guest applications framework-pure** with zero Electron knowledge
+- **Use preload scripts** for secure main/renderer communication
+- **Isolate native modules** in host project only
+- **Leverage Nx project boundaries** to enforce separation
+
+### Performance Optimization
+
+- **Use Nx caching** for development builds
+- **Take advantage of parallel execution** for faster iteration
+- **Selective rebuilds** - only modified projects rebuild
+- **Shared workspace setup** in testing
+
+### Troubleshooting Common Issues
+
+- **Port conflicts**: Frontend and Electron use different ports automatically
+- **Build failures**: Ensure guest project builds successfully first
+- **Hot-reload issues**: Verify both dev servers running in terminal
+- **Native module conflicts**: Use build-native generator for proper isolation
+- **Debug attachment**: Check port configuration matches VS Code launch.json
+
+## Critical Development Notes
+
+### ⚠️ Important Warnings
+
+1. **Never run build-electron executor in parallel** with other nx-electron-vite builders
+2. **Package.json modifications are temporary** during builds and automatically restored
+3. **Native modules must be rebuilt** against Electron ABI using build-native generator
+4. **Guest applications should remain Electron-agnostic** for portability
+
+### Framework Compatibility
+
+**Fully Supported Frameworks** (any Nx-supported framework):
+
+- React (CRA, Vite, Next.js)
+- Angular (CLI, standalone)
+- Vue (2.x, 3.x, Nuxt)
+- Svelte (SvelteKit via @nxext/svelte)
+- SolidJS
+- Qwik
+- Custom setups
+
+### Monorepo Requirements
+
+- **Requires Nx monorepo context** - does not support standalone Nx projects
+- **Minimum Nx version**: 19.x or newer
+- **Node.js version**: 18.18.0 or higher (20.17.0 recommended)
+
+## Documentation Structure
+
+### Main Documentation (packages/nx-electron-vite/documentation/)
+
+- **what-is-nx-electron-vite.md**: Project overview and key features
+- **architecture-pattern.md**: Deep dive into distributed architecture philosophy
+- **getting-started.md**: Installation and setup guide
+- **scaffolding-a-project.md**: Project generation workflow
+- **development-workflow.md**: Development commands and processes
+- **debugging-your-application.md**: IDE debugging setup
+- **production-builds.md**: Building distributable applications
+- **generators/**: Individual generator documentation
+- **executors/**: Individual executor documentation
+
+### Legacy Documentation (packages/nx-electron-vite/docs/)
+
+- **features.md**: High-level feature overview
+- **setup.md**: Basic setup instructions
+- **generators.md**: Generator reference
+- **executors.md**: Executor reference
+- **requirements-and-considerations.md**: Prerequisites and limitations
+
+## Support & Maintenance
+
+### Issue Resolution Process
+
+1. **Check smoke tests** for regression validation
+2. **Review architecture patterns** for design compliance
+3. **Validate Nx compatibility** for version requirements
+4. **Test across frameworks** for framework agnosticism
+5. **Verify native module handling** for complex dependencies
+
+### Future Enhancement Areas
+
+- **E2E Testing**: Browser-based testing with Playwright
+- **Additional Platforms**: Linux packaging optimizations
+- **Performance Monitoring**: Build time and bundle size tracking
+- **Advanced Native Integration**: More complex native module scenarios
+
+---
+
+> **Remember**: This knowledge base must be referenced for ALL nx-electron-vite work to ensure accuracy and consistency with the project's architectural philosophy and technical implementation.
+> description:
+> globs:
+
+## alwaysApply: false

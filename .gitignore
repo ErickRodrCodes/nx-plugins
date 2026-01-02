@@ -17,10 +17,14 @@ node_modules
 .settings/
 *.sublime-workspace
 
+# AI Assistance
+.claude
+
 # IDE - VSCode
 .vscode/*
 .vscode/settings.json
 !.vscode/tasks.json
+!.vscode/mcp.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
@@ -48,3 +52,14 @@ build
 
 
 vite.config.*.timestamp*
+vitest.config.*.timestamp*
+.cursor\rules\nx-rules.mdc
+.github\instructions\nx.instructions.md
+
+# Electron application archives and build artifacts
+*.asar
+*.asar.unpacked
+electron-builder-output/
+release/
+electron-dist/
+smoke-tests/test-results.json
