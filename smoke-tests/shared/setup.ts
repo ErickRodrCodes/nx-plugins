@@ -51,12 +51,27 @@ beforeAll(async () => {
   });
 
   // Step 2: Create tar.gz
+  // Use full path to tar.exe for security (prevents PATH manipulation attacks)
   const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
-  execSync(
-    `tar -czf "${tarGzPath}" --directory=dist/packages/nx-electron-vite --exclude=node_modules --exclude=.git .`,
+  const tarPath = join(
+    process.env.SYSTEMROOT || 'C:\\Windows',
+    'system32',
+    'tar.exe'
+  );
+  spawnSync(
+    tarPath,
+    [
+      '-czf',
+      tarGzPath,
+      '--directory=dist/packages/nx-electron-vite',
+      '--exclude=node_modules',
+      '--exclude=.git',
+      '.',
+    ],
     {
       cwd: rootDir,
       stdio: 'inherit',
+      shell: false,
     }
   );
 
