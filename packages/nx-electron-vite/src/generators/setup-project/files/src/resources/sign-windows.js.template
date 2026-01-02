@@ -10,7 +10,7 @@
  * - WIN_<%= guestProjectUpperCase %>_CERT_PASSWD: Certificate password
  */
 
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -98,23 +98,32 @@ exports.default = async function (configuration) {
     try {
       console.log(`Signing with timestamp server: ${timestampServer}`);
       
-      const signCommand = [
-        `"${signtoolPath}"`,
+      // Build argument array for secure execution without shell
+      const signArgs = [
         'sign',
-        '/f', `"${certPath}"`,
-        certPassword ? `/p "${certPassword}"` : '',
+        '/f', certPath,
         '/tr', timestampServer,
         '/td', hash || 'sha256',
         '/fd', hash || 'sha256',
         '/v',
-        `"${filePath}"`
-      ].filter(Boolean).join(' ');
+        filePath
+      ];
+      
+      // Add password argument if provided
+      if (certPassword) {
+        signArgs.splice(3, 0, '/p', certPassword);
+      }
       
       // Log command with password redacted for security
-      const redactedCommand = signCommand.replace(/\/p\s+"[^"]*"/, '/p "[REDACTED]"');
-      console.log('Executing:', redactedCommand);
+      const redactedArgs = signArgs.map((arg, index) => {
+        if (signArgs[index - 1] === '/p') {
+          return '[REDACTED]';
+        }
+        return arg;
+      });
+      console.log('Executing:', signtoolPath, redactedArgs.join(' '));
       
-      execSync(signCommand, { 
+      execFileSync(signtoolPath, signArgs, { 
         stdio: 'inherit',
         windowsHide: true 
       });
@@ -126,7 +135,7 @@ exports.default = async function (configuration) {
     } catch (error) {
       // Redact password from error message to prevent leaking in CI logs
       const redactedError = error.message
-        ? error.message.replace(/\/p\s+"[^"]*"/g, '/p "[REDACTED]"')
+        ? error.message.replace(/\/p\s+[^\s]+/g, '/p [REDACTED]')
         : 'Unknown error';
       console.warn(`Failed with ${timestampServer}:`, redactedError);
       // Try next timestamp server
