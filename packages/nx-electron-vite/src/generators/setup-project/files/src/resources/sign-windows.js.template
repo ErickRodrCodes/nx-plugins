@@ -110,7 +110,20 @@ exports.default = async function (configuration) {
         `"${filePath}"`
       ].filter(Boolean).join(' ');
       
-      console.log('Executing:', signCommand);
+      // Log command with password redacted for security
+      const logCommand = [
+        `"${signtoolPath}"`,
+        'sign',
+        '/f', `"${certPath}"`,
+        certPassword ? '/p "[REDACTED]"' : '',
+        '/tr', timestampServer,
+        '/td', hash || 'sha256',
+        '/fd', hash || 'sha256',
+        '/v',
+        `"${filePath}"`
+      ].filter(Boolean).join(' ');
+      
+      console.log('Executing:', logCommand);
       
       execSync(signCommand, { 
         stdio: 'inherit',
