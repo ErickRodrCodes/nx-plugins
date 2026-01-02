@@ -12,6 +12,9 @@ const expConfig = defineConfig({
   title: 'Nx Electron Vite',
   description:
     'A Plugin for Nx to create Electron applications with the power of Vite',
+  // Base URL for GitHub Pages deployment
+  // Use '/nx-plugins/' for https://erickrodrcodes.github.io/nx-plugins/
+  base: '/nx-plugins/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
