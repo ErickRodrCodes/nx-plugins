@@ -306,7 +306,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
   // These sections build native binaries and should be tested manually first
   // ==================================================================================
 
-  describe.skip('04: Native Module Building', () => {
+  describe('04: Native Module Building', () => {
     it('should install better-sqlite3 and build native modules', () => {
       const electronAppName = 'smoke-test-app-electron';
 
@@ -358,22 +358,27 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
       ).toBe(true);
     });
 
-    it('should have reference.json file (plugin limitation: not updated currently)', () => {
+    it('should have reference.json file with module information', () => {
       const electronAppName = 'smoke-test-app-electron';
 
-      // Read reference.json - currently the plugin doesn't update this file correctly
+      // Read reference.json - should now contain the built module info
       const referenceJson = workspaceGenerator!.readJsonFile(
         `apps/${electronAppName}/src/main/native/reference.json`
       );
 
-      // For now, just verify the file exists and is a valid JSON object
-      // TODO: Once plugin bug is fixed, this should track better-sqlite3 properly
+      // Verify the file exists and is a valid JSON object
       expect(referenceJson).toBeDefined();
       expect(typeof referenceJson).toBe('object');
+
+      // Verify better-sqlite3 is tracked in reference.json
+      expect(referenceJson['better-sqlite3']).toBeDefined();
+      expect(referenceJson['better-sqlite3'].path).toBe('better-sqlite3.node');
+      expect(referenceJson['better-sqlite3'].version).toBeDefined();
+      expect(referenceJson['better-sqlite3'].version).not.toBe('unknown');
     });
   });
 
-  describe.skip('05: Icon Generation', () => {
+  describe('05: Icon Generation', () => {
     it('should have source icon files in correct location', () => {
       const electronAppName = 'smoke-test-app-electron';
 
@@ -450,7 +455,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
     });
   });
 
-  describe.skip('06: App Building (Distribution)', () => {
+  describe('06: App Building (Distribution)', () => {
     it('should have correct dist target configuration in project.json', () => {
       const electronAppName = 'smoke-test-app-electron';
 
@@ -503,7 +508,7 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
       console.log('📁 Verifying installer was created...');
 
       // Check for installer file with any extension (.exe, .dmg, .AppImage, etc.)
-      const installerPattern = 'smoke-test-workspace-0.0.0-setup';
+      const installerPattern = 'smoke-test-app-0.0.0-setup';
       let installerFound = false;
       let installerName = '';
 

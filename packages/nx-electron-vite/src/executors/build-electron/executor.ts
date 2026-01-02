@@ -8,8 +8,8 @@ import {
 import { unlink, writeFile } from 'node:fs/promises';
 import * as path from 'node:path/posix';
 
+import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import { runCommandUntil } from '../../util/utils';
 import { BuildElectronExecutorSchema } from './schema';
 
 export default async function electronBuildExecutor(
@@ -79,9 +79,11 @@ The dist folder will be cleaned while running this executor.
   } electron-builder --config=${tempConfigPath}`;
 
   try {
-    await runCommandUntil(commandLine, (criteria) =>
-      criteria.includes('building block map')
-    );
+    execSync(commandLine, {
+      cwd: workspaceRoot,
+      stdio: 'inherit',
+      encoding: 'utf-8',
+    });
   } catch (error) {
     logger.error('Electron build failed.');
     return { success: false };
