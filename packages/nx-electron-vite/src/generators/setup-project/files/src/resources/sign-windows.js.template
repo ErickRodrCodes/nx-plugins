@@ -110,7 +110,9 @@ exports.default = async function (configuration) {
         `"${filePath}"`
       ].filter(Boolean).join(' ');
       
-      console.log('Executing:', signCommand);
+      // Log command with password redacted for security
+      const redactedCommand = signCommand.replace(/\/p\s+"[^"]*"/, '/p "[REDACTED]"');
+      console.log('Executing:', redactedCommand);
       
       execSync(signCommand, { 
         stdio: 'inherit',
@@ -122,7 +124,11 @@ exports.default = async function (configuration) {
       break;
       
     } catch (error) {
-      console.warn(`Failed with ${timestampServer}:`, error.message);
+      // Redact password from error message to prevent leaking in CI logs
+      const redactedError = error.message
+        ? error.message.replace(/\/p\s+"[^"]*"/g, '/p "[REDACTED]"')
+        : 'Unknown error';
+      console.warn(`Failed with ${timestampServer}:`, redactedError);
       // Try next timestamp server
     }
   }
