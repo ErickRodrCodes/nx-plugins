@@ -8,7 +8,7 @@ import {
 import { unlink, writeFile } from 'node:fs/promises';
 import * as path from 'node:path/posix';
 
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { BuildElectronExecutorSchema } from './schema';
 
@@ -25,17 +25,8 @@ export default async function electronBuildExecutor(
     description,
   } = options;
 
-  logger.warn(
-    `
-===============================
-⚠️ ⚠️ ⚠️  Important ⚠️ ⚠️ ⚠️
-
-This executor uses a temporary electron-builder configuration file.
-Multiple builds can run in sequence, but ensure each build completes before starting another.
-
-The dist folder will be cleaned while running this executor.
-===============================
-  `
+  logger.info(
+    `🧪 Starting distribution task via Nx dist for electron application for host project ${hostProject}...`
   );
 
   const workspace = workspaceRoot;
@@ -74,16 +65,34 @@ The dist folder will be cleaned while running this executor.
 🧪 Building Electron App with electron-builder from built files from ${hostProject}...
 `);
 
-  const commandLine = `${
-    getPackageManagerCommand().exec
-  } electron-builder --config=${tempConfigPath}`;
+  // Use spawnSync with shell: false for security (avoids shell injection)
+  // Note: On Windows, we need shell: true for .cmd scripts (npx.cmd, pnpm.cmd)
+  // The security risk is mitigated by using fixed arguments (no user input in command)
+  const pmc = getPackageManagerCommand();
+  const isWindows = process.platform === 'win32';
+
+  // Build the command as an array of arguments for security
+  const execCommand = pmc.exec.split(' ')[0]; // e.g., 'npx', 'pnpm', 'yarn'
+  const execArgs = [
+    ...pmc.exec.split(' ').slice(1), // Additional args from package manager (e.g., 'exec' for pnpm)
+    'electron-builder',
+    `--config=${tempConfigPath}`,
+  ].filter(Boolean);
 
   try {
-    execSync(commandLine, {
+    const result = spawnSync(execCommand, execArgs, {
       cwd: workspaceRoot,
       stdio: 'inherit',
       encoding: 'utf-8',
+      // Windows requires shell: true for .cmd scripts
+      // Security is maintained because all arguments are fixed/controlled values
+      shell: isWindows,
     });
+
+    if (result.status !== 0) {
+      logger.error('Electron build failed.');
+      return { success: false };
+    }
   } catch (error) {
     logger.error('Electron build failed.');
     return { success: false };

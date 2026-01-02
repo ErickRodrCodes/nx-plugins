@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import { mkdirSync } from 'node:fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
@@ -17,9 +17,17 @@ beforeAll(async () => {
   // Step 0: Kill any lingering esbuild processes that might lock files
   console.log('Killing any lingering esbuild processes...');
   try {
-    execSync('taskkill /im esbuild.exe /f', {
+    // Use full path to taskkill.exe for security (prevents PATH manipulation attacks)
+    // Use spawnSync with shell: false to avoid shell injection
+    const taskkillPath = join(
+      process.env.SYSTEMROOT || 'C:\\Windows',
+      'System32',
+      'taskkill.exe'
+    );
+    spawnSync(taskkillPath, ['/im', 'esbuild.exe', '/f'], {
       cwd: rootDir,
       stdio: 'ignore', // Suppress output - it's ok if no process exists
+      shell: false,
     });
     console.log('✓ Cleaned up esbuild processes');
   } catch (e) {

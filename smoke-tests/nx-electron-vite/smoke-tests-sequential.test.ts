@@ -98,7 +98,10 @@ describe.sequential('Smoke Tests - Sequential Execution', () => {
       // Note: NPM may normalize versions (e.g., "^39.0.0" becomes "39.0.0")
       // We verify dependencies exist and match the major version from versions.json
       const extractMajorVersion = (version: string) => {
-        const match = version.match(/(\d+)\./);
+        // Remove leading ^ or ~ prefix before matching
+        const cleanVersion = version.replace(/^[\^~]/, '');
+        // Use bounded quantifier {1,10} and anchor to start to prevent ReDoS
+        const match = cleanVersion.match(/^(\d{1,10})\./);
         return match ? match[1] : null;
       };
 
