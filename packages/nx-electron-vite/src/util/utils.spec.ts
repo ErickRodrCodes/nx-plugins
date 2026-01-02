@@ -1,6 +1,6 @@
 import { Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
-import * as path from 'path';
+import * as path from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SetupProjectSchema } from '../generators/setup-project/schema';
 import { normalizeOptions } from './utils';

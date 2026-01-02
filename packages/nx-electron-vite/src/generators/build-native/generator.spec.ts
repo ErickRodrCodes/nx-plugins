@@ -27,7 +27,7 @@ import {
   logger,
   readProjectConfiguration,
 } from '@nx/devkit';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import { rebuildNativeModules } from '../../util/utils';
 import { _buildNativeGenerator, buildNativeGenerator } from './generator';
 

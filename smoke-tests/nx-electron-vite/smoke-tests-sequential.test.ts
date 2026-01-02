@@ -1,6 +1,6 @@
-import { existsSync } from 'fs';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { smokeTestsTmpDir, workspaceGenerator } from '../shared/setup';
 

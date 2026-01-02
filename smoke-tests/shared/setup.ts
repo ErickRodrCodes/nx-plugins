@@ -1,7 +1,7 @@
-import { execSync, spawnSync } from 'child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll } from 'vitest';
 import { WorkspaceGenerator } from './workspace-generator';
 
@@ -51,12 +51,27 @@ beforeAll(async () => {
   });
 
   // Step 2: Create tar.gz
+  // Use full path to tar.exe for security (prevents PATH manipulation attacks)
   const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
-  execSync(
-    `tar -czf "${tarGzPath}" --directory=dist/packages/nx-electron-vite --exclude=node_modules --exclude=.git .`,
+  const tarPath = join(
+    process.env.SYSTEMROOT || 'C:\\Windows',
+    'system32',
+    'tar.exe'
+  );
+  spawnSync(
+    tarPath,
+    [
+      '-czf',
+      tarGzPath,
+      '--directory=dist/packages/nx-electron-vite',
+      '--exclude=node_modules',
+      '--exclude=.git',
+      '.',
+    ],
     {
       cwd: rootDir,
       stdio: 'inherit',
+      shell: false,
     }
   );
 

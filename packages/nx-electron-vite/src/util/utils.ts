@@ -15,12 +15,12 @@ import {
 import { rebuild } from '@electron/rebuild';
 
 import { determineProjectNameAndRootOptions } from '@nx/devkit/src/generators/project-name-and-root-utils';
-import { ChildProcess, exec } from 'child_process';
-import { existsSync } from 'fs';
 import { mkdir, rm, writeFile } from 'fs/promises';
+import { ChildProcess, exec } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
-import * as path from 'path';
-import { resolve } from 'path';
+import * as path from 'node:path';
+import { resolve } from 'node:path';
 import { exit, platform } from 'process';
 import { SetupProjectSchema } from '../generators/setup-project/schema';
 import { versionLibraries } from './versions';
@@ -142,7 +142,7 @@ export async function getViteOutputPath(
   // Match: outDir: './dist' or outDir: "./dist" or outDir: '../../dist/apps/something'
   const outDirMatch = viteConfigContent.match(/outDir:\s*['"]([^'"]+)['"]/);
 
-  if (outDirMatch && outDirMatch?.[1]) {
+  if (outDirMatch?.[1]) {
     const outputPath = outDirMatch[1];
     // Join project root with the outDir to get full path from workspace root
     const fullPath = path.posix.join(projectConfig.root, outputPath);

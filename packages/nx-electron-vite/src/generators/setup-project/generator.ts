@@ -7,7 +7,7 @@ import {
   Tree,
 } from '@nx/devkit';
 
-import { join } from 'path';
+import { join } from 'node:path';
 import {
   cleanupDependencies,
   installDependencies,
