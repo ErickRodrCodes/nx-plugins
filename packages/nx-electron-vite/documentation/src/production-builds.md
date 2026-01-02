@@ -236,38 +236,12 @@ nx dist your-project --configuration=production
 
 ## Troubleshooting
 
-### Common Build Issues
+Encountering issues with production builds? See the [Troubleshooting](/troubleshooting#production-build-issues) page for solutions to common problems including:
 
-**Build Fails with "Package.json not found"**
-
-- Ensure your guest project builds successfully first: `nx build <guest-project>`
-- Verify the guest project's build output path matches the `files` section in `electron-builder.yml`
-
-**Icons Missing in Final Package**
-
-- Verify icon source files exist: `src/resources/icon/source/icon.png` and `src/resources/icon/source/setup.png`
-- Run icons generation manually: `nx nx-electron-icons <your-electron-project>`
-- Check that generated icons exist in `dist/apps/<your-electron-project>-icons/`
-
-**Large Bundle Size**
-
-- Review the `files` section in `electron-builder.yml`
-- Exclude unnecessary files and directories
-
-**Platform-Specific Issues**
-
-- Windows: Ensure Node.js and npm/pnpm are properly installed
-- macOS: Check Xcode command line tools are available
-- Linux: Verify required system packages are installed
-
-### Build Validation
-
-Before distributing, test your build:
-
-1. **Install locally**: Test the generated installer
-2. **Run on clean system**: Verify all dependencies are included
-3. **Check file associations**: Ensure proper file type handling
-4. **Test auto-updater**: If enabled, verify update mechanism works
+- Build failures and missing dependencies
+- Icon generation issues
+- Platform-specific problems
+- Bundle size optimization
 
 ## Next Steps
 

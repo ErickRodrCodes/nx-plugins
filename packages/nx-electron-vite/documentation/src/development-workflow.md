@@ -150,9 +150,7 @@ The generated project includes debug configurations for:
 
 ### Troubleshooting Common Issues
 
-- **Port conflicts**: Frontend and Electron servers use different ports automatically
-- **Build failures**: Check guest project builds successfully before running Electron target
-- **Hot-reload issues**: Ensure both dev servers are running in the terminal output
+Encountering problems during development? See the [Troubleshooting](/troubleshooting#development-issues) page for solutions to port conflicts, build failures, and hot-reload issues.
 
 ## Development vs Production Builds
 

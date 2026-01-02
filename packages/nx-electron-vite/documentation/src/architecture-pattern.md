@@ -162,9 +162,9 @@ flowchart TB
     Contract -->|"window.electronAPI"| APP
     IPC_MAIN <-->|"Secure IPC"| IPC_RENDERER
 
-    style Host fill:#1e3a5f,stroke:#0d253f,color:#fff
-    style Guest fill:#2d5016,stroke:#1a3009,color:#fff
-    style Contract fill:#7c2d12,stroke:#451a03,color:#fff
+    style Host fill:#dcfce7,stroke:#16a34a
+    style Guest fill:#dbeafe,stroke:#2563eb
+    style Contract fill:#fef3c7,stroke:#d97706
 ```
 
 - **Guest Project**: This is your existing, standard frontend application that runs as the renderer process. While architecturally decoupled from Electron, it may optionally interact with Electron-specific functionality through the well-defined APIs exposed by the preload script

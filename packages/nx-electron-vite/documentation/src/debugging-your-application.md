@@ -263,32 +263,11 @@ if (process.env.NODE_ENV === 'development') {
 
 ## Troubleshooting
 
-### Common Issues
+Encountering debugging issues? See the [Troubleshooting](/troubleshooting#debugging-issues) page for solutions to common problems including:
 
-**Port Already in Use**
-
-- Check if another process is using the debugging ports
-- Change the ports in your configuration files
-
-**Debugger Won't Attach**
-
-- Ensure the Electron app is running in development mode
-- Verify the ports match between your app and VS Code configuration
-- Check that the debugging flags are enabled in your Vite configuration
-
-**Breakpoints Not Hitting**
-
-- Ensure source maps are enabled in development
-- Verify the file paths in your debugger configuration
-- Check that you're debugging the correct process (main vs renderer)
-
-### Key Configuration Files
-
-The debugging setup involves these files in your project:
-
-- **`debugme.md`** - Project-specific debugging guide with exact configurations (start here!)
-- **`electron-nx-vite.config.ts`** - Main Electron configuration including debug port settings
-- **`.env`** - Environment variables for customizing debug ports
+- Debugger not attaching
+- Breakpoints not hitting
+- Port conflicts
 
 ## Next Steps
 

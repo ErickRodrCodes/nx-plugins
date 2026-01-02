@@ -69,6 +69,7 @@ const expConfig = defineConfig({
       //   link: '/api-reference'
       // },
       { text: 'Architecture Pattern', link: '/architecture-pattern' },
+      { text: 'Troubleshooting', link: '/troubleshooting' },
     ],
     footer: {
       message: 'Released under the MIT License.',
