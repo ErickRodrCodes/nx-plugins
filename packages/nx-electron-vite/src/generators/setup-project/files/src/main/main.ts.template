@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 // import { createRequire } from 'node:module' // Uncomment if you need to require CommonJS modules in ESM
 import { fileURLToPath } from 'node:url'
-import { join } from 'path'
+import { join } from 'node:path'
 
 import path from 'node:path'
 

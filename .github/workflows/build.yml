@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/*
   pull_request:
     types: [opened, synchronize, reopened]
 name: Main Workflow
@@ -22,6 +23,8 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: -Dsonar.test.exclusions=packages/**/*.spec.ts;smoke-tests/**/*.spec.ts
 
       # Check the Quality Gate status.
       - name: SonarQube Quality Gate check
