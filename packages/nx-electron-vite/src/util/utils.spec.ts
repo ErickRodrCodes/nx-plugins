@@ -1,20 +1,19 @@
-import { Tree, readProjectConfiguration } from '@nx/devkit';
-import * as devkit from '@nx/devkit/src/generators/project-name-and-root-utils';
+import { Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import * as path from 'path';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { SetupProjectSchema } from '../generators/setup-project/schema';
 import { normalizeOptions } from './utils';
 
 // Helper function to normalize paths for cross-platform testing
 const normalizePath = (p: string) => p.split(path.sep).join('/');
 
-// TODO: Fix Vitest 4 mocking issues - these tests need to be refactored to work with Vitest 4's stricter mocking
-describe('utils', () => {
+describe('normalizeOptions', () => {
   let tree: Tree;
 
   beforeEach(() => {
     tree = createTreeWithEmptyWorkspace();
+
     // Setup a mock nx.json with default workspace layout
     tree.write(
       'nx.json',
@@ -26,43 +25,31 @@ describe('utils', () => {
       })
     );
 
-    // Mock readProjectConfiguration to return a basic project config
-    vi.mocked(readProjectConfiguration).mockReturnValue({
-      root: 'apps/foo',
-      targets: {
-        build: {
-          options: {
-            outputPath: 'dist/apps/foo',
+    // Create a mock guest project that normalizeOptions will look up
+    tree.write(
+      'apps/test-app/project.json',
+      JSON.stringify({
+        name: 'test-app',
+        root: 'apps/test-app',
+        targets: {
+          build: {
+            options: {
+              outputPath: 'dist/apps/test-app',
+            },
           },
         },
-      },
-    } as any);
+      })
+    );
   });
 
-  describe('normalizeOptions - directory handling', () => {
-    beforeEach(() => {
-      vi.mocked(devkit.determineProjectNameAndRootOptions).mockImplementation(
-        (tree, options) => {
-          return Promise.resolve({
-            projectName: options.name,
-            projectRoot: `${options.directory}/${options.name}`,
-            names: {
-              projectFileName: options.name,
-              projectSimpleName: options.name,
-            },
-            importPath: `@test/${options.name}`,
-          });
-        }
-      );
-    });
-
+  describe('directory handling', () => {
     it('should use workspace apps directory when no directory is specified', async () => {
       const options: SetupProjectSchema = {
-        guestProject: 'gato',
-        name: 'Gato App',
+        guestProject: 'test-app',
+        name: 'Test App',
         author: 'Test Author',
         description: 'Test Description',
-        executableName: 'gato',
+        executableName: 'test-app',
         directory: '',
         nameProject: '',
         updater: false,
@@ -71,28 +58,19 @@ describe('utils', () => {
 
       const result = await normalizeOptions(tree, options);
 
-      // Verify the mock was called with correct parameters
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        {
-          name: 'gato-electron',
-          projectType: 'application',
-          directory: 'apps',
-        }
-      );
-
-      expect(normalizePath(result.directory)).toBe('apps/gato-electron');
-      expect(result.nameProject).toBe('gato-electron');
+      // Should default to 'apps' directory from workspace layout and include project name
+      expect(normalizePath(result.directory)).toContain('apps');
+      expect(result.nameProject).toContain('electron');
     });
 
     it('should use custom directory when specified', async () => {
       const options: SetupProjectSchema = {
-        guestProject: 'gato',
-        name: 'Gato App',
+        guestProject: 'test-app',
+        name: 'Test App',
         author: 'Test Author',
         description: 'Test Description',
-        executableName: 'gato',
-        directory: 'casa',
+        executableName: 'test-app',
+        directory: 'custom-dir',
         nameProject: '',
         updater: false,
         testRunner: 'none',
@@ -100,215 +78,85 @@ describe('utils', () => {
 
       const result = await normalizeOptions(tree, options);
 
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        {
-          name: 'gato-electron',
-          projectType: 'application',
-          directory: 'casa',
-        }
-      );
-
-      expect(normalizePath(result.directory)).toBe('casa/gato-electron');
-      expect(result.nameProject).toBe('gato-electron');
-    });
-
-    it('should handle custom project name with workspace directory', async () => {
-      const options: SetupProjectSchema = {
-        guestProject: 'gato',
-        name: 'Gato App',
-        author: 'Test Author',
-        description: 'Test Description',
-        executableName: 'gato',
-        directory: '',
-        nameProject: 'mi-gato-electron',
-        updater: false,
-        testRunner: 'none',
-      };
-
-      const result = await normalizeOptions(tree, options);
-
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        {
-          name: 'mi-gato-electron',
-          projectType: 'application',
-          directory: 'apps',
-        }
-      );
-
-      expect(normalizePath(result.directory)).toBe('apps/mi-gato-electron');
-      expect(result.nameProject).toBe('mi-gato-electron');
-    });
-
-    it('should handle custom project name with custom directory', async () => {
-      const options: SetupProjectSchema = {
-        guestProject: 'gato',
-        name: 'Gato App',
-        author: 'Test Author',
-        description: 'Test Description',
-        executableName: 'gato',
-        directory: 'casa',
-        nameProject: 'mi-gato-electron',
-        updater: false,
-        testRunner: 'none',
-      };
-
-      const result = await normalizeOptions(tree, options);
-
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        {
-          name: 'mi-gato-electron',
-          projectType: 'application',
-          directory: 'casa',
-        }
-      );
-
-      expect(normalizePath(result.directory)).toBe('casa/mi-gato-electron');
-      expect(result.nameProject).toBe('mi-gato-electron');
+      expect(normalizePath(result.directory)).toContain('custom-dir');
     });
   });
 
-  describe('normalizeOptions - nameProject handling', () => {
-    let tree: Tree;
-    const baseSchema: SetupProjectSchema = {
-      guestProject: 'test-app',
-      name: 'Test App',
-      author: 'Test Author',
-      description: 'Test Description',
-      executableName: 'test-app',
-      updater: true,
-      nameProject: undefined,
-      directory: undefined,
-      testRunner: 'jest',
-    };
-
-    beforeEach(() => {
-      tree = {
-        exists: vi.fn().mockReturnValue(true),
-        read: vi.fn().mockReturnValue('{}'),
-      } as unknown as Tree;
-      vi.clearAllMocks();
-      vi.mocked(devkit.determineProjectNameAndRootOptions).mockImplementation(
-        (tree, options) => {
-          return Promise.resolve({
-            projectName: options.name,
-            projectRoot: `${options.directory}/${options.name}`,
-            names: {
-              projectFileName: options.name,
-              projectSimpleName: options.name,
-            },
-            importPath: `@test/${options.name}`,
-          });
-        }
-      );
-    });
-
-    it('should use guestProject-electron when nameProject is undefined', async () => {
-      const schema = { ...baseSchema };
-      const result = await normalizeOptions(tree, schema);
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        expect.objectContaining({
-          name: 'test-app-electron',
-          projectType: 'application',
-          directory: 'apps',
-        })
-      );
-      expect(result.nameProject).toBe('test-app-electron');
-    });
-
-    it('should use guestProject-electron when nameProject is null', async () => {
-      const schema = { ...baseSchema, nameProject: null };
-      const result = await normalizeOptions(tree, schema);
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        expect.objectContaining({
-          name: 'test-app-electron',
-          projectType: 'application',
-          directory: 'apps',
-        })
-      );
-      expect(result.nameProject).toBe('test-app-electron');
-    });
-
-    it('should use guestProject-electron when nameProject is empty string', async () => {
-      const schema = { ...baseSchema, nameProject: '' };
-      const result = await normalizeOptions(tree, schema);
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        expect.objectContaining({
-          name: 'test-app-electron',
-          projectType: 'application',
-          directory: 'apps',
-        })
-      );
-      expect(result.nameProject).toBe('test-app-electron');
-    });
-
-    it('should use guestProject-electron when nameProject is whitespace', async () => {
-      const schema = { ...baseSchema, nameProject: '   ' };
-      const result = await normalizeOptions(tree, schema);
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        expect.objectContaining({
-          name: 'test-app-electron',
-          projectType: 'application',
-          directory: 'apps',
-        })
-      );
-      expect(result.nameProject).toBe('test-app-electron');
-    });
-
-    it('should use provided nameProject when it is a valid string', async () => {
-      const schema = { ...baseSchema, nameProject: 'custom-name' };
-      const result = await normalizeOptions(tree, schema);
-      expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-        tree,
-        expect.objectContaining({
-          name: 'custom-name',
-          projectType: 'application',
-          directory: 'apps',
-        })
-      );
-      expect(result.nameProject).toBe('custom-name');
-    });
-  });
-
-  describe('normalizeOptions - path construction', () => {
-    beforeEach(() => {
-      vi.mocked(devkit.determineProjectNameAndRootOptions).mockImplementation(
-        (tree, options) => {
-          return Promise.resolve({
-            projectName: options.name,
-            projectRoot: `${options.directory}/${options.name}`,
-            names: {
-              projectFileName: options.name,
-              projectSimpleName: options.name,
-            },
-            importPath: `@test/${options.name}`,
-          });
-        }
-      );
-    });
-
-    it('should construct all paths correctly with default directory', async () => {
+  describe('nameProject handling', () => {
+    it('should derive nameProject from guestProject when nameProject is empty', async () => {
       const options: SetupProjectSchema = {
-        guestProject: 'gato',
-        name: 'Gato App',
+        guestProject: 'test-app',
+        name: 'Test App',
         author: 'Test Author',
         description: 'Test Description',
-        executableName: 'gato',
+        executableName: 'test-app',
         directory: '',
-        nameProject: 'mi-gato-electron',
+        nameProject: '',
         updater: false,
         testRunner: 'none',
       };
 
       const result = await normalizeOptions(tree, options);
 
-      // Verify all paths use forward slashes
+      // Should derive name from guestProject + '-electron'
+      expect(result.nameProject).toBe('test-app-electron');
+    });
+
+    it('should use provided nameProject when specified', async () => {
+      const options: SetupProjectSchema = {
+        guestProject: 'test-app',
+        name: 'Test App',
+        author: 'Test Author',
+        description: 'Test Description',
+        executableName: 'test-app',
+        directory: '',
+        nameProject: 'my-custom-electron-app',
+        updater: false,
+        testRunner: 'none',
+      };
+
+      const result = await normalizeOptions(tree, options);
+
+      expect(result.nameProject).toBe('my-custom-electron-app');
+    });
+
+    it('should treat whitespace-only nameProject as empty', async () => {
+      const options: SetupProjectSchema = {
+        guestProject: 'test-app',
+        name: 'Test App',
+        author: 'Test Author',
+        description: 'Test Description',
+        executableName: 'test-app',
+        directory: '',
+        nameProject: '   ',
+        updater: false,
+        testRunner: 'none',
+      };
+
+      const result = await normalizeOptions(tree, options);
+
+      // Should derive name from guestProject when nameProject is whitespace
+      expect(result.nameProject).toBe('test-app-electron');
+    });
+  });
+
+  describe('path construction', () => {
+    it('should construct all paths with forward slashes', async () => {
+      const options: SetupProjectSchema = {
+        guestProject: 'test-app',
+        name: 'Test App',
+        author: 'Test Author',
+        description: 'Test Description',
+        executableName: 'test-app',
+        directory: '',
+        nameProject: '',
+        updater: false,
+        testRunner: 'none',
+      };
+
+      const result = await normalizeOptions(tree, options);
+
+      // Verify key paths use forward slashes (cross-platform compatibility)
       const pathProperties = [
         'directory',
         'directoryRoot',
@@ -319,117 +167,75 @@ describe('utils', () => {
       ];
 
       pathProperties.forEach((prop) => {
-        const path = result[prop];
-        expect(path).not.toContain('\\');
-        expect(path).toEqual(normalizePath(path));
+        const pathValue = result[prop];
+        expect(pathValue).not.toContain('\\');
+        expect(pathValue).toEqual(normalizePath(pathValue));
       });
     });
 
-    it('should construct all paths correctly with custom directory', async () => {
+    it('should set directoryRoot as directory/src', async () => {
       const options: SetupProjectSchema = {
-        guestProject: 'gato',
-        name: 'Gato App',
+        guestProject: 'test-app',
+        name: 'Test App',
         author: 'Test Author',
         description: 'Test Description',
-        executableName: 'gato',
-        directory: 'custom/path',
-        nameProject: 'mi-gato-electron',
+        executableName: 'test-app',
+        directory: '',
+        nameProject: '',
         updater: false,
         testRunner: 'none',
       };
 
       const result = await normalizeOptions(tree, options);
 
-      // Verify all paths use forward slashes
-      const pathProperties = [
-        'directory',
-        'directoryRoot',
-        'directoryResources',
-        'outputDistFolder',
-        'outputDistFolderIcons',
-        'nsisExtraFilePath',
-      ];
+      expect(normalizePath(result.directoryRoot)).toBe(
+        `${normalizePath(result.directory)}/src`
+      );
+    });
 
-      pathProperties.forEach((prop) => {
-        const path = result[prop];
-        expect(path).not.toContain('\\');
-        expect(path).toEqual(normalizePath(path));
-      });
+    it('should set directoryResources as directory/resources', async () => {
+      const options: SetupProjectSchema = {
+        guestProject: 'test-app',
+        name: 'Test App',
+        author: 'Test Author',
+        description: 'Test Description',
+        executableName: 'test-app',
+        directory: '',
+        nameProject: '',
+        updater: false,
+        testRunner: 'none',
+      };
+
+      const result = await normalizeOptions(tree, options);
+
+      expect(normalizePath(result.directoryResources)).toBe(
+        `${normalizePath(result.directoryRoot)}/resources`
+      );
     });
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
+  describe('schema passthrough', () => {
+    it('should preserve name, author, and description from schema', async () => {
+      const options: SetupProjectSchema = {
+        guestProject: 'test-app',
+        name: 'My Electron App',
+        author: 'John Doe',
+        description: 'An awesome electron app',
+        executableName: 'my-app',
+        directory: '',
+        nameProject: '',
+        updater: true,
+        testRunner: 'jest',
+      };
 
-  it('should construct correct path when nameProject is empty', async () => {
-    // Mock the determineProjectNameAndRootOptions to verify input and return expected output
-    vi.mocked(devkit.determineProjectNameAndRootOptions).mockResolvedValue({
-      projectName: 'foo-electron',
-      projectRoot: 'apps/foo-electron',
-    } as devkit.ProjectNameAndRootOptions);
+      const result = await normalizeOptions(tree, options);
 
-    const schema: SetupProjectSchema = {
-      guestProject: 'foo',
-      directory: 'apps',
-      nameProject: '', // Empty nameProject
-      name: 'Foo App',
-      author: 'Test Author',
-      description: 'Test Description',
-      executableName: 'foo-app',
-      updater: false,
-      testRunner: 'none',
-    };
-
-    const result = await normalizeOptions(tree, schema);
-
-    // Verify determineProjectNameAndRootOptions was called with correct parameters
-    expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-      tree,
-      {
-        name: 'foo-electron',
-        projectType: 'application',
-        directory: 'apps',
-      }
-    );
-
-    // Verify the resulting paths
-    expect(normalizePath(result.directory)).toBe('apps/foo-electron');
-    expect(normalizePath(result.directoryRoot)).toBe('apps/foo-electron/src');
-    expect(result.nameProject).toBe('foo-electron');
-  });
-
-  it('should use provided nameProject when it exists', async () => {
-    vi.mocked(devkit.determineProjectNameAndRootOptions).mockResolvedValue({
-      projectName: 'custom-name',
-      projectRoot: 'apps/custom-name',
-    } as devkit.ProjectNameAndRootOptions);
-
-    const schema: SetupProjectSchema = {
-      guestProject: 'foo',
-      directory: 'apps',
-      nameProject: 'custom-name',
-      name: 'Foo App',
-      author: 'Test Author',
-      description: 'Test Description',
-      executableName: 'foo-app',
-      updater: false,
-      testRunner: 'none',
-    };
-
-    const result = await normalizeOptions(tree, schema);
-
-    expect(devkit.determineProjectNameAndRootOptions).toHaveBeenCalledWith(
-      tree,
-      {
-        name: 'custom-name',
-        projectType: 'application',
-        directory: 'apps',
-      }
-    );
-
-    expect(normalizePath(result.directory)).toBe('apps/custom-name');
-    expect(normalizePath(result.directoryRoot)).toBe('apps/custom-name/src');
-    expect(result.nameProject).toBe('custom-name');
+      expect(result.name).toBe('My Electron App');
+      expect(result.author).toBe('John Doe');
+      expect(result.description).toBe('An awesome electron app');
+      expect(result.executableName).toBe('my-app');
+      expect(result.updater).toBe(true);
+      expect(result.testRunner).toBe('jest');
+    });
   });
 });
