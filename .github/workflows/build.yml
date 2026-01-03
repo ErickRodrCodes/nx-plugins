@@ -25,6 +25,8 @@ jobs:
   # Build and test on Ubuntu
   build-and-test:
     runs-on: ubuntu-latest
+    outputs:
+      dist_found: ${{ steps.check_dist.outputs.found }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,7 +43,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -64,7 +66,19 @@ jobs:
       - name: Run affected linting
         run: pnpm nx affected -t lint --parallel 4
 
+      - name: Check for build artifacts
+        id: check_dist
+        run: |
+          if [ -d dist/packages ] && find dist/packages -type f | read; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Build artifacts found in dist/packages."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No build artifacts found; skipping upload."
+          fi
+
       - name: Upload build artifacts
+        if: steps.check_dist.outputs.found == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: dist-packages
@@ -76,6 +90,7 @@ jobs:
   smoke-tests-windows:
     runs-on: windows-latest
     needs: build-and-test
+    if: needs.build-and-test.outputs.dist_found == 'true'
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -92,7 +107,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -116,6 +131,8 @@ jobs:
   sonarqube:
     runs-on: ubuntu-latest
     needs: build-and-test
+    # Skip when SonarCloud automatic analysis is enabled (set repo/org variable SONAR_AUTOMATIC_ANALYSIS=true)
+    if: vars.SONAR_AUTOMATIC_ANALYSIS != 'true' && secrets.SONAR_TOKEN != ''
     steps:
       - name: Checkout
         uses: actions/checkout@v4
