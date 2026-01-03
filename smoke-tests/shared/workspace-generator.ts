@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { rimraf } from 'rimraf';
@@ -128,8 +128,7 @@ export class WorkspaceGenerator {
     try {
       // Read the current package.json
       const packageJsonPath = join(this.tmpDir, 'package.json');
-      const fs = require('fs');
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 
       // Add the nx script if it doesn't exist
       if (!packageJson.scripts) {
@@ -141,7 +140,7 @@ export class WorkspaceGenerator {
       }
 
       // Write back the modified package.json
-      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+      writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
     } catch (error) {
       // Silently fail
     }
@@ -164,8 +163,7 @@ export class WorkspaceGenerator {
     try {
       // Read the current package.json
       const packageJsonPath = join(this.tmpDir, 'package.json');
-      const fs = require('fs');
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 
       // Initialize devDependencies if it doesn't exist
       if (!packageJson.devDependencies) {
@@ -178,7 +176,7 @@ export class WorkspaceGenerator {
       ] = `file:./nx-electron-vite.tar.gz`;
 
       // Write back the modified package.json
-      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+      writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Install the dependency with the configured package manager
       this.execCommand(`${this.packageManager} install`);
@@ -226,8 +224,7 @@ export class WorkspaceGenerator {
     const sourceTarGzPath = join(this.tmpDir, '../nx-electron-vite.tar.gz');
     const targetTarGzPath = join(this.tmpDir, 'nx-electron-vite.tar.gz');
 
-    const fs = require('fs');
-    fs.copyFileSync(sourceTarGzPath, targetTarGzPath);
+    copyFileSync(sourceTarGzPath, targetTarGzPath);
   }
 
   /**
@@ -297,8 +294,7 @@ export class WorkspaceGenerator {
    * Reads a JSON file from the workspace
    */
   readJsonFile(relativePath: string): any {
-    const fs = require('fs');
-    const content = fs.readFileSync(join(this.tmpDir, relativePath), 'utf8');
+    const content = readFileSync(join(this.tmpDir, relativePath), 'utf8');
     return JSON.parse(content);
   }
 }
