@@ -1,6 +1,20 @@
-# Run lint and tests on affected files
-echo "🔍 Running lint on affected files..."
-pnpm exec nx affected:lint --base=origin/main || exit 1
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🧪 Running tests on affected files..."
-pnpm exec nx affected:test --base=origin/main --exclude=smoke-tests || exit 1
+# Format staged files with Nx/Prettier
+staged_files="$(git diff --name-only --cached)"
+if [ -n "$staged_files" ]; then
+  files_csv="$(printf "%s" "$staged_files" | tr '\n' ',' | sed 's/,$//')"
+  if [ -n "$files_csv" ]; then
+    echo "Running formatter on staged files..."
+    pnpm nx format:write --files="$files_csv"
+    printf "%s\n" "$staged_files" | xargs git add
+  fi
+fi
+
+# Run lint and tests on affected files
+echo "Running lint on affected files..."
+pnpm exec nx affected:lint --base=origin/main
+
+echo "Running tests on affected files..."
+pnpm exec nx affected:test --base=origin/main --exclude=smoke-tests
