@@ -9,10 +9,7 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": [
-      "es2020",
-      "dom"
-    ],
+    "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
@@ -20,13 +17,8 @@
       "@erickrodrcodes/nx-electron-vite": [
         "packages/nx-electron-vite/src/index.ts"
       ],
-      "@erickrodrcodes/verdaccio": [
-        "verdaccio/src/index.ts"
-      ]
+      "@erickrodrcodes/verdaccio": ["verdaccio/src/index.ts"]
     }
   },
-  "exclude": [
-    "node_modules",
-    "tmp"
-  ]
+  "exclude": ["node_modules", "tmp"]
 }

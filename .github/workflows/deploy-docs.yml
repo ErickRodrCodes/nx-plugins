@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "packages/nx-electron-vite/documentation/**"
-      - ".github/workflows/deploy-docs.yml"
+      - 'packages/nx-electron-vite/documentation/**'
+      - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
 # Allow only one concurrent deployment
@@ -34,10 +34,10 @@ jobs:
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
         with:
           node-version: 22.20.0
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts --ignore-scripts
 
       - name: Build documentation
         run: pnpm exec nx run nx-electron-vite-documentation:build

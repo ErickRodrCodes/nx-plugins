@@ -20,6 +20,11 @@ Authored by Erick Rodriguez
 | ------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ⚠️     | create-nx-electron-vite | **CLI** to create [Nx](https://nx.dev) workspaces with built-in support for [electron](https://spring.io/projects/spring-boot) and [vite](). Under consideration |
 
+## Continuous Integration
+
+- CI runs via `.github/workflows/build.yml` on pushes and PRs (main, develop, feature/\*),
+  covering build, test, lint, smoke tests, and Sonar analysis.
+
 ## Credits
 
 - The format of the readme page is based on the readme of [NxRocks](https://github.com/tinesoft/nxrocks) project of Tine Kondo

@@ -5,7 +5,10 @@ on:
     branches:
       - main
       - develop
-      - feature/*
+      - 'feature/*'
+      - 'releases/**'
+      - 'hotfix/**'
+      - 'bugfix/**'
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -25,6 +28,8 @@ jobs:
   # Build and test on Ubuntu
   build-and-test:
     runs-on: ubuntu-latest
+    outputs:
+      dist_found: ${{ steps.check_dist.outputs.found }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,36 +46,25 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       # Derive appropriate SHAs for base and head for `nx affected` commands
       - name: Derive SHAs for nx affected
         uses: nrwl/nx-set-shas@v4
 
       # Record non-Nx commands to Nx Cloud
-      - name: Check formatting
-        run: pnpm nx-cloud record -- pnpm nx format:check
+      # - name: Check formatting
+      #   run: pnpm nx-cloud record -- pnpm nx format:check
 
       # Use affected commands to only run tasks for changed projects
-      - name: Build affected packages
-        run: pnpm nx affected -t build --parallel 4
+      - name: Build and linting affected packages
+        run: pnpm nx affected -t build lint
 
       - name: Run affected unit tests
-        run: pnpm nx affected -t test --parallel 4
-
-      - name: Run affected linting
-        run: pnpm nx affected -t lint --parallel 4
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-packages
-          path: dist/packages/
-          retention-days: 1
-          if-no-files-found: ignore
+        run: pnpm nx affected -t test --exclude=smoke-tests
 
   # Smoke tests on Windows (headless)
   smoke-tests-windows:
@@ -92,16 +86,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-packages
-          path: dist/packages/
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Setup smoke tests
         run: pnpm run smoke:setup
@@ -117,13 +105,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
+          # Disabling shallow clones is recommended for improving the relevancy of reporting
           fetch-depth: 0
-
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

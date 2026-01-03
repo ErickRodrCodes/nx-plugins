@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Perform a dry run (no actual publish)"
+        description: 'Perform a dry run (no actual publish)'
         required: false
         default: false
         type: boolean
@@ -45,17 +45,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       # For release, we build all packages (not just affected)
       - name: Build all packages
-        run: pnpm nx run-many -t build --parallel 4
+        run: pnpm nx run-many -t build
 
       - name: Run all unit tests
-        run: pnpm nx run-many -t test --parallel 4
+        run: pnpm nx run-many -t test --exclude=smoke-test
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -84,7 +84,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -93,7 +93,7 @@ jobs:
           path: dist/packages/
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Setup smoke tests
         run: pnpm run smoke:setup
@@ -106,7 +106,7 @@ jobs:
           # Disable interactive prompts
           ELECTRON_ENABLE_LOGGING: false
           # Use virtual framebuffer for headless Electron
-          DISPLAY: ":99"
+          DISPLAY: ':99'
 
   # Release to npm
   release:
@@ -138,11 +138,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4

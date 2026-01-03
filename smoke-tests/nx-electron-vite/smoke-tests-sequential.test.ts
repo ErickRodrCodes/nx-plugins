@@ -10,7 +10,11 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 describe.sequential('Smoke Tests - Sequential Execution', () => {
   describe('01: Workspace Setup and Plugin Installation', () => {
     it('should have created the plugin tar.gz in smoke-tests/tmp', () => {
-      const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
+      const tarGzPath = join(
+        smokeTestsTmpDir,
+        'smoke-test-workspace',
+        'nx-electron-vite.tar.gz'
+      );
       expect(existsSync(tarGzPath)).toBe(true);
     });
 

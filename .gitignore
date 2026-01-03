@@ -64,3 +64,8 @@ electron-builder-output/
 release/
 electron-dist/
 smoke-tests/test-results.json
+
+
+# Secrets
+.secrets
+.actrc
