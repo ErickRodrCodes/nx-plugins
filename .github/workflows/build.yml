@@ -61,7 +61,7 @@ jobs:
         run: pnpm nx affected -t build lint
 
       - name: Run affected unit tests
-        run: pnpm nx affected -t test --exclude smoke-test
+        run: pnpm nx affected -t test --exclude=smoke-test
 
       - name: Check for build artifacts
         id: check_dist
