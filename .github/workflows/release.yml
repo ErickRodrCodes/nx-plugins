@@ -55,7 +55,7 @@ jobs:
         run: pnpm nx run-many -t build
 
       - name: Run all unit tests
-        run: pnpm nx run-many -t test --exclude smoke-test
+        run: pnpm nx run-many -t test --exclude=smoke-test
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
