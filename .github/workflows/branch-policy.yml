@@ -35,4 +35,11 @@ jobs:
 
       - name: Verify develop is an ancestor of PR head
         if: github.base_ref == 'main' && startsWith(github.head_ref, 'release/')
-        env
+        run: |
+          git fetch origin develop --no-tags --prune --depth=0
+          if git merge-base --is-ancestor origin/develop HEAD; then
+            echo "develop is an ancestor of ${GITHUB_HEAD_REF}."
+          else
+            echo "develop is NOT an ancestor of ${GITHUB_HEAD_REF}. Release branches must be based on develop."
+            exit 1
+          fi
