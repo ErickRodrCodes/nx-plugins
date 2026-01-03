@@ -1,0 +1,49 @@
+name: branch-policy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+jobs:
+  branch_policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Enforce branch flow rules
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="${{ github.base_ref }}"
+          HEAD="${{ github.head_ref }}"
+
+          echo "Base: $BASE"
+          echo "Head: $HEAD"
+
+          # Only feature/* -> develop
+          if [[ "$BASE" == "develop" ]]; then
+            [[ "$HEAD" =~ ^feature\/ ]] || {
+              echo "::error::PRs into 'develop' must come from 'feature/*'."
+              exit 1
+            }
+          fi
+
+          # Only release/* -> main AND release must be based on develop
+          if [[ "$BASE" == "main" ]]; then
+            [[ "$HEAD" =~ ^release\/ ]] || {
+              echo "::error::PRs into 'main' must come from 'release/*'."
+              exit 1
+            }
+
+            git fetch origin develop:refs/remotes/origin/develop --depth=0
+
+            if ! git merge-base --is-ancestor origin/develop HEAD; then
+              echo "::error::Release branch must be based on 'develop' (develop must be an ancestor)."
+              exit 1
+            fi
+          fi
