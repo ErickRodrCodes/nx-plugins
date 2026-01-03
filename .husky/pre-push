@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [[ "$branch" == "main" || "$branch" == "develop" ]]; then
+  echo "❌ Push blocked: you're on protected branch '$branch'. Use a PR."
+  echo "   If you really must (bootstrap only): ALLOW_PROTECTED_PUSH=1 git push"
+  if [[ "${ALLOW_PROTECTED_PUSH:-}" != "1" ]]; then
+    exit 1
+  fi
+fi
