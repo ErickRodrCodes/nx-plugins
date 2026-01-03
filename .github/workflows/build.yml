@@ -129,7 +129,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     # Skip when SonarCloud automatic analysis is enabled (set repo/org variable SONAR_AUTOMATIC_ANALYSIS=true)
-    if: vars.SONAR_AUTOMATIC_ANALYSIS != 'true' && secrets.SONAR_TOKEN != ''
+    if: ${{ vars.SONAR_AUTOMATIC_ANALYSIS != 'true' && secrets.SONAR_TOKEN != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
