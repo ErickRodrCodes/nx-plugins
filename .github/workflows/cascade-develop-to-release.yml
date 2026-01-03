@@ -1,0 +1,66 @@
+name: cascade-develop-to-release
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: write
+
+jobs:
+  update_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge develop into active release branch (if any)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+
+            // Find an open PR targeting main from a release/* head branch
+            const prs = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "open",
+              base: "main",
+              per_page: 100,
+            });
+
+            const releasePr = prs.data.find(pr => pr.head?.ref?.startsWith("release/"));
+            if (!releasePr) {
+              core.info("No active release/* -> main PR found. Skipping.");
+              return;
+            }
+
+            const releaseBranch = releasePr.head.ref;
+
+            // Validate branch name strictly before using it
+            // (only allow safe characters after release/)
+            const re = /^release\/[A-Za-z0-9._-]+$/;
+            if (!re.test(releaseBranch)) {
+              core.setFailed(`Unsafe release branch name: ${releaseBranch}`);
+              return;
+            }
+
+            core.info(`Active release branch: ${releaseBranch}`);
+
+            // Merge develop into the release branch using the merges API
+            try {
+              const res = await github.rest.repos.merge({
+                owner,
+                repo,
+                base: releaseBranch,
+                head: "develop",
+                commit_message: `chore: cascade develop into ${releaseBranch}`,
+              });
+              core.info(`Merge completed: ${res.data.sha}`);
+            } catch (e) {
+              // If there is nothing to merge, GitHub returns 204 or throws depending on client handling.
+              // Also could be conflicts (409). Handle and surface clearly.
+              const status = e?.status || "unknown";
+              if (status === 409) {
+                core.setFailed(`Merge conflict updating ${releaseBranch} from develop. Manual resolution required.`);
+              } else {
+                core.setFailed(`Merge failed (status ${status}): ${e.message}`);
+              }
+            }

@@ -1,0 +1,38 @@
+name: branch-policy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  branch_policy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1) Enforce: only feature/* -> develop (done via 'if', not shell)
+      - name: Block non-feature branches merging into develop
+        if: github.base_ref == 'develop' && !startsWith(github.head_ref, 'feature/')
+        run: |
+          echo "PRs into 'develop' must come from 'feature/*' branches."
+          exit 1
+
+      # 2) Enforce: only release/* -> main (done via 'if', not shell)
+      - name: Block non-release branches merging into main
+        if: github.base_ref == 'main' && !startsWith(github.head_ref, 'release/')
+        run: |
+          echo "PRs into 'main' must come from 'release/*' branches."
+          exit 1
+
+      # 3) Only if it's a release/* -> main PR, verify release is based on develop
+      - name: Checkout PR head (SHA, not branch name)
+        if: github.base_ref == 'main' && startsWith(github.head_ref, 'release/')
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify develop is an ancestor of PR head
+        if: github.base_ref == 'main' && startsWith(github.head_ref, 'release/')
+        env
