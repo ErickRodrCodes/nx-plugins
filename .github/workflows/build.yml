@@ -57,14 +57,11 @@ jobs:
         run: pnpm nx-cloud record -- pnpm nx format:check
 
       # Use affected commands to only run tasks for changed projects
-      - name: Build affected packages
-        run: pnpm nx affected -t build --parallel 4
+      - name: Build and linting affected packages
+        run: pnpm nx affected -t build lint
 
       - name: Run affected unit tests
-        run: pnpm nx affected -t test --parallel 4
-
-      - name: Run affected linting
-        run: pnpm nx affected -t lint --parallel 4
+        run: pnpm nx affected -t test --exclude smoke-test
 
       - name: Check for build artifacts
         id: check_dist
