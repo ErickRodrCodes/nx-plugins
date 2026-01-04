@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync, SpawnSyncOptions } from 'node:child_process';
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,6 +7,29 @@ import { rimraf } from 'rimraf';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const rootDir = join(__dirname, '../../');
 const smokeTestsDir = join(__dirname, '../');
+
+// Tokenize a command string while preserving quoted segments
+function splitCommand(command: string): string[] {
+  const tokens = command.match(/(?:[^\s'"]+|'[^']*'|"[^"]*")+/g) || [];
+  return tokens.map((token) => token.replace(/^['"](.+)['"]$/, '$1'));
+}
+
+function assertSafeTokens(tokens: string[]): void {
+  const unsafePattern = /[;&|`$<>]/;
+  tokens.forEach((token) => {
+    if (unsafePattern.test(token)) {
+      throw new Error(`Unsafe token detected in command: ${token}`);
+    }
+  });
+}
+
+function isNxCommand(tokens: string[]): boolean {
+  return (
+    tokens[0] === 'nx' ||
+    (tokens[0] === 'npx' && tokens[1] === 'nx') ||
+    (tokens[0] === 'pnpm' && tokens[1] === 'exec' && tokens[2] === 'nx')
+  );
+}
 
 // Helper function to safely remove directory using rimraf
 async function safeRemoveDir(dir: string): Promise<void> {
@@ -29,11 +52,11 @@ function getNxVersionFromWorkspace(): string {
       throw new Error('Nx version not found in workspace package.json');
     }
 
-    console.log(`📦 Using Nx version from workspace: ${nxVersion}`);
+    console.log(`dY"İ Using Nx version from workspace: ${nxVersion}`);
     return nxVersion;
   } catch (error) {
     console.warn(
-      `⚠️  Could not read Nx version from workspace, using latest: ${error}`
+      `ƒsÿ‹,?  Could not read Nx version from workspace, using latest: ${error}`
     );
     return 'latest';
   }
@@ -101,22 +124,26 @@ export class WorkspaceGenerator {
       preset === 'empty' ? '--workspaceType=integrated' : '';
 
     const nxVersion = getNxVersionFromWorkspace();
-    const createCommand = `npx --yes create-nx-workspace@${nxVersion} --name=${name} --preset=${preset} ${workspaceTypeFlag} ${nxCloudFlag} --package-manager=${packageManager} ${skipGitFlag} --interactive=false --verbose`;
+    const createCommand = [
+      'npx',
+      '--yes',
+      `create-nx-workspace@${nxVersion}`,
+      `--name=${name}`,
+      `--preset=${preset}`,
+      workspaceTypeFlag,
+      nxCloudFlag,
+      `--package-manager=${packageManager}`,
+      skipGitFlag,
+      '--interactive=false',
+      '--verbose',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
-    try {
-      execSync(createCommand, {
-        cwd: directory,
-        stdio: 'inherit',
-        encoding: 'utf8',
-      });
-    } catch (error) {
-      const execError = error as any;
-      if (execError.stdout)
-        console.error(`📄 stdout: ${execError.stdout.toString()}`);
-      if (execError.stderr)
-        console.error(`📄 stderr: ${execError.stderr.toString()}`);
-      throw error;
-    }
+    this.execCommand(createCommand, {
+      cwd: directory,
+      stdio: 'inherit',
+    });
 
     return this.tmpDir;
   }
@@ -242,13 +269,13 @@ export class WorkspaceGenerator {
   }
 
   /**
-   * Executes a command in the workspace
+   * Executes a command in the workspace safely
    */
   execCommand(
     command: string,
-    options: { stdio?: 'inherit' | 'pipe' } = {}
+    options: { stdio?: 'inherit' | 'pipe'; cwd?: string } = {}
   ): string {
-    const { stdio = 'pipe' } = options;
+    const { stdio = 'pipe', cwd } = options;
     let cmd = command;
 
     if (/npx\s+nx\s+|pnpm\s+exec\s+nx\s+/.test(command)) {
@@ -260,27 +287,57 @@ export class WorkspaceGenerator {
       }
     }
 
-    try {
-      return execSync(cmd, {
-        cwd: this.tmpDir,
-        stdio,
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          NX_DAEMON: 'false', // Disable Nx daemon to avoid conflicts with parent workspace
-        },
-      });
-    } catch (error) {
-      const execError = error as any;
-      console.error(`❌ Command failed: ${cmd}`);
-      if (execError.stdout) {
-        console.error(`📄 stdout: ${execError.stdout.toString()}`);
-      }
-      if (execError.stderr) {
-        console.error(`📄 stderr: ${execError.stderr.toString()}`);
-      }
-      throw error;
+    const tokens = splitCommand(cmd);
+    assertSafeTokens(tokens);
+
+    if (tokens.length === 0) {
+      throw new Error('No command provided to execCommand');
     }
+
+    // Append Nx flags when command is parsed into tokens
+    if (isNxCommand(tokens)) {
+      if (!tokens.includes('--verbose')) {
+        tokens.push('--verbose');
+      }
+      if (!tokens.includes('--skip-nx-cache')) {
+        tokens.push('--skip-nx-cache');
+      }
+    }
+
+    const spawnOptions: SpawnSyncOptions = {
+      cwd: cwd || this.tmpDir,
+      stdio,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        NX_DAEMON: 'false', // Disable Nx daemon to avoid conflicts with parent workspace
+      },
+    };
+
+    const commandBinary =
+      process.platform === 'win32' && tokens[0] === 'npx'
+        ? 'npx.cmd'
+        : tokens[0];
+
+    const result = spawnSync(commandBinary, tokens.slice(1), {
+      ...spawnOptions,
+      shell: process.platform === 'win32',
+    });
+
+    if (result.error || result.status !== 0) {
+      console.error(`ƒ?O Command failed: ${cmd}`);
+      if (result.stdout) {
+        console.error(`dY", stdout: ${result.stdout.toString()}`);
+      }
+      if (result.stderr) {
+        console.error(`dY", stderr: ${result.stderr.toString()}`);
+      }
+      throw (
+        result.error || new Error(`Command failed with code ${result.status}`)
+      );
+    }
+
+    return result.stdout ? result.stdout.toString() : '';
   }
 
   /**
