@@ -1,4 +1,4 @@
-import { execSync, spawnSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,10 +26,9 @@ beforeAll(async () => {
       'System32',
       'taskkill.exe'
     );
-    spawnSync(taskkillPath, ['/im', 'esbuild.exe', '/f'], {
+    execSync(`"${taskkillPath}" /im esbuild.exe /f`, {
       cwd: rootDir,
-      stdio: 'ignore', // Suppress output - it's ok if no process exists
-      shell: false,
+      stdio: 'ignore',
     });
     console.log('✓ Cleaned up esbuild processes');
   } catch (e) {
@@ -74,22 +73,19 @@ beforeAll(async () => {
     'system32',
     'tar.exe'
   );
-  spawnSync(
+  const sanitizedCommand = [
     tarPath,
-    [
-      '-czf',
-      tarGzPath,
-      '--directory=dist/packages/nx-electron-vite',
-      '--exclude=node_modules',
-      '--exclude=.git',
-      '.',
-    ],
-    {
-      cwd: rootDir,
-      stdio: 'inherit',
-      shell: false,
-    }
-  );
+    '-czf',
+    tarGzPath,
+    '--directory=dist/packages/nx-electron-vite',
+    '--exclude=node_modules',
+    '--exclude=.git',
+    '.',
+  ];
+  execSync(sanitizedCommand.join(' '), {
+    cwd: rootDir,
+    stdio: 'inherit',
+  });
   // Print and check full path of tarball and workspace for CI visibility
   const tarballExists = existsSync(tarGzPath);
   const workspaceExists = existsSync(workspacePath);
