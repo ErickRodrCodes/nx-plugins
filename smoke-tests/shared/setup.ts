@@ -91,7 +91,6 @@ beforeAll(async () => {
           shell: false,
         }
       );
-
       // Print and check full path of tarball and workspace for CI visibility
       const tarballExists = existsSync(tarGzPath);
       const workspaceExists = existsSync(workspacePath);
