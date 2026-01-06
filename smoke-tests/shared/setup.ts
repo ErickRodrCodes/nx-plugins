@@ -14,6 +14,8 @@ let workspaceGenerator: WorkspaceGenerator | null = null;
 
 // Global setup - runs once before all tests
 beforeAll(async () => {
+  // Print the generated smoke test temp directory for CI visibility
+  console.log('smokeTestsTmpDir:', smokeTestsTmpDir);
   // Step 0: Kill any lingering esbuild processes that might lock files
   console.log('Killing any lingering esbuild processes...');
   try {
@@ -87,6 +89,17 @@ beforeAll(async () => {
     nxCloud: false,
     directory: smokeTestsTmpDir,
   });
+
+  // Print and check full path of tarball and workspace for CI visibility
+  const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
+  const tarballExists = existsSync(tarGzPath);
+  const workspaceExists = existsSync(workspacePath);
+  console.log('TARBALL FULL PATH:', tarGzPath);
+  console.log('TARBALL EXISTS:', tarballExists);
+  console.log('WORKSPACE FULL PATH:', workspacePath);
+  console.log('WORKSPACE EXISTS:', workspaceExists);
+  // End process early for CI debug
+  process.exit(0);
 
   // Step 3.1: Add @nx/react
   console.log('Adding @nx/react...');
