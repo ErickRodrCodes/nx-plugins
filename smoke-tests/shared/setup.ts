@@ -52,9 +52,22 @@ beforeAll(async () => {
     stdio: 'inherit',
   });
 
-  // Step 2: Create tar.gz
+  // Step 2: Create workspace
+  console.log('Creating workspace...');
+  const workspacePath = join(smokeTestsTmpDir, 'smoke-test-workspace');
+  workspaceGenerator = WorkspaceGenerator.fromAbsolutePath(workspacePath);
+  await workspaceGenerator.createWorkspace({
+    name: 'smoke-test-workspace',
+    preset: 'apps',
+    packageManager: 'npm',
+    skipGit: true,
+    nxCloud: false,
+    directory: smokeTestsTmpDir,
+  });
+
+  // Step 3: Create tar.gz
   // Use full path to tar.exe for security (prevents PATH manipulation attacks)
-  const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
+  const tarGzPath = join(workspacePath, 'nx-electron-vite.tar.gz');
   const tarPath = join(
     process.env.SYSTEMROOT || String.raw`C:\Windows`,
     'system32',
@@ -76,19 +89,6 @@ beforeAll(async () => {
       shell: false,
     }
   );
-
-  // Step 3: Create workspace
-  console.log('Creating workspace...');
-  const workspacePath = join(smokeTestsTmpDir, 'smoke-test-workspace');
-  workspaceGenerator = WorkspaceGenerator.fromAbsolutePath(workspacePath);
-  await workspaceGenerator.createWorkspace({
-    name: 'smoke-test-workspace',
-    preset: 'apps',
-    packageManager: 'npm',
-    skipGit: true,
-    nxCloud: false,
-    directory: smokeTestsTmpDir,
-  });
 
   // Print and check full path of tarball and workspace for CI visibility
   const tarballExists = existsSync(tarGzPath);
