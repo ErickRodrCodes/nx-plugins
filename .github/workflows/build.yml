@@ -90,7 +90,7 @@ jobs:
   smoke-tests-windows:
     runs-on: windows-latest
     needs: build-and-test
-    if: needs.build-and-test.outputs.dist_found == 'true'
+    # if: needs.build-and-test.outputs.dist_found == 'true'
     timeout-minutes: 30
     steps:
       - name: Checkout
