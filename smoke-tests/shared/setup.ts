@@ -1,5 +1,5 @@
 import { execSync, spawnSync } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll } from 'vitest';
@@ -22,7 +22,7 @@ beforeAll(async () => {
     // Use full path to taskkill.exe for security (prevents PATH manipulation attacks)
     // Use spawnSync with shell: false to avoid shell injection
     const taskkillPath = join(
-      process.env.SYSTEMROOT || 'C:\\Windows',
+      process.env.SYSTEMROOT || String.raw`C:\Windows`,
       'System32',
       'taskkill.exe'
     );
@@ -56,7 +56,7 @@ beforeAll(async () => {
   // Use full path to tar.exe for security (prevents PATH manipulation attacks)
   const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
   const tarPath = join(
-    process.env.SYSTEMROOT || 'C:\\Windows',
+    process.env.SYSTEMROOT || String.raw`C:\Windows`,
     'system32',
     'tar.exe'
   );
@@ -91,7 +91,6 @@ beforeAll(async () => {
   });
 
   // Print and check full path of tarball and workspace for CI visibility
-  const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
   const tarballExists = existsSync(tarGzPath);
   const workspaceExists = existsSync(workspacePath);
   console.log('TARBALL FULL PATH:', tarGzPath);
@@ -101,32 +100,32 @@ beforeAll(async () => {
   // End process early for CI debug
   process.exit(0);
 
-  // Step 3.1: Add @nx/react
-  console.log('Adding @nx/react...');
-  workspaceGenerator.execCommand('npx nx add @nx/react --yes');
+  // // Step 3.1: Add @nx/react
+  // console.log('Adding @nx/react...');
+  // workspaceGenerator.execCommand('npx nx add @nx/react --yes');
 
-  // Step 3.2: Create React app
-  console.log('Creating React app...');
-  workspaceGenerator.generateReactApp('smoke-test-app', 'apps/smoke-test-app');
+  // // Step 3.2: Create React app
+  // console.log('Creating React app...');
+  // workspaceGenerator.generateReactApp('smoke-test-app', 'apps/smoke-test-app');
 
-  // Step 4: Install plugin
-  console.log('Installing plugin...');
-  workspaceGenerator.copyPluginTarGz();
-  workspaceGenerator.addPluginAsDevDependency();
+  // // Step 4: Install plugin
+  // console.log('Installing plugin...');
+  // workspaceGenerator.copyPluginTarGz();
+  // workspaceGenerator.addPluginAsDevDependency();
 
-  // Step 5: Run init generator
-  console.log('Running init generator...');
-  workspaceGenerator.execCommand(
-    'npx nx g @erickrodrcodes/nx-electron-vite:init'
-  );
+  // // Step 5: Run init generator
+  // console.log('Running init generator...');
+  // workspaceGenerator.execCommand(
+  //   'npx nx g @erickrodrcodes/nx-electron-vite:init'
+  // );
 
-  // Step 6: Create Electron project
-  console.log('Creating Electron project...');
-  const electronAppName = 'smoke-test-app-electron';
-  const command = `npx nx g @erickrodrcodes/nx-electron-vite:setup-project --guestProject="smoke-test-app" --name="Smoke Test Electron App" --author="Test Author" --description="Test Electron application" --executableName="smoke-test-app" --directory="apps/${electronAppName}" --updater=false --test=none --no-interactive`;
-  workspaceGenerator.execCommand(command);
+  // // Step 6: Create Electron project
+  // console.log('Creating Electron project...');
+  // const electronAppName = 'smoke-test-app-electron';
+  // const command = `npx nx g @erickrodrcodes/nx-electron-vite:setup-project --guestProject="smoke-test-app" --name="Smoke Test Electron App" --author="Test Author" --description="Test Electron application" --executableName="smoke-test-app" --directory="apps/${electronAppName}" --updater=false --test=none --no-interactive`;
+  // workspaceGenerator.execCommand(command);
 
-  console.log('Setup completed successfully');
+  // console.log('Setup completed successfully');
 }, 300000); // 5 minutes timeout
 
 // Global cleanup - runs once after all tests
