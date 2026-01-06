@@ -1,5 +1,5 @@
 import { execSync, spawnSync, SpawnSyncOptions } from 'node:child_process';
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { rimraf } from 'rimraf';
@@ -241,17 +241,6 @@ export class WorkspaceGenerator {
       cwd: this.tmpDir,
       stdio: 'inherit',
     });
-  }
-
-  /**
-   * Copies the plugin tar.gz file to the workspace
-   */
-  copyPluginTarGz(): void {
-    // The tarball is in the parent directory of the workspace (which is the unique run dir)
-    const sourceTarGzPath = join(this.tmpDir, '../nx-electron-vite.tar.gz');
-    const targetTarGzPath = join(this.tmpDir, 'nx-electron-vite.tar.gz');
-
-    copyFileSync(sourceTarGzPath, targetTarGzPath);
   }
 
   /**
