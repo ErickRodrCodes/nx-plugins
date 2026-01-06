@@ -66,26 +66,6 @@ jobs:
       - name: Run affected unit tests
         run: pnpm nx affected -t test --exclude=smoke-tests
 
-      - name: Check for build artifacts
-        id: check_dist
-        run: |
-          if [ -d dist/packages ] && find dist/packages -type f | read; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "Build artifacts found in dist/packages."
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No build artifacts found; skipping upload."
-          fi
-
-      - name: Upload build artifacts
-        if: steps.check_dist.outputs.found == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-packages
-          path: dist/packages/
-          retention-days: 1
-          if-no-files-found: ignore
-
   # Smoke tests on Windows (headless)
   smoke-tests-windows:
     runs-on: windows-latest
@@ -107,12 +87,6 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-packages
-          path: dist/packages/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
