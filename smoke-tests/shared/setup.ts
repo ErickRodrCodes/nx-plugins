@@ -56,49 +56,52 @@ beforeAll(async () => {
   console.log('Creating workspace...');
   const workspacePath = join(smokeTestsTmpDir, 'smoke-test-workspace');
   workspaceGenerator = WorkspaceGenerator.fromAbsolutePath(workspacePath);
-  await workspaceGenerator.createWorkspace({
-    name: 'smoke-test-workspace',
-    preset: 'apps',
-    packageManager: 'npm',
-    skipGit: true,
-    nxCloud: false,
-    directory: smokeTestsTmpDir,
-  });
+  await workspaceGenerator
+    .createWorkspace({
+      name: 'smoke-test-workspace',
+      preset: 'apps',
+      packageManager: 'npm',
+      skipGit: true,
+      nxCloud: false,
+      directory: smokeTestsTmpDir,
+    })
+    .then(() => {
+      // Step 3: Create tar.gz
+      // Use full path to tar.exe for security (prevents PATH manipulation attacks)
+      console.log(' ⚠️ creating Tarball');
+      const tarGzPath = join(workspacePath, 'nx-electron-vite.tar.gz');
+      const tarPath = join(
+        process.env.SYSTEMROOT || String.raw`C:\Windows`,
+        'system32',
+        'tar.exe'
+      );
+      spawnSync(
+        tarPath,
+        [
+          '-czf',
+          tarGzPath,
+          '--directory=dist/packages/nx-electron-vite',
+          '--exclude=node_modules',
+          '--exclude=.git',
+          '.',
+        ],
+        {
+          cwd: rootDir,
+          stdio: 'inherit',
+          shell: false,
+        }
+      );
 
-  // Step 3: Create tar.gz
-  // Use full path to tar.exe for security (prevents PATH manipulation attacks)
-  const tarGzPath = join(workspacePath, 'nx-electron-vite.tar.gz');
-  const tarPath = join(
-    process.env.SYSTEMROOT || String.raw`C:\Windows`,
-    'system32',
-    'tar.exe'
-  );
-  spawnSync(
-    tarPath,
-    [
-      '-czf',
-      tarGzPath,
-      '--directory=dist/packages/nx-electron-vite',
-      '--exclude=node_modules',
-      '--exclude=.git',
-      '.',
-    ],
-    {
-      cwd: rootDir,
-      stdio: 'inherit',
-      shell: false,
-    }
-  );
-
-  // Print and check full path of tarball and workspace for CI visibility
-  const tarballExists = existsSync(tarGzPath);
-  const workspaceExists = existsSync(workspacePath);
-  console.log('TARBALL FULL PATH:', tarGzPath);
-  console.log('TARBALL EXISTS:', tarballExists);
-  console.log('WORKSPACE FULL PATH:', workspacePath);
-  console.log('WORKSPACE EXISTS:', workspaceExists);
-  // End process early for CI debug
-  process.exit(0);
+      // Print and check full path of tarball and workspace for CI visibility
+      const tarballExists = existsSync(tarGzPath);
+      const workspaceExists = existsSync(workspacePath);
+      console.log('TARBALL FULL PATH:', tarGzPath);
+      console.log('TARBALL EXISTS:', tarballExists);
+      console.log('WORKSPACE FULL PATH:', workspacePath);
+      console.log('WORKSPACE EXISTS:', workspaceExists);
+      // End process early for CI debug
+      process.exit(0);
+    });
 
   // // Step 3.1: Add @nx/react
   // console.log('Adding @nx/react...');
