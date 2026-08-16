@@ -14,7 +14,7 @@ import {
 
 import { rebuild } from '@electron/rebuild';
 
-import { determineProjectNameAndRootOptions } from '@nx/devkit/src/generators/project-name-and-root-utils';
+import { determineProjectNameAndRootOptions } from '@nx/devkit/internal';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { ChildProcess, exec } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -64,7 +64,7 @@ export interface RebuildResult {
  */
 export async function getProjectOutputDirectory(
   tree: Tree,
-  projectName: string
+  projectName: string,
 ): Promise<string> {
   const projectConfig = readProjectConfiguration(tree, projectName);
 
@@ -79,7 +79,7 @@ export async function getProjectOutputDirectory(
         .replace(/\.\.\//g, '');
 
       logger.info(
-        `Resolved output path for project ${projectName} from build target outputs: ${outputPath}`
+        `Resolved output path for project ${projectName} from build target outputs: ${outputPath}`,
       );
       return outputPath;
     }
@@ -89,7 +89,7 @@ export async function getProjectOutputDirectory(
   if (projectConfig.targets?.build?.options?.outputPath) {
     return projectConfig.targets.build.options.outputPath.replace(
       /\.\.\//g,
-      ''
+      '',
     );
   }
 
@@ -103,7 +103,7 @@ export async function getProjectOutputDirectory(
   throw new Error(
     `Could not determine output path for project ${projectName}. ` +
       `Please ensure the project has a build target with outputs configured, ` +
-      `or explicitly set outputPath in project.json, or have a vite.config.ts with outDir specified.`
+      `or explicitly set outputPath in project.json, or have a vite.config.ts with outDir specified.`,
   );
 }
 
@@ -115,7 +115,7 @@ export async function getProjectOutputDirectory(
  */
 export async function getViteOutputPath(
   tree: Tree,
-  projectName: string
+  projectName: string,
 ): Promise<string> {
   const projectConfig = readProjectConfiguration(tree, projectName);
 
@@ -130,7 +130,7 @@ export async function getViteOutputPath(
 
   const viteConfigPath = path.posix.join(
     projectConfig.root,
-    viteConfigFiles[0]
+    viteConfigFiles[0],
   );
   const viteConfigContent = tree.read(viteConfigPath, 'utf-8');
 
@@ -149,7 +149,7 @@ export async function getViteOutputPath(
     logger.info(
       `Resolved output path for project ${projectName} from ${
         viteConfigFiles[0]
-      }: ${fullPath.replace(/\.\.\//g, '')}`
+      }: ${fullPath.replace(/\.\.\//g, '')}`,
     );
     return fullPath.replace(/\.\.\//g, '');
   }
@@ -164,7 +164,7 @@ export async function getViteOutputPath(
  */
 export async function normalizeOptions(
   tree: Tree,
-  schema: SetupProjectSchema
+  schema: SetupProjectSchema,
 ): Promise<SetupProjectSchema> {
   // Normalize project name: use guestProject-electron only if nameProject is undefined, null, empty string or whitespace
   const projectName =
@@ -193,7 +193,7 @@ export async function normalizeOptions(
 
   const outputGuestDirectory = await getProjectOutputDirectory(
     tree,
-    schema.guestProject
+    schema.guestProject,
   );
 
   const options: SetupProjectSchema = {
@@ -214,7 +214,7 @@ export async function normalizeOptions(
     directoryResources: path.posix.join(projectDirectory, 'src/resources'),
     offsetFromRoot: offsetFromRoot(projectDirectory),
     rootTsConfigPath: `${offsetFromRoot(
-      projectDirectory
+      projectDirectory,
     )}${getRootTsConfigPath()}`,
     nsisExtraFilePath: path.posix.join(projectDirectory, 'src/installer.nsh'),
   };
@@ -230,7 +230,7 @@ export async function normalizeOptions(
  */
 export const isApplication = async (
   tree: Tree,
-  guestProject: string
+  guestProject: string,
 ): Promise<boolean> => {
   const project = readProjectConfiguration(tree, guestProject);
   return project.projectType === 'application';
@@ -269,11 +269,11 @@ function getRootTsConfigFileName(): string | null {
  */
 export const checkNodeVersion = (
   currentVersion: string,
-  suggestedNodeVersion: string
+  suggestedNodeVersion: string,
 ): void => {
   if (compareNodeVersion(currentVersion, suggestedNodeVersion) === -1) {
     throw new Error(
-      `Your current node version ${currentVersion} is lower than the suggested version ${suggestedNodeVersion}. Please update your node version to ${suggestedNodeVersion} or higher.`
+      `Your current node version ${currentVersion} is lower than the suggested version ${suggestedNodeVersion}. Please update your node version to ${suggestedNodeVersion} or higher.`,
     );
   }
 };
@@ -286,7 +286,7 @@ export const checkNodeVersion = (
  */
 export const cleanupDependencies = async (
   tree: Tree,
-  schema: SetupProjectSchema
+  schema: SetupProjectSchema,
 ): Promise<GeneratorCallback> => {
   const devDependencies: string[] = [
     '@nx/web',
@@ -313,7 +313,7 @@ export const cleanupDependencies = async (
  */
 export const installDependencies = async (
   tree: Tree,
-  schema: SetupProjectSchema
+  schema: SetupProjectSchema,
 ): Promise<GeneratorCallback> => {
   // First check the current node version
   checkNodeVersion(process.versions.node, versionLibraries.node);
@@ -337,7 +337,7 @@ export const installDependencies = async (
   return await addDependenciesToPackageJson(
     tree,
     dependencies,
-    devDependencies
+    devDependencies,
   );
 };
 
@@ -370,7 +370,7 @@ export function compareNodeVersion(version1: string, version2: string): number {
  */
 export function runCommandUntil(
   command: string,
-  criteria: (output: string) => boolean
+  criteria: (output: string) => boolean,
 ): Promise<ChildProcess> {
   const pathToWorkspace = resolve(workspaceRoot);
   const p = exec(`${command}`, {
@@ -415,11 +415,11 @@ export function runCommandUntil(
  */
 export async function restorePackageJson(
   workspace: string,
-  originalPackageJson: object
+  originalPackageJson: object,
 ): Promise<void> {
   await writeFile(
     path.posix.join(workspace, 'package.json'),
-    JSON.stringify(originalPackageJson, null, 2)
+    JSON.stringify(originalPackageJson, null, 2),
   );
 }
 
@@ -454,7 +454,7 @@ export interface RebuildResult {
  * @returns {Promise<string>} - The command to execute for icon generation.
  */
 export async function resolveIconCommand(
-  params: ResolveIconCommandParams
+  params: ResolveIconCommandParams,
 ): Promise<string> {
   if (!existsSync(params.iconOutputPath)) {
     await mkdir(params.iconOutputPath, { recursive: true });
@@ -466,7 +466,7 @@ export async function resolveIconCommand(
     'resources',
     'icon',
     'source',
-    `${params.type}.png`
+    `${params.type}.png`,
   );
   const resolveTargetFile = path.posix.join(params.iconOutputPath, params.type);
 
@@ -498,7 +498,7 @@ async function validateModule(moduleName: string): Promise<boolean> {
  * @throws {Error} If any module is invalid or if the rebuild process fails.
  */
 export async function rebuildNativeModules(
-  moduleNames: string | string[]
+  moduleNames: string | string[],
 ): Promise<RebuildResult> {
   // Ensure moduleNames is always an array
   const modules = Array.isArray(moduleNames) ? moduleNames : [moduleNames];
@@ -514,7 +514,7 @@ export async function rebuildNativeModules(
     modules.map(async (moduleName) => ({
       moduleName,
       exists: await validateModule(moduleName),
-    }))
+    })),
   );
 
   // Filter out invalid modules
@@ -529,7 +529,7 @@ export async function rebuildNativeModules(
       .map((m) => m.moduleName)
       .join(', ');
     throw new Error(
-      `Cannot proceed with rebuild. Missing modules: ${invalidModuleNames}`
+      `Cannot proceed with rebuild. Missing modules: ${invalidModuleNames}`,
     );
   }
 
@@ -579,14 +579,14 @@ async function getNativeAddonFile(moduleName: string): Promise<string> {
     const nodeFile = await findNodeFile(moduleFolder);
     if (!nodeFile) {
       throw new Error(
-        `No .node file found for "${moduleName}" in ${moduleFolder}`
+        `No .node file found for "${moduleName}" in ${moduleFolder}`,
       );
     }
 
     return nodeFile;
   } catch (error) {
     throw new Error(
-      `Failed to locate native addon for "${moduleName}": ${error.message}`
+      `Failed to locate native addon for "${moduleName}": ${error.message}`,
     );
   }
 }

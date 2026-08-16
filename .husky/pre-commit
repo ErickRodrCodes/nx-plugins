@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Format staged files with Nx/Prettier
-staged_files="$(git diff --name-only --cached)"
+# Format staged files with Nx/Prettier (skip deletions — they break format:write)
+staged_files="$(git diff --name-only --cached --diff-filter=ACMR)"
 if [ -n "$staged_files" ]; then
   files_csv="$(printf "%s" "$staged_files" | tr '\n' ',' | sed 's/,$//')"
   if [ -n "$files_csv" ]; then

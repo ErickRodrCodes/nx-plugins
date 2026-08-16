@@ -133,7 +133,6 @@
   "release": {
     "projects": ["packages/*"],
     "projectsRelationship": "independent",
-    "releaseTagPattern": "{projectName}/v{version}",
     "git": {
       "commitMessage": "chore(release): 🚀 release packages [skip ci]"
     },
@@ -149,6 +148,9 @@
         "packageRoot": "dist/packages/{projectName}",
         "updateDependents": "auto"
       }
+    },
+    "releaseTag": {
+      "pattern": "{projectName}/v{version}"
     }
   },
   "tasksRunnerOptions": {
