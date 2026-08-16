@@ -331,6 +331,7 @@ export const installDependencies = async (
   const dependencies = {};
 
   if (schema.testRunner && schema.testRunner === 'vitest') {
+    devDependencies['@nx/vitest'] = NX_VERSION;
     devDependencies['vitest'] = versionLibraries.vitest;
   }
 

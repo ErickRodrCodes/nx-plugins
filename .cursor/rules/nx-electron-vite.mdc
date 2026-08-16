@@ -603,8 +603,8 @@ Centralized dependency version management:
 ### Monorepo Requirements
 
 - **Requires Nx monorepo context** - does not support standalone Nx projects
-- **Minimum Nx version**: 19.x or newer
-- **Node.js version**: 18.18.0 or higher (20.17.0 recommended)
+- **Minimum Nx version**: 23.x or newer
+- **Node.js version**: 22.20.0 or higher (22.21.1 recommended)
 
 ## Documentation Structure
 
@@ -1254,8 +1254,8 @@ Centralized dependency version management:
 ### Monorepo Requirements
 
 - **Requires Nx monorepo context** - does not support standalone Nx projects
-- **Minimum Nx version**: 19.x or newer
-- **Node.js version**: 18.18.0 or higher (20.17.0 recommended)
+- **Minimum Nx version**: 23.x or newer
+- **Node.js version**: 22.20.0 or higher (22.21.1 recommended)
 
 ## Documentation Structure
 

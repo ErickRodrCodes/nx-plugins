@@ -18,7 +18,7 @@ import { SetupProjectSchema } from './schema';
 
 export async function updateDependencies(
   tree: Tree,
-  schema: SetupProjectSchema
+  schema: SetupProjectSchema,
 ) {
   const tasks: GeneratorCallback[] = [];
 
@@ -163,7 +163,7 @@ export async function updateDependencies(
         },
       },
       test: {
-        executor: '@nx/vite:test',
+        executor: '@nx/vitest:test',
         options: {
           config: '{projectRoot}/vite.config.ts',
         },
@@ -179,7 +179,7 @@ export async function updateDependencies(
 
 export async function setupProjectGenerator(
   tree: Tree,
-  schema: SetupProjectSchema
+  schema: SetupProjectSchema,
 ) {
   const installTask = await updateDependencies(tree, schema);
   await formatFiles(tree);
