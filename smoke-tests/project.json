@@ -9,7 +9,7 @@
       "executor": "@nx/vitest:test",
       "outputs": ["{options.reportsDirectory}"],
       "options": {
-        "reportsDirectory": "../../coverage/smoke-tests"
+        "reportsDirectory": "{projectRoot}/../../coverage/smoke-tests"
       },
       "configurations": {
         "ci": {
