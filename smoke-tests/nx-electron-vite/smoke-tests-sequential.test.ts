@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { writeLatestWorkspacePointer } from '../shared/latest-workspace';
 import {
   ELECTRON_HOST,
   EXECUTABLE_NAME,
@@ -129,6 +130,15 @@ describe.sequential('Layer 1: packaging smoke', () => {
         `Expected installer under dist/ matching ${EXECUTABLE_NAME}-0.0.0-setup.*`,
       ).toBeTruthy();
       console.log(`✅ Installer artifact: ${installer}`);
+
+      writeLatestWorkspacePointer({
+        workspacePath: ws.getWorkspacePath(),
+        runDir: smokeTestsTmpDir,
+        guestApp: GUEST_APP,
+        electronHost: ELECTRON_HOST,
+        executableName: EXECUTABLE_NAME,
+        hasDist: true,
+      });
     });
   });
 

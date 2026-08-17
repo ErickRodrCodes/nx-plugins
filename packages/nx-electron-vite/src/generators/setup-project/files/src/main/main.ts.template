@@ -1,11 +1,13 @@
 import { app, BrowserWindow } from 'electron'
-// import { createRequire } from 'node:module' // Uncomment if you need to require CommonJS modules in ESM
-import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
+import path, { join } from 'node:path'
 
-import path from 'node:path'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+/**
+ * Main is emitted as CommonJS (`main.cjs`). Use Node's `__dirname` — do not use
+ * `import.meta.url` here. Vite/Rolldown CJS transforms have rewritten
+ * `fileURLToPath(import.meta.url)` to `fileURLToPath({}.url)` (undefined),
+ * which crashes the packaged app at startup.
+ */
+declare const __dirname: string
 
 // Ensure Single Instance Lock
 if (!app.requestSingleInstanceLock()) {

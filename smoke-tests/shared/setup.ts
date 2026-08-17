@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll } from 'vitest';
+import { writeLatestWorkspacePointer } from './latest-workspace';
 import { WorkspaceGenerator } from './workspace-generator';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -110,6 +111,15 @@ beforeAll(async () => {
   );
 
   console.log('Layer 1 setup completed successfully');
+
+  writeLatestWorkspacePointer({
+    workspacePath,
+    runDir: smokeTestsTmpDir,
+    guestApp: GUEST_APP,
+    electronHost: ELECTRON_HOST,
+    executableName: EXECUTABLE_NAME,
+    hasDist: false,
+  });
 }, 300000);
 
 afterAll(async () => {
