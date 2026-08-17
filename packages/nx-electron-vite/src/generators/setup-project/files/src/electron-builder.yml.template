@@ -10,6 +10,8 @@ files:
  - '<%= outputDistFolderIcons %>'
 asarUnpack:
   - resources/**
+  # Native Node addons cannot dlopen from inside asar
+  - "**/*.node"
 win:
   executableName:  <%= executableName %>
   icon: <%= outputDistFolderIcons %>/icon.ico

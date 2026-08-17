@@ -13,6 +13,9 @@ export interface LatestWorkspacePointer {
   electronHost: string;
   executableName: string;
   hasDist: boolean;
+  /** Set when Layer 1 ran with SMOKE_NATIVE=1 and packaged a .node */
+  hasNative?: boolean;
+  nativeBinaryName?: string;
   updatedAt: string;
 }
 

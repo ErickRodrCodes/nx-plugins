@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll } from 'vitest';
 import { writeLatestWorkspacePointer } from './latest-workspace';
+import { wipeSmokeTestsTmp } from './wipe-tmp';
 import { WorkspaceGenerator } from './workspace-generator';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -19,24 +20,8 @@ export const EXECUTABLE_NAME = 'smoke-test-app';
 let workspaceGenerator: WorkspaceGenerator | null = null;
 
 beforeAll(async () => {
-  console.log('Killing any lingering esbuild processes...');
-  try {
-    if (process.platform === 'win32') {
-      const taskkillPath = join(
-        process.env.SYSTEMROOT || 'C:\\Windows',
-        'System32',
-        'taskkill.exe',
-      );
-      spawnSync(taskkillPath, ['/im', 'esbuild.exe', '/f'], {
-        cwd: rootDir,
-        stdio: 'ignore',
-        shell: false,
-      });
-    }
-    console.log('✓ Cleaned up esbuild processes');
-  } catch {
-    console.log('✓ No esbuild processes to clean up');
-  }
+  // NON-NEGOTIABLE: never reuse a previous run's tmp (Windows locks / stale dist).
+  await wipeSmokeTestsTmp();
 
   mkdirSync(smokeTestsTmpDir, { recursive: true });
 

@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import path, { join } from 'node:path'
 
 /**
@@ -23,6 +23,16 @@ export const MAIN_DIST = path.join(process.env.APP_ROOT, '<%= outputDistFolder %
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, '<%= guestProject %>');
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
+
+/**
+ * Demo / smoke-testable IPC: renderer → main via preload `ipcRenderer.invoke`.
+ * Guests stay Electron-agnostic; host templates own this contract.
+ */
+ipcMain.handle('app:ping', async () => ({
+  ok: true as const,
+  from: 'main' as const,
+  packaged: app.isPackaged,
+}))
 
 let win: BrowserWindow | null
 

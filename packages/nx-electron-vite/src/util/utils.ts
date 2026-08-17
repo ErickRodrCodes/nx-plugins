@@ -544,14 +544,37 @@ export async function rebuildNativeModules(
     try {
       logger.info(`📦 Rebuilding ${moduleName}...`);
 
-      await rebuild({
-        buildPath: workspaceRoot,
-        force: true,
-        onlyModules: [moduleName],
-        electronVersion: versionLibraries.electron.replace('^', ''),
-      });
+      // better-sqlite3 (prebuildify) sets binding.gyp `prebuild_exists` from a
+      // host Node prebuild and skips compile (`type: none`) unless force_build=1.
+      // Without this, @electron/rebuild "succeeds" but produces no .node for Electron.
+      const prevForceBuild = process.env.npm_config_force_build;
+      process.env.npm_config_force_build = '1';
+      try {
+        await rebuild({
+          buildPath: workspaceRoot,
+          force: true,
+          onlyModules: [moduleName],
+          electronVersion: versionLibraries.electron.replace('^', ''),
+          arch: process.arch,
+        });
+      } finally {
+        if (prevForceBuild === undefined) {
+          delete process.env.npm_config_force_build;
+        } else {
+          process.env.npm_config_force_build = prevForceBuild;
+        }
+      }
 
       const nativeFilePath = await getNativeAddonFile(moduleName);
+      // Require a real compile output — platform npm prebuilds are Node ABI / wrong runtime.
+      const normalized = nativeFilePath.replace(/\\/g, '/');
+      if (!/\/build\/(Release|Debug)\//i.test(normalized)) {
+        throw new Error(
+          `Rebuild of ${moduleName} did not produce build/Release/*.node ` +
+            `(got ${nativeFilePath}). Ensure Visual Studio Build Tools / Python ` +
+            `are available for @electron/rebuild, and force_build is applied.`,
+        );
+      }
       successful.push({ moduleName, nativeFilePath });
       logger.info(`✅ Successfully rebuilt ${moduleName}`);
     } catch (error) {
@@ -568,9 +591,9 @@ export async function rebuildNativeModules(
 
 /**
  * Locates the native addon (.node) file for a given module.
- * @param {string} moduleName - Name of the module.
- * @returns {Promise<string>} - Path to the .node file.
- * @throws {Error} If the native addon file cannot be found.
+ * Prefers Electron rebuild output under build/Release, then a platform-matching
+ * prebuild. Never returns a cross-platform prebuild (that yields
+ * "not a valid Win32 application" / bad Mach-O / bad ELF at dlopen).
  */
 async function getNativeAddonFile(moduleName: string): Promise<string> {
   try {
@@ -580,7 +603,8 @@ async function getNativeAddonFile(moduleName: string): Promise<string> {
     const nodeFile = await findNodeFile(moduleFolder);
     if (!nodeFile) {
       throw new Error(
-        `No .node file found for "${moduleName}" in ${moduleFolder}`,
+        `No .node file found for "${moduleName}" in ${moduleFolder}. ` +
+          `Expected build/Release/*.node after @electron/rebuild (not a foreign prebuild).`,
       );
     }
 
@@ -592,26 +616,94 @@ async function getNativeAddonFile(moduleName: string): Promise<string> {
   }
 }
 
+function platformPrebuildNames(): string[] {
+  const arch = process.arch;
+  const names = [`${process.platform}-${arch}.node`];
+  // better-sqlite3 / prebuildify naming
+  if (process.platform === 'win32' && arch === 'x64') {
+    names.push('win32-x64.node');
+  }
+  if (process.platform === 'linux' && arch === 'x64') {
+    names.push('linux-x64.node', 'linuxmusl-x64.node');
+  }
+  return names;
+}
+
 /**
- * Recursively searches for a .node file in a directory.
- * @param {string} directory - Directory to search in.
- * @returns {Promise<string|null>} - Path to the .node file or null if not found.
- * @throws {Error} If there's an error accessing the directory.
+ * Recursively collect .node paths (platform-native path joins).
  */
-async function findNodeFile(directory: string): Promise<string | null> {
-  const entries = await readdir(directory, { withFileTypes: true });
+async function collectNodeFiles(directory: string): Promise<string[]> {
+  const found: string[] = [];
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch {
+    return found;
+  }
 
   for (const entry of entries) {
-    const fullPath = path.posix.join(directory, entry.name);
-
+    const fullPath = path.join(directory, entry.name);
     if (entry.isFile() && path.extname(entry.name) === '.node') {
-      return fullPath;
+      found.push(fullPath);
+    } else if (entry.isDirectory()) {
+      found.push(...(await collectNodeFiles(fullPath)));
     }
+  }
+  return found;
+}
 
-    if (entry.isDirectory()) {
-      const result = await findNodeFile(fullPath);
-      if (result) return result;
+/**
+ * Locates the native addon (.node) file after rebuild.
+ * Order: build/Release → build/Debug → platform prebuild → other (excluding foreign prebuilds).
+ */
+async function findNodeFile(directory: string): Promise<string | null> {
+  const releaseDir = path.join(directory, 'build', 'Release');
+  const debugDir = path.join(directory, 'build', 'Debug');
+  const prebuildsDir = path.join(directory, 'prebuilds');
+
+  for (const dir of [releaseDir, debugDir]) {
+    if (!existsSync(dir)) continue;
+    const inDir = await collectNodeFiles(dir);
+    const preferred =
+      inDir.find((f) => /better_sqlite3\.node$/i.test(path.basename(f))) ||
+      inDir.find((f) => /better.?sqlite/i.test(path.basename(f))) ||
+      inDir.find((f) => !/test_extension/i.test(path.basename(f))) ||
+      inDir[0];
+    if (preferred) {
+      logger.info(`📍 Using rebuilt native addon: ${preferred}`);
+      return preferred;
     }
+  }
+
+  if (existsSync(prebuildsDir)) {
+    for (const name of platformPrebuildNames()) {
+      const candidate = path.join(prebuildsDir, name);
+      if (existsSync(candidate)) {
+        logger.warn(
+          `⚠️ No build/Release/*.node found; using platform prebuild ${name}. ` +
+            `This may be Node ABI, not Electron — prefer a successful @electron/rebuild.`,
+        );
+        return candidate;
+      }
+    }
+  }
+
+  // Last resort: any .node outside prebuilds/
+  const all = await collectNodeFiles(directory);
+  const nonPrebuild = all.filter(
+    (f) => !f.split(path.sep).includes('prebuilds'),
+  );
+  if (nonPrebuild.length > 0) {
+    logger.info(`📍 Using native addon: ${nonPrebuild[0]}`);
+    return nonPrebuild[0];
+  }
+
+  // Do NOT return foreign prebuilds (darwin on win32, etc.)
+  if (all.length > 0) {
+    logger.error(
+      `❌ Found ${all.length} .node file(s) but none for ${process.platform}-${process.arch} under build/Release. ` +
+        `Refusing to copy a cross-platform prebuild (e.g. ${path.basename(all[0])}).`,
+    );
   }
 
   return null;
