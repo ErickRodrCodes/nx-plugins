@@ -547,9 +547,7 @@ export async function rebuildNativeModules(
       // better-sqlite3 (prebuildify) sets binding.gyp `prebuild_exists` from a
       // host Node prebuild and skips compile (`type: none`) unless force_build=1.
       // Without this, @electron/rebuild "succeeds" but produces no .node for Electron.
-      const prevForceBuild = process.env.npm_config_force_build;
-      process.env.npm_config_force_build = '1';
-      try {
+      await withNpmConfigForceBuild(async () => {
         await rebuild({
           buildPath: workspaceRoot,
           force: true,
@@ -557,18 +555,10 @@ export async function rebuildNativeModules(
           electronVersion: versionLibraries.electron.replace('^', ''),
           arch: process.arch,
         });
-      } finally {
-        if (prevForceBuild === undefined) {
-          delete process.env.npm_config_force_build;
-        } else {
-          process.env.npm_config_force_build = prevForceBuild;
-        }
-      }
+      });
 
       const nativeFilePath = await getNativeAddonFile(moduleName);
-      // Require a real compile output — platform npm prebuilds are Node ABI / wrong runtime.
-      const normalized = nativeFilePath.replace(/\\/g, '/');
-      if (!/\/build\/(Release|Debug)\//i.test(normalized)) {
+      if (!isRebuiltNativeAddonPath(nativeFilePath)) {
         throw new Error(
           `Rebuild of ${moduleName} did not produce build/Release/*.node ` +
             `(got ${nativeFilePath}). Ensure Visual Studio Build Tools / Python ` +
@@ -587,6 +577,31 @@ export async function rebuildNativeModules(
   }
 
   return { successful, failed };
+}
+
+/**
+ * Forces node-gyp `force_build=1` for the duration of `fn` (prebuildify packages
+ * otherwise skip compile when a host Node prebuild exists).
+ */
+export async function withNpmConfigForceBuild<T>(
+  fn: () => Promise<T>,
+): Promise<T> {
+  const prevForceBuild = process.env.npm_config_force_build;
+  process.env.npm_config_force_build = '1';
+  try {
+    return await fn();
+  } finally {
+    if (prevForceBuild === undefined) {
+      delete process.env.npm_config_force_build;
+    } else {
+      process.env.npm_config_force_build = prevForceBuild;
+    }
+  }
+}
+
+/** True when the path is @electron/rebuild output, not an npm prebuild. */
+export function isRebuiltNativeAddonPath(nativeFilePath: string): boolean {
+  return /\/build\/(Release|Debug)\//i.test(nativeFilePath.replace(/\\/g, '/'));
 }
 
 /**
@@ -656,7 +671,7 @@ async function collectNodeFiles(directory: string): Promise<string[]> {
  * Locates the native addon (.node) file after rebuild.
  * Order: build/Release → build/Debug → platform prebuild → other (excluding foreign prebuilds).
  */
-async function findNodeFile(directory: string): Promise<string | null> {
+export async function findNodeFile(directory: string): Promise<string | null> {
   const releaseDir = path.join(directory, 'build', 'Release');
   const debugDir = path.join(directory, 'build', 'Debug');
   const prebuildsDir = path.join(directory, 'prebuilds');

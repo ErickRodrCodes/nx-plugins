@@ -78,30 +78,34 @@ describe('_buildNativeGenerator', () => {
   it('should exit with error if the host project does not exist', async () => {
     (readProjectConfiguration as Mock).mockReturnValue(undefined);
 
-    const mockExit = vi.spyOn(process, 'exit').mockImplementation((number) => {
-      throw new Error('process.exit: ' + number);
-    });
-
     await expect(
       _buildNativeGenerator(tree, {
         ...mockSchemaWithHostProject,
         hostProject: 'non-existent-project',
-      })
+      }),
     ).rejects.toThrow('process.exit: 1');
+  });
+
+  it('should log when the host project does not exist', async () => {
+    (readProjectConfiguration as Mock).mockReturnValue(undefined);
+
+    await _buildNativeGenerator(tree, {
+      ...mockSchemaWithHostProject,
+      hostProject: 'non-existent-project',
+    }).catch(() => undefined);
 
     expect(logger.error).toHaveBeenCalledWith(
-      'there is no app called non-existent-project in the structure of the monorepo. Aborting'
+      'there is no app called non-existent-project in the structure of the monorepo. Aborting',
     );
-    expect(mockExit).toHaveBeenCalledWith(1);
   });
 
   it('should throw error if neither hostProject nor pathTarget is provided', async () => {
     await expect(
       _buildNativeGenerator(tree, {
         npmPackageName: 'test-package',
-      })
+      }),
     ).rejects.toThrow(
-      'You must provide either a hostProject or a pathTarget. Aborting.'
+      'You must provide either a hostProject or a pathTarget. Aborting.',
     );
   });
 
@@ -112,9 +116,9 @@ describe('_buildNativeGenerator', () => {
     });
 
     await expect(
-      _buildNativeGenerator(tree, mockSchemaWithHostProject)
+      _buildNativeGenerator(tree, mockSchemaWithHostProject),
     ).rejects.toThrow(
-      'The project test-project does not have a sourceRoot defined. Aborting.'
+      'The project test-project does not have a sourceRoot defined. Aborting.',
     );
   });
 
@@ -192,7 +196,7 @@ describe('_buildNativeGenerator', () => {
     await _buildNativeGenerator(tree, mockSchemaWithHostProject);
 
     expect(logger.error).toHaveBeenCalledWith(
-      '❌ Failed to rebuild modules: test-package-1, test-package-2, test-package-3'
+      '❌ Failed to rebuild modules: test-package-1, test-package-2, test-package-3',
     );
   });
 
@@ -215,9 +219,8 @@ describe('_buildNativeGenerator', () => {
     await _buildNativeGenerator(tree, mockSchemaWithHostProject);
 
     expect(logger.info).toHaveBeenCalledWith(
-      '✅ Successfully rebuilt modules: test-package'
+      '✅ Successfully rebuilt modules: test-package',
     );
-    expect(mockExit).not.toHaveBeenCalled();
   });
 
   it('should log success for successfully built modules with pathTarget', async () => {
@@ -234,9 +237,8 @@ describe('_buildNativeGenerator', () => {
     await _buildNativeGenerator(tree, mockSchemaWithPathTarget);
 
     expect(logger.info).toHaveBeenCalledWith(
-      '✅ Successfully rebuilt modules: test-package'
+      '✅ Successfully rebuilt modules: test-package',
     );
-    expect(mockExit).not.toHaveBeenCalled();
   });
 
   it('should show dry-run messages without executing actions', async () => {
@@ -251,7 +253,7 @@ describe('_buildNativeGenerator', () => {
     await _buildNativeGenerator(tree, mockSchemaWithHostProject);
 
     expect(logger.warn).toHaveBeenCalledWith(
-      'Note: The argument --dry-run is partially supported in this generator.\n- Electron rebuild will be executed to rebuild native node modules.\n- A log of files changed in the tree will be shown, but no changes will be made.\n'
+      'Note: The argument --dry-run is partially supported in this generator.\n- Electron rebuild will be executed to rebuild native node modules.\n- A log of files changed in the tree will be shown, but no changes will be made.\n',
     );
 
     // Cleanup
@@ -266,9 +268,9 @@ describe('_buildNativeGenerator', () => {
     (tree.children as Mock).mockReturnValue(['some-other-file.ts']); // Config file missing
 
     await expect(
-      _buildNativeGenerator(tree, mockSchemaWithHostProject)
+      _buildNativeGenerator(tree, mockSchemaWithHostProject),
     ).rejects.toThrow(
-      'The selected project is not an @erickrodrcodes/nx-electron-vite host project. Aborting.'
+      'The selected project is not an @erickrodrcodes/nx-electron-vite host project. Aborting.',
     );
   });
 
@@ -282,9 +284,9 @@ describe('_buildNativeGenerator', () => {
       _buildNativeGenerator(tree, {
         ...mockSchemaWithHostProject,
         npmPackageName: '',
-      })
+      }),
     ).rejects.toThrow(
-      'No modules were provided to rebuild a node binary. Aborting'
+      'No modules were provided to rebuild a node binary. Aborting',
     );
   });
 
@@ -298,9 +300,9 @@ describe('_buildNativeGenerator', () => {
       _buildNativeGenerator(tree, {
         ...mockSchemaWithHostProject,
         npmPackageName: '   ',
-      })
+      }),
     ).rejects.toThrow(
-      'No modules were provided to rebuild a node binary. Aborting'
+      'No modules were provided to rebuild a node binary. Aborting',
     );
   });
 
@@ -325,16 +327,34 @@ describe('_buildNativeGenerator', () => {
 
     await _buildNativeGenerator(tree, mockSchemaWithHostProject);
 
-    // Verify native directory creation
-    expect(tree.exists).toHaveBeenCalledWith(
-      'apps/test-project/src/main/native'
-    );
-
-    // Verify module file copy - we don't need to check for .keep files anymore as
-    // that's part of the ensureDirectoryExists internal function
     expect(tree.write).toHaveBeenCalledWith(
       'apps/test-project/src/main/native/test-package.node',
-      expect.any(Buffer)
+      expect.any(Buffer),
+    );
+  });
+
+  it('should ensure the native directory exists when using hostProject', async () => {
+    (readProjectConfiguration as Mock).mockReturnValue({
+      root: 'apps/test-project',
+      sourceRoot: 'apps/test-project/src',
+    });
+
+    const successfulModule = {
+      moduleName: 'test-package',
+      nativeFilePath: 'path/to/native/module.node',
+    };
+
+    (rebuildNativeModules as Mock).mockResolvedValue({
+      successful: [successfulModule],
+      failed: [],
+    });
+
+    (fs.readFileSync as Mock).mockReturnValue(Buffer.from('mocked content'));
+
+    await _buildNativeGenerator(tree, mockSchemaWithHostProject);
+
+    expect(tree.exists).toHaveBeenCalledWith(
+      'apps/test-project/src/main/native',
     );
   });
 
@@ -354,14 +374,28 @@ describe('_buildNativeGenerator', () => {
 
     await _buildNativeGenerator(tree, mockSchemaWithPathTarget);
 
-    // Verify directory creation and file copying
-    expect(tree.exists).toHaveBeenCalledWith('custom/path/native');
-
-    // Verify module file copy
     expect(tree.write).toHaveBeenCalledWith(
       'custom/path/native/test-package.node',
-      expect.any(Buffer)
+      expect.any(Buffer),
     );
+  });
+
+  it('should ensure the custom native path exists when using pathTarget', async () => {
+    const successfulModule = {
+      moduleName: 'test-package',
+      nativeFilePath: 'path/to/native/module.node',
+    };
+
+    (rebuildNativeModules as Mock).mockResolvedValue({
+      successful: [successfulModule],
+      failed: [],
+    });
+
+    (fs.readFileSync as Mock).mockReturnValue(Buffer.from('mocked content'));
+
+    await _buildNativeGenerator(tree, mockSchemaWithPathTarget);
+
+    expect(tree.exists).toHaveBeenCalledWith('custom/path/native');
   });
 
   it('should handle errors when copying native modules', async () => {
@@ -394,7 +428,7 @@ describe('_buildNativeGenerator', () => {
     await _buildNativeGenerator(tree, mockSchemaWithHostProject);
 
     expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Unable to write the module test-package.node')
+      expect.stringContaining('Unable to write the module test-package.node'),
     );
   });
 });

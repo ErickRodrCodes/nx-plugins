@@ -303,7 +303,6 @@ export async function electronNxViteConfig() {
             cwd: workspaceRoot,
             env: {
               ...process.env,
-              ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
               NODE_ENV: 'development',
             },
           }

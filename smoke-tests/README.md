@@ -73,4 +73,6 @@ $env:SMOKE_WORKSPACE='C:\path\to\smoke-test-workspace'; pnpm nx run smoke-tests:
 - Guest React app uses `--style=css` (Nx 23).
 - Temp workspace uses **npm**; Nx is invoked via `npx nx`.
 - Layer 2 uses experimental Playwright Electron support (`_electron.launch`).
-- Old `e2e/nx-electron-vite` browser+webServer suite is unrelated to Electron packaging; use Layer 2 instead.
+- Layer 2 is the only end-to-end suite. The former `e2e/nx-electron-vite` browser+webServer
+  suite was removed: it drove a React page in three browsers and covered nothing about
+  Electron packaging.

@@ -1,4 +1,5 @@
 import nx from '@nx/eslint-plugin';
+import vitest from '@vitest/eslint-plugin';
 
 export default [
   ...nx.configs['flat/base'],
@@ -21,6 +22,15 @@ export default [
     files: ['**/*.js', '**/*.jsx'],
     // Override or add rules here
     rules: {},
+  },
+  {
+    files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx'],
+    plugins: {
+      vitest,
+    },
+    rules: {
+      'vitest/max-expects': ['error', { max: 1 }],
+    },
   },
   {
     files: ['**/*.json'],

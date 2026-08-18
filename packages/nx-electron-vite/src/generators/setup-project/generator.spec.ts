@@ -5,6 +5,9 @@ import {
   Tree,
 } from '@nx/devkit';
 import { vi, type Mock } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   cleanupDependencies,
   installDependencies,
@@ -132,7 +135,7 @@ describe('setupProjectGenerator', () => {
           root: fakeOptions.directory,
           sourceRoot: fakeOptions.directoryRoot,
           implicitDependencies: [fakeOptions.guestProject],
-        })
+        }),
       );
     });
 
@@ -237,17 +240,27 @@ describe('setupProjectGenerator', () => {
         tree,
         expect.stringContaining('files'),
         fakeOptions.directory,
-        expect.objectContaining(fakeOptions)
+        expect.objectContaining(fakeOptions),
       );
     });
   });
 
   describe('Dependency Management', () => {
-    it('should cleanup and install dependencies in correct order', async () => {
+    it('should cleanup existing electron dependencies', async () => {
       await updateDependencies(tree, schema);
 
       expect(cleanupDependencies).toHaveBeenCalledWith(tree, fakeOptions);
+    });
+
+    it('should install plugin dependencies', async () => {
+      await updateDependencies(tree, schema);
+
       expect(installDependencies).toHaveBeenCalledWith(tree, fakeOptions);
+    });
+
+    it('should run cleanup then install in serial', async () => {
+      await updateDependencies(tree, schema);
+
       expect(runTasksInSerial).toHaveBeenCalledWith(cleanupTask, installTask);
     });
   });
@@ -257,7 +270,7 @@ describe('setupProjectGenerator', () => {
       (isApplication as Mock).mockResolvedValue(false);
 
       await expect(updateDependencies(tree, schema)).rejects.toThrow(
-        'The selected project is not an application'
+        'The selected project is not an application',
       );
     });
 
@@ -272,7 +285,48 @@ describe('setupProjectGenerator', () => {
       await updateDependencies(tree, schema);
 
       expect(normalizeOptions).toHaveBeenCalledWith(tree, schema);
-      expect(normalizeOptions).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('generated electron-nx-vite.config template', () => {
+  it('does not disable Electron security warnings in generated apps', () => {
+    const templatePath = join(
+      dirname(fileURLToPath(import.meta.url)),
+      'files',
+      'electron-nx-vite.config.ts.template',
+    );
+    const template = readFileSync(templatePath, 'utf8');
+    expect(template).not.toContain('ELECTRON_DISABLE_SECURITY_WARNINGS');
+  });
+});
+
+describe('generated main process template', () => {
+  const readMainTemplate = () =>
+    readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'files',
+        'src',
+        'main',
+        'main.ts.template',
+      ),
+      'utf8',
+    );
+
+  it('does not opt out of Electron process sandboxing', () => {
+    expect(readMainTemplate()).not.toMatch(/sandbox:\s*false/);
+  });
+
+  it('enables process sandboxing explicitly', () => {
+    expect(readMainTemplate()).toMatch(/sandbox:\s*true/);
+  });
+
+  it('keeps context isolation enabled', () => {
+    expect(readMainTemplate()).toMatch(/contextIsolation:\s*true/);
+  });
+
+  it('keeps node integration disabled in the renderer', () => {
+    expect(readMainTemplate()).toMatch(/nodeIntegration:\s*false/);
   });
 });

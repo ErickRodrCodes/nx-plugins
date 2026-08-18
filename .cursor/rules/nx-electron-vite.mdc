@@ -96,16 +96,16 @@ packages/nx-electron-vite/
 
 ```json
 {
-  "electron": "^30.0.2",
-  "electron-builder": "^24.13.3",
-  "@electron/rebuild": "^3.7.1",
-  "vite-plugin-electron": "^0.28.6",
-  "vite-plugin-electron-renderer": "^0.14.5",
-  "png2icons": "^2.0.1",
-  "wait-on": "8.0.0",
-  "vitest": "^3.0.1",
-  "electron-is-dev": "^2.0.0",
-  "electron-log": "^5.4.1"
+  "electron": "43.4.0",
+  "electron-builder": "26.15.3",
+  "@electron/rebuild": "4.2.0",
+  "vite-plugin-electron": "0.29.1",
+  "vite-plugin-electron-renderer": "0.14.6",
+  "png2icons": "2.0.1",
+  "wait-on": "9.1.0",
+  "vitest": "4.0.0",
+  "electron-is-dev": "3.0.1",
+  "electron-log": "5.4.3"
 }
 ```
 
@@ -339,8 +339,8 @@ nx g @erickrodrcodes/nx-electron-vite:build-native --hostProject=my-app-electron
 ```json
 {
   "better-sqlite3": {
-    "path": "better_sqlite3.node",
-    "version": "8.7.0"
+    "path": "better-sqlite3.node",
+    "version": "13.0.3"
   }
 }
 ```
@@ -520,11 +520,18 @@ Centralized dependency version management:
 
 ```json
 {
-  "electron-builder": "^24.13.3",
-  "electron": "^30.0.2",
-  "vite-plugin-electron": "^0.28.6",
-  "node": "20.17.0",
-  "suggested-node": "v18.18.0"
+  "electronBuilder": "26.15.3",
+  "electronRebuild": "4.2.0",
+  "electron": "43.4.0",
+  "vitePluginElectronRenderer": "0.14.6",
+  "vitePluginElectron": "0.29.1",
+  "png2icons": "2.0.1",
+  "suggestedNode": "v24.18.1",
+  "waitOn": "9.1.0",
+  "node": "24.18.1",
+  "vitest": "4.0.0",
+  "electronIsDev": "3.0.1",
+  "electronLog": "5.4.3"
 }
 ```
 
@@ -604,7 +611,7 @@ Centralized dependency version management:
 
 - **Requires Nx monorepo context** - does not support standalone Nx projects
 - **Minimum Nx version**: 23.x or newer
-- **Node.js version**: 22.20.0 or higher (22.21.1 recommended)
+- **Node.js version**: 24.18.1 or higher (matches the Node embedded in Electron 43.4.0)
 
 ## Documentation Structure
 
@@ -747,16 +754,16 @@ packages/nx-electron-vite/
 
 ```json
 {
-  "electron": "^30.0.2",
-  "electron-builder": "^24.13.3",
-  "@electron/rebuild": "^3.7.1",
-  "vite-plugin-electron": "^0.28.6",
-  "vite-plugin-electron-renderer": "^0.14.5",
-  "png2icons": "^2.0.1",
-  "wait-on": "8.0.0",
-  "vitest": "^3.0.1",
-  "electron-is-dev": "^2.0.0",
-  "electron-log": "^5.4.1"
+  "electron": "43.4.0",
+  "electron-builder": "26.15.3",
+  "@electron/rebuild": "4.2.0",
+  "vite-plugin-electron": "0.29.1",
+  "vite-plugin-electron-renderer": "0.14.6",
+  "png2icons": "2.0.1",
+  "wait-on": "9.1.0",
+  "vitest": "4.0.0",
+  "electron-is-dev": "3.0.1",
+  "electron-log": "5.4.3"
 }
 ```
 
@@ -990,8 +997,8 @@ nx g @erickrodrcodes/nx-electron-vite:build-native --hostProject=my-app-electron
 ```json
 {
   "better-sqlite3": {
-    "path": "better_sqlite3.node",
-    "version": "8.7.0"
+    "path": "better-sqlite3.node",
+    "version": "13.0.3"
   }
 }
 ```
@@ -1171,11 +1178,18 @@ Centralized dependency version management:
 
 ```json
 {
-  "electron-builder": "^24.13.3",
-  "electron": "^30.0.2",
-  "vite-plugin-electron": "^0.28.6",
-  "node": "20.17.0",
-  "suggested-node": "v18.18.0"
+  "electronBuilder": "26.15.3",
+  "electronRebuild": "4.2.0",
+  "electron": "43.4.0",
+  "vitePluginElectronRenderer": "0.14.6",
+  "vitePluginElectron": "0.29.1",
+  "png2icons": "2.0.1",
+  "suggestedNode": "v24.18.1",
+  "waitOn": "9.1.0",
+  "node": "24.18.1",
+  "vitest": "4.0.0",
+  "electronIsDev": "3.0.1",
+  "electronLog": "5.4.3"
 }
 ```
 
@@ -1255,7 +1269,7 @@ Centralized dependency version management:
 
 - **Requires Nx monorepo context** - does not support standalone Nx projects
 - **Minimum Nx version**: 23.x or newer
-- **Node.js version**: 22.20.0 or higher (22.21.1 recommended)
+- **Node.js version**: 24.18.1 or higher (matches the Node embedded in Electron 43.4.0)
 
 ## Documentation Structure
 

@@ -43,7 +43,17 @@ This will rebuild `better-sqlite3` against your Electron version and make it ava
 
 ## Using Native Modules in Your Code
 
-After running the `build-native` generator, the `.node` binary is copied to `src/main/native/` in your host project. Since `.node` files are compiled binaries (not JavaScript modules), you cannot import them directly. Instead, you configure the package to load the native binary from a custom path.
+After running the `build-native` generator, the `.node` binary lives at `src/main/native/` in your host project. Since `.node` files are compiled binaries (not JavaScript modules), you cannot import them directly. Instead, you configure the package to load the native binary from a custom path.
+
+::: warning Source location ≠ runtime location
+`src/main/native/` is where the binary is **stored in your repository**. It is not where your code
+loads it from at runtime.
+
+During the build, the `copyNative` Vite plugin copies each binary listed in `reference.json`
+**flat into your main process output directory**, next to the compiled `main.cjs` — there is no
+`native/` subfolder in the build output. Resolve the binary relative to `__dirname` and nothing
+else.
+:::
 
 ### Understanding the Native Module Pattern
 
@@ -59,35 +69,43 @@ Normally, the JavaScript wrapper automatically locates its `.node` binary. Howev
 The `better-sqlite3` package accepts a `nativeBinding` option that specifies the path to its compiled binary:
 
 ```typescript
-// src/main/index.ts
+// src/main/main.ts
 import Database from 'better-sqlite3';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Point to the native binary in the native/ directory
+// The binary sits next to the compiled main process, not in a native/ subfolder.
 const db = new Database('my-database.sqlite', {
-  nativeBinding: path.join(__dirname, 'native', 'better_sqlite3.node'),
+  nativeBinding: join(__dirname, 'better-sqlite3.node'),
 });
 
 // Use the database normally
 const rows = db.prepare('SELECT * FROM users').all();
 ```
 
+::: danger Do not use `import.meta.url` in the main process
+The main process is emitted as CommonJS (`main.cjs`), so use Node's `__dirname` directly.
+
+Vite/Rolldown's CommonJS transform rewrites `fileURLToPath(import.meta.url)` into
+`fileURLToPath({}.url)`, which evaluates to `undefined` and **crashes the packaged app on
+startup**. The generated `main.ts` declares `__dirname` for exactly this reason.
+:::
+
 ::: tip Finding the Binary Name
-After running `build-native`, check the `src/main/native/reference.json` file to see the exact filename:
+The filename is derived from the npm package name, so `better-sqlite3` produces
+`better-sqlite3.node` (hyphens), not `better_sqlite3.node`. Check
+`src/main/native/reference.json` for the exact value rather than guessing:
 
 ```json
 {
   "better-sqlite3": {
-    "path": "better_sqlite3.node",
-    "version": "11.8.1"
+    "path": "better-sqlite3.node",
+    "version": "13.0.3"
   }
 }
 ```
 
-The `path` field shows the exact binary filename to use.
+The `path` field is the filename to pass to `join(__dirname, …)`, and `version` records the
+package version the binary was built from.
 :::
 
 ### Other Native Modules
@@ -111,4 +129,22 @@ When Vite bundles your Electron main process:
 
 ### Production Builds
 
-The `build-electron` executor automatically includes the `src/main/native/` directory in the final distribution. No additional configuration is needed—your native modules will work in packaged apps just as they do in development.
+No additional configuration is needed—your native modules work in packaged apps just as they do in
+development—but it is worth knowing the three steps involved, because the final path differs from
+your source layout:
+
+1. **Vite** — the `copyNative` plugin reads `src/main/native/reference.json` and copies each binary
+   flat into the main process output directory, beside `main.cjs`.
+2. **electron-builder** — `electron-builder.yml` lists that output directory under `files`, so the
+   binaries are packaged with your app.
+3. **asar** — `asarUnpack` includes `**/*.node`, because native addons cannot be `dlopen`ed from
+   inside an asar archive. They are extracted to `app.asar.unpacked/`.
+
+The result in a packaged app looks like this:
+
+```
+resources/app.asar.unpacked/<mainOutputPath>/better-sqlite3.node
+```
+
+Because `__dirname` resolves inside `app.asar.unpacked` at runtime, the same
+`join(__dirname, 'better-sqlite3.node')` works in development and in the packaged app.

@@ -71,7 +71,7 @@ describe('initGenerator', () => {
 
       const updatedNxJson = JSON.parse(tree.read('nx.json', 'utf-8'));
       const vitePlugins = updatedNxJson.plugins.filter(
-        (plugin) => plugin.plugin === '@nx/vite/plugin'
+        (plugin) => plugin.plugin === '@nx/vite/plugin',
       );
       expect(vitePlugins).toHaveLength(1);
     });
@@ -81,7 +81,7 @@ describe('initGenerator', () => {
     it('should add required dependencies when skipPackageJson is false', async () => {
       const addDependenciesSpy = vi.spyOn(
         devkit,
-        'addDependenciesToPackageJson'
+        'addDependenciesToPackageJson',
       );
 
       await initGenerator(tree, {
@@ -104,14 +104,14 @@ describe('initGenerator', () => {
           // Note: Vitest is not included - managed by framework generators
           'electron-is-dev': expect.any(String),
           'electron-log': expect.any(String),
-        })
+        }),
       );
     });
 
     it('should not modify dependencies when skipPackageJson is true', async () => {
       const addDependenciesSpy = vi.spyOn(
         devkit,
-        'addDependenciesToPackageJson'
+        'addDependenciesToPackageJson',
       );
 
       await initGenerator(tree, {
@@ -173,9 +173,6 @@ describe('initGenerator', () => {
     });
 
     it('should do nothing if .gitignore does not exist', async () => {
-      // Ensure .gitignore does not exist (it doesn't by default in createTreeWithEmptyWorkspace)
-      expect(tree.exists('.gitignore')).toBe(false);
-
       await initGenerator(tree, { skipFormat: true });
 
       expect(tree.exists('.gitignore')).toBe(false);

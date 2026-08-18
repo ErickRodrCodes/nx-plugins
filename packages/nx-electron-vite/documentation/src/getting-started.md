@@ -8,7 +8,7 @@ This guide will walk you through setting up your first Electron application usin
 
 Before you begin, ensure you have the following:
 
-1.  To ensure true compatibility with the Electron version pinned by this plugin (at the time of writing **v39.8.10**), it is recommended to use Node.js v22.21.1. (you can check the release table for stable versions of electron [here](https://releases.electronjs.org/)) While it is possible to use a greater Node version, it is not recommended as it may cause compatibility issues with some of the dependencies used by the plugin.
+1.  **Node.js v24.18.1 or newer.** This plugin pins Electron **v43.4.0**, which embeds Node **v24.18.1** — you can confirm any Electron-to-Node pairing in the [stable release table](https://releases.electronjs.org/). Matching your local Node to Electron's keeps native addons on one ABI: `build-native` compiles `.node` binaries against Electron's Node headers, so a different Node major produces a binary the packaged app cannot load. The repository ships an `.nvmrc`, so `nvs use auto`, `nvm use`, or `fnm use` will select the right version for you.
 2.  An **Nx Workspace** using **v23 or newer** as a **monorepo** where applications and libraries are segregated in individual directories.
 3.  A frontend **application project** within your workspace that you want to wrap with Electron. This could be a React, Angular, Vue, or any other framework application managed by Nx.
 

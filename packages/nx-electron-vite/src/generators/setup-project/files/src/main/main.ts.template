@@ -45,7 +45,13 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: join(__dirname, process.env.NODE_ENV === 'development' ? 'preload.js' : 'preload.cjs'),
-      sandbox: false
+      /**
+       * Electron's default since v20 and recommendation #4 of the security
+       * checklist. A sandboxed preload may only require 'electron' and a small
+       * polyfilled subset of Node — expose privileged work over IPC instead of
+       * turning this off.
+       */
+      sandbox: true
     },
   })
 
