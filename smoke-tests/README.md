@@ -45,7 +45,7 @@ $env:SMOKE_NATIVE='1'; pnpm nx test smoke-tests --output-style=stream-without-pr
 Ordered steps (before `dist`):
 
 1. **Nx plugin** — `nx g …:build-native` (after `npm install -D better-sqlite3`) → `src/main/native/better-sqlite3.node` + `reference.json`.
-2. **Edit host main** — inject `sqlite-smoke.ts` so main loads the `.node` via `nativeBinding`, seeds mock rows, and exposes `db:native-status` / `db:mock-rows` over preload IPC.
+2. **Edit host main + preload** — inject `sqlite-smoke.ts` so main loads the `.node` via `nativeBinding` and seeds mock rows, then add named `dbNativeStatus` / `dbPublishMock` / `onDbMockRows` wrappers to the host preload (the generated bridge exposes fixed operations, never a raw channel).
 3. **Nx** — `nx run <host>:dist` (Vite `copyNative` + `build-electron` with `asarUnpack: **/*.node`).
 4. Assert `.node` in host dist **and** under packaged `app.asar.unpacked`; set pointer `hasNative` for Layer 2.
 

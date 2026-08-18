@@ -11,13 +11,18 @@ import type { LatestWorkspacePointer } from '../shared/latest-workspace';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-/** Shape exposed by generated preload `contextBridge.exposeInMainWorld('ipcRenderer', …)` */
-type PreloadIpc = {
-  on: (
-    channel: string,
-    listener: (event: unknown, ...args: unknown[]) => void,
-  ) => void;
-  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
+/**
+ * Shape exposed by generated preload `exposeInMainWorld('electronAPI', …)`.
+ *
+ * Named operations only — the bridge takes no caller-supplied channel. The
+ * `db*` entries are added to the host preload by `injectSqliteSmokeIpc`.
+ */
+type PreloadApi = {
+  ping: () => Promise<unknown>;
+  onMainProcessMessage: (callback: (message: string) => void) => () => void;
+  dbNativeStatus: () => Promise<unknown>;
+  dbPublishMock: () => Promise<unknown>;
+  onDbMockRows: (callback: (rows: unknown) => void) => () => void;
 };
 
 function readPointer(): LatestWorkspacePointer {
@@ -107,19 +112,27 @@ test.describe('Layer 2: Playwright Electron', () => {
       await expect(window.locator('body')).toBeVisible();
 
       const bridgeReady = await window.evaluate(() => {
-        const api = (window as unknown as { ipcRenderer?: PreloadIpc })
-          .ipcRenderer;
-        return Boolean(api?.invoke && api?.on);
+        const api = (window as unknown as { electronAPI?: PreloadApi })
+          .electronAPI;
+        return Boolean(api?.ping && api?.onMainProcessMessage);
       });
       expect(
         bridgeReady,
-        'window.ipcRenderer bridge from preload missing',
+        'window.electronAPI bridge from preload missing',
       ).toBe(true);
 
+      const noRawIpc = await window.evaluate(() => {
+        return (window as unknown as { ipcRenderer?: unknown }).ipcRenderer;
+      });
+      expect(
+        noRawIpc,
+        'preload must not expose a raw ipcRenderer surface',
+      ).toBeUndefined();
+
       const ping = await window.evaluate(async () => {
-        const api = (window as unknown as { ipcRenderer: PreloadIpc })
-          .ipcRenderer;
-        return api.invoke('app:ping');
+        const api = (window as unknown as { electronAPI: PreloadApi })
+          .electronAPI;
+        return api.ping();
       });
       expect(ping).toEqual({
         ok: true,
@@ -129,16 +142,18 @@ test.describe('Layer 2: Playwright Electron', () => {
 
       const pushPromise = window.evaluate(() => {
         return new Promise<string>((resolve, reject) => {
-          const api = (window as unknown as { ipcRenderer: PreloadIpc })
-            .ipcRenderer;
+          const api = (window as unknown as { electronAPI: PreloadApi })
+            .electronAPI;
           const timer = setTimeout(
             () =>
               reject(new Error('Timed out waiting for main-process-message')),
             15_000,
           );
-          api.on('main-process-message', (_event, payload) => {
+          // First argument is the payload, not an IpcRendererEvent: the preload
+          // wrapper strips it (Electron security checklist #20).
+          api.onMainProcessMessage((message) => {
             clearTimeout(timer);
-            resolve(String(payload));
+            resolve(String(message));
           });
         });
       });
@@ -199,9 +214,9 @@ test.describe('Layer 2: Playwright Electron', () => {
       await window.waitForLoadState('domcontentloaded');
 
       const status = await window.evaluate(async () => {
-        const api = (window as unknown as { ipcRenderer: PreloadIpc })
-          .ipcRenderer;
-        return api.invoke('db:native-status') as Promise<{
+        const api = (window as unknown as { electronAPI: PreloadApi })
+          .electronAPI;
+        return api.dbNativeStatus() as Promise<{
           loaded: boolean;
           bindingExists: boolean;
           nativeBinaryName: string;
@@ -217,24 +232,24 @@ test.describe('Layer 2: Playwright Electron', () => {
       const rowsPromise = window.evaluate(() => {
         return new Promise<Array<{ id: number; name: string }>>(
           (resolve, reject) => {
-            const api = (window as unknown as { ipcRenderer: PreloadIpc })
-              .ipcRenderer;
+            const api = (window as unknown as { electronAPI: PreloadApi })
+              .electronAPI;
             const timer = setTimeout(
               () => reject(new Error('Timed out waiting for db:mock-rows')),
               15_000,
             );
-            api.on('db:mock-rows', (_event, payload) => {
+            api.onDbMockRows((rows) => {
               clearTimeout(timer);
-              resolve(payload as Array<{ id: number; name: string }>);
+              resolve(rows as Array<{ id: number; name: string }>);
             });
           },
         );
       });
 
       await window.evaluate(async () => {
-        const api = (window as unknown as { ipcRenderer: PreloadIpc })
-          .ipcRenderer;
-        return api.invoke('db:publish-mock');
+        const api = (window as unknown as { electronAPI: PreloadApi })
+          .electronAPI;
+        return api.dbPublishMock();
       });
 
       await expect(rowsPromise).resolves.toEqual([...SQLITE_SMOKE_MOCK_ROWS]);

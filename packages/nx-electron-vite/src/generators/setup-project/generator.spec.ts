@@ -330,3 +330,48 @@ describe('generated main process template', () => {
     expect(readMainTemplate()).toMatch(/nodeIntegration:\s*false/);
   });
 });
+
+/**
+ * Electron security checklist #20: expose named operations, never raw
+ * ipcRenderer methods, and strip the IpcRendererEvent before invoking a
+ * renderer callback (event.sender leaks ipcRenderer back to the page).
+ */
+describe('generated preload template', () => {
+  const readPreloadTemplate = () =>
+    readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'files',
+        'src',
+        'preload',
+        'preload.ts.template',
+      ),
+      'utf8',
+    );
+
+  it('exposes a named API object over the context bridge', () => {
+    expect(readPreloadTemplate()).toMatch(
+      /exposeInMainWorld\(\s*'electronAPI'/,
+    );
+  });
+
+  it('does not expose a raw ipcRenderer surface to the renderer', () => {
+    expect(readPreloadTemplate()).not.toMatch(
+      /exposeInMainWorld\(\s*'ipcRenderer'/,
+    );
+  });
+
+  it('does not forward the ipc event object to renderer callbacks', () => {
+    expect(readPreloadTemplate()).not.toMatch(/listener\(\s*event/);
+  });
+
+  it('strips the event argument in subscription wrappers', () => {
+    expect(readPreloadTemplate()).toMatch(/\(\s*_event:\s*IpcRendererEvent/);
+  });
+
+  it('binds subscriptions to a fixed channel rather than a caller-supplied one', () => {
+    expect(readPreloadTemplate()).toMatch(
+      /ipcRenderer\.on\(\s*'main-process-message'/,
+    );
+  });
+});

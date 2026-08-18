@@ -65,17 +65,27 @@ The production build uses `electron-builder.yml` in your project's `src/` direct
 
 ```yaml
 # Key configuration sections
-appId: your-app.electron.app
-productName: Your App Name
+appId: your-guest-project.electron.app
+productName: your-guest-project
 directories:
   buildResources: build
 files:
   - '!**/*'
   - '!dist/apps/your-guest-project-electron/package.json'
-  - 'dist/apps/your-guest-project' # Frontend build
+  - 'dist/apps/your-guest-project' # Frontend build (guest)
   - 'dist/apps/your-guest-project-electron' # Electron host
-  - 'dist/apps/your-guest-project-icons' # Generated icons
+  - 'dist/apps/your-guest-project-electron-icons' # Generated icons
+asarUnpack:
+  - resources/**
+  # Native Node addons cannot dlopen from inside asar
+  - '**/*.node'
 ```
+
+Note that the icons folder is named after the **host** project (`…-electron-icons`), not the guest. Both `appId` and `productName` default to the guest project's name.
+
+::: tip Native modules are already handled
+The `**/*.node` entry under `asarUnpack` is what keeps native binaries loadable after packaging — a `.node` file cannot be `dlopen`ed from inside an asar archive. Combined with the `copyNative` step that places binaries next to `main.cjs`, native modules added via [`build-native`](/generators/build-native) need no extra packaging configuration.
+:::
 
 ### Important Build Behavior
 
@@ -132,13 +142,20 @@ After a successful build, you'll find files organized as follows:
 
 ```
 workspace-root/
-├── dist/
-│   └── apps/
-│       ├── your-guest-project/              # Built frontend
-│       ├── your-guest-project-electron/     # Built Electron host
-│       └── your-guest-project-icons/        # Generated icons
-└── [Platform-specific installers]           # .exe, .dmg, etc. (in root)
+└── dist/
+    ├── apps/
+    │   ├── your-guest-project/                   # Built frontend (guest)
+    │   ├── your-guest-project-electron/          # Built host
+    │   │   ├── main.cjs                          # Main process (renamed from main.js)
+    │   │   ├── preload.cjs                       # Preload script
+    │   │   ├── index.html
+    │   │   └── better-sqlite3.node               # Native binaries, if any
+    │   └── your-guest-project-electron-icons/    # Generated icons
+    ├── win-unpacked/                             # Unpacked app tree (platform-specific)
+    └── your-guest-project-0.0.0-setup.exe        # Installer artifact
 ```
+
+The installers land in `dist/` alongside the intermediate build output, because the generated `electron-builder.yml` does not override `directories.output`. The installer filename comes from the `artifactName` patterns in that file (`{guest-project}-{version}-setup.{ext}` for NSIS).
 
 ## Build Optimization
 
@@ -216,8 +233,18 @@ Only modify these sections if absolutely necessary:
 - **Icon paths** (if using custom locations)
 - **File inclusion patterns** (for framework-specific build outputs)
 
-::: tip Linux Icon Format
-The generated `electron-builder.yml` template uses `.ico` format for Linux icons, but Linux typically uses `.png` format. This is a known issue in the template that will be addressed in future versions.
+### Known rough edges in the generated template
+
+Three details in the generated `electron-builder.yml` are worth reviewing before your first real release:
+
+::: warning Check these before shipping
+
+**Linux icon format.** The template points `linux.icon` at `icon.ico`, while Linux packaging conventionally expects `.png`. This is consistent with what the icons target actually produces on Linux (see [Generating Icons](/generating-icons#generated-icon-formats)), but it is not idiomatic — supply a `.png` if your target distro tooling requires one.
+
+**macOS entitlements path.** The template sets `entitlementsInherit` to `<resources>/entitlements/entitlements.mac.plist`, but the generator writes the file to `<resources>/entitlements/macos/entitlements.mac.plist`. If you sign a macOS build, correct the path (add the `macos/` segment) or move the file, otherwise entitlements are silently not inherited.
+
+**Electron download mirror.** The template sets `electronDownload.mirror` to `https://npmmirror.com/mirrors/electron/`, a third-party mirror. It is useful in regions where the default endpoint is slow, but it means your release binaries are fetched from a host you may not have vetted. Remove the `electronDownload` block to use Electron's official download endpoint.
+
 :::
 
 Avoid modifying platform-specific settings or advanced electron-builder options unless you have extensive experience with the tool.

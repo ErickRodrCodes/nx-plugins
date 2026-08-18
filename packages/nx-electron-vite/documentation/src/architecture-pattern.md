@@ -194,22 +194,36 @@ flowchart TB
 
     **What makes this truly agnostic**: Unlike traditional Electron tools that require framework-specific templates, build configurations, or Electron-aware adaptations baked into your codebase, `nx-electron-vite` treats your frontend application as a **completely independent entity**. Whether you're using React hooks, Angular services, Vue composition API, Svelte stores, or SolidJS signals—your core application code remains **framework-pure** without Electron-specific build tooling or dependencies. However, to leverage desktop-specific features, you'll need a basic understanding of Electron's IPC pattern to communicate with the main process and react to native events.
 
-    **Understanding the Integration Layer**: The preload script exposes APIs to the `window` object, and your frontend code calls these APIs when needed. This is a minimal but intentional integration point:
+    **Understanding the Integration Layer**: The preload script exposes APIs to the `window` object, and your frontend code calls these APIs when needed. This is a minimal but intentional integration point.
+
+    Electron's docs use `electronAPI` as the example key for `contextBridge.exposeInMainWorld` — it is a convention, not a required name. You can rename it: `exposeInMainWorld(apiKey, api)` attaches the object to `window[apiKey]`, and Electron's own pages also use `electron` and `app`. If you change the key, update the matching `Window` declaration in `src/main/electron-env.d.ts` and any guest calls. What matters is the **shape**: named operations bound to fixed channels, with the `IpcRendererEvent` stripped before it reaches the renderer.
 
     ::: code-group
 
-    ```js
-    // Example: Optional desktop APIs exposed by preload script
+    ```ts [src/preload/preload.ts]
+    contextBridge.exposeInMainWorld('electronAPI', {
+      openFile: () => ipcRenderer.invoke('dialog:openFile'),
+      onProgress: (cb) => ipcRenderer.on('job:progress', (_e, pct) => cb(pct)),
+    });
+    ```
+
+    ```js [Guest usage]
     if (window.electronAPI?.openFile) {
-      // Desktop-specific functionality available
       const file = await window.electronAPI.openFile();
     } else {
-      // Fallback for web deployment
       const file = await webFileAPI.selectFile();
     }
     ```
 
     :::
+
+    Adding a capability is a small, reviewable change in three places: register the handler in `src/main/main.ts`, wrap it as a named operation in the preload, and declare it on `Window` in `src/main/electron-env.d.ts` so the guest gets types.
+
+    ::: tip Why named operations instead of a channel bridge
+    Forwarding `invoke`/`on` and letting callers pass any channel would be less code, and a lot of Electron scaffolding does exactly that. Electron's security checklist ([#20 — Do not expose Electron APIs to untrusted web content](https://www.electronjs.org/docs/latest/tutorial/security#20-do-not-expose-electron-apis-to-untrusted-web-content)) advises against it on two counts:
+    1. **No caller-supplied channels.** A generic `invoke(channel, …)` lets renderer code reach every handler the main process registers, so an XSS bug in the guest inherits your entire privileged surface instead of the handful of operations you meant to publish.
+    2. **No event object.** The first argument to an IPC listener is an `IpcRendererEvent`, and its `sender` property is a reference back to `ipcRenderer`. Passing the renderer's callback straight into `ipcRenderer.on` leaks that reference, which is why the wrapper above accepts `(_e, pct)` and forwards only `pct`.
+       :::
 
     This approach ensures your frontend remains portable across all deployment targets while optionally leveraging desktop capabilities when available.
 
@@ -250,9 +264,39 @@ flowchart TB
     style GUEST fill:#fef3c7,stroke:#d97706
 ```
 
-The plugin's `build-native` generator provides an explicit, traceable workflow: it uses the official `@electron/rebuild` tool to compile native modules against the correct Electron ABI, then copies the resulting `.node` binary directly into the host application's source tree at `src/main/native/`. This approach eliminates the common anti-pattern where renderer processes accidentally import Node.js modules by making such imports architecturally impossible—the guest application has no access to the host project's dependency tree.
+The plugin's `build-native` generator provides an explicit, traceable workflow: it uses the official `@electron/rebuild` tool to compile the module against the Electron ABI pinned by the plugin, then copies the resulting binary into the host application's source tree as `src/main/native/{package-name}.node`, recording the package and version in `src/main/native/reference.json`. At build time a Vite plugin (`copyNative`) reads that manifest and copies each binary into the host's dist folder alongside `main.cjs`, and `electron-builder` keeps it loadable by listing `**/*.node` under `asarUnpack`.
 
-This represents a fundamental shift from **reactive problem-solving** (bundler exclusions, runtime guards, manual build scripts) to **proactive architectural prevention**. Rather than detecting and handling native module conflicts when they occur, the distributed architecture prevents unnecessary workarounds: the guest project exists in a separate Nx project with its own `package.json` and `node_modules`, meaning it literally cannot `import` or `require` native modules that only exist in the host project's dependency tree. Nx keeps separation of concerns clear, providing a maintainable and reliable path for native dependency management.
+This is a shift from **reactive problem-solving** (bundler exclusions, runtime guards, manual build scripts) to **structural containment**: the binary is an asset of the host project, checked into the host's source tree and loaded from a known path by the main process. The guest project never references it, and nothing in the guest's build graph produces or consumes it.
+
+::: warning What actually enforces the boundary
+Be precise about the mechanism, because it is not filesystem isolation. An Nx monorepo installs a **single hoisted `node_modules` at the workspace root**, so the guest and host resolve packages from the same tree — a determined developer _can_ write `import Database from 'better-sqlite3'` in guest code and have it resolve.
+
+Three things make that a dead end rather than a silent trap:
+
+1. **The renderer has no Node.** The generated main process sets `nodeIntegration: false` and `sandbox: true`, so a native addon cannot be loaded from renderer code at runtime even if it bundles.
+2. **The guest is built for the browser.** Vite targets the browser for guest code, so a native addon import fails at build time instead of shipping.
+3. **Nx can forbid the import outright.** The `@nx/enforce-module-boundaries` lint rule turns a guest→host dependency into a lint error, which is where you make the constraint explicit and CI-enforced.
+
+The architectural payoff is that the _correct_ place for native code is unambiguous and the failure mode is loud and early, not that the import is physically unresolvable.
+:::
+
+### Security Posture of the Generated Shell
+
+The host/guest split is also a security boundary, so the generated shell starts from Electron's recommended defaults rather than leaving them as an exercise. The window created in `src/main/main.ts` uses:
+
+| `webPreferences`   | Value   | Why it matters                                                                                   |
+| ------------------ | ------- | ------------------------------------------------------------------------------------------------ |
+| `nodeIntegration`  | `false` | Renderer code cannot reach Node APIs directly; everything privileged crosses IPC.                |
+| `contextIsolation` | `true`  | Preload and page scripts run in separate contexts, so the page cannot tamper with the bridge.    |
+| `sandbox`          | `true`  | Electron's default since v20 and item #4 of the security checklist; the renderer runs sandboxed. |
+
+The host `index.html` also ships a Content Security Policy (`default-src 'self'`, `script-src 'self'`, `img-src 'self' data:`), and the shell takes a single-instance lock so a second launch focuses the existing window instead of starting a rival process. The preload completes the picture by publishing only named operations over `contextBridge`, never a raw `ipcRenderer` surface — see [the integration layer above](#what-this-means-for-you) for the reasoning.
+
+::: warning Sandboxing constrains your preload
+With `sandbox: true`, the preload script may only `require('electron')` and a small polyfilled subset of Node — it cannot read files or load native addons. That is deliberate: privileged work belongs in the main process, exposed to the renderer as narrow IPC handlers. Reaching for `sandbox: false` to make a preload import work trades away the strongest isolation Electron offers; add a handler in `main.ts` instead.
+:::
+
+In development the window loads `VITE_DEV_SERVER_URL` (falling back to `http://localhost:4200`) and opens DevTools; in production it loads the built guest `index.html` from disk. The dev configuration deliberately does **not** set `ELECTRON_DISABLE_SECURITY_WARNINGS`, so Electron's own console warnings stay visible while you develop.
 
 ### Workspace Integrity Architecture
 

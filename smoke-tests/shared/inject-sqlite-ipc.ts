@@ -102,7 +102,74 @@ export function pushSqliteMockRows(win: BrowserWindow): void {
 `;
 
 /**
- * Writes sqlite smoke module and wires it into generated host main.ts.
+ * Named preload wrappers for the sqlite smoke channels.
+ *
+ * The generated preload exposes only fixed, named operations, so reaching a new
+ * channel from the renderer means adding a wrapper here — the same step a real
+ * consumer takes. Mirrors the template style: strip the event, return a
+ * disposer.
+ */
+const SQLITE_SMOKE_PRELOAD_API = `
+  // --- injected by smoke-tests: wrappers for the sqlite smoke channels ---
+  dbNativeStatus: () => ipcRenderer.invoke('db:native-status'),
+
+  dbPublishMock: () => ipcRenderer.invoke('db:publish-mock'),
+
+  onDbMockRows: (callback: (rows: unknown) => void) => {
+    const listener = (_event: IpcRendererEvent, rows: unknown) => callback(rows)
+
+    ipcRenderer.on('db:mock-rows', listener)
+
+    return () => {
+      ipcRenderer.off('db:mock-rows', listener)
+    }
+  },
+`;
+
+/** Adds the sqlite smoke operations to the generated host preload. */
+function injectSqlitePreloadApi(
+  workspacePath: string,
+  electronHost: string,
+): void {
+  const preloadPath = join(
+    workspacePath,
+    'apps',
+    electronHost,
+    'src',
+    'preload',
+    'preload.ts',
+  );
+
+  if (!existsSync(preloadPath)) {
+    throw new Error(`Host preload.ts not found: ${preloadPath}`);
+  }
+
+  let preload = readFileSync(preloadPath, 'utf8');
+
+  if (preload.includes('dbNativeStatus')) return;
+
+  const anchor = preload.match(
+    /contextBridge\.exposeInMainWorld\(\s*['"]electronAPI['"]\s*,\s*\{/,
+  );
+  if (!anchor || anchor.index === undefined) {
+    throw new Error(
+      `Could not find exposeInMainWorld('electronAPI', {) in ${preloadPath}`,
+    );
+  }
+
+  const insertAt = anchor.index + anchor[0].length;
+  preload =
+    preload.slice(0, insertAt) +
+    `\n${SQLITE_SMOKE_PRELOAD_API}` +
+    preload.slice(insertAt);
+
+  writeFileSync(preloadPath, preload, 'utf8');
+  console.log(`💉 Injected sqlite preload API into ${preloadPath}`);
+}
+
+/**
+ * Writes sqlite smoke module and wires it into generated host main.ts, then
+ * exposes the matching named operations through the host preload.
  * Call only after build-native has placed the .node.
  */
 export function injectSqliteSmokeIpc(options: {
@@ -172,6 +239,8 @@ export function injectSqliteSmokeIpc(options: {
 
   writeFileSync(mainPath, main, 'utf8');
   console.log(`💉 Injected sqlite smoke IPC into ${mainPath}`);
+
+  injectSqlitePreloadApi(workspacePath, electronHost);
 }
 
 export function resolveHostNativeBinaryName(
