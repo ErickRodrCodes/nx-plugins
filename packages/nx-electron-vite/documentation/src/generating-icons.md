@@ -28,9 +28,15 @@ your-electron-project/
 │   └── resources/
 │       └── icon/
 │           └── source/
-│               ├── icon.png      # Main application icon
-│               └── setup.png     # Installer icon
+│               ├── icon.png      # Main application icon (read by the executor)
+│               ├── setup.png     # Installer icon (read by the executor)
+│               ├── icon.svg      # Editable placeholder artwork
+│               ├── icon-o.svg    # Editable placeholder variants
+│               ├── icon-o2.svg
+│               └── icon.ai
 ```
+
+The generator ships working placeholder icons, so the target succeeds before you supply your own artwork. Only the two `.png` files are read during generation — the `.svg` and `.ai` files are editable sources for you to export from, and can be deleted if you keep artwork elsewhere.
 
 ### Image Requirements
 
@@ -85,44 +91,30 @@ nx nx-electron-icons [your-electron-project] --configuration=setup
 
 ## Generated Icon Formats
 
-The icon generator creates platform-specific formats automatically:
+The executor produces **one container format per run, chosen by the machine you run it on**. Each container holds every standard resolution internally, so a single `.ico` or `.icns` covers all the sizes the OS asks for.
 
-### Windows Icons
+| Build platform | Format produced | `png2icons` flag                              |
+| -------------- | --------------- | --------------------------------------------- |
+| macOS          | `.icns`         | `-icns`                                       |
+| Windows        | `.ico`          | `-icop` (members stored PNG-compressed)       |
+| Linux          | `.ico`          | `-icop` — same as Windows, see the note below |
 
-- **`.ico`** files in multiple sizes (16x16, 32x32, 48x48, 256x256)
-- Used for application executable and taskbar
-- Setup icons for installer
+::: warning Icons are not cross-compiled
+Running the target on Windows produces only `.ico`; it does not also emit the `.icns` that a macOS build needs. If you distribute for multiple platforms, generate icons on each platform (or in a per-platform CI job) as part of that platform's build.
 
-### macOS Icons
-
-- **`.icns`** files with multiple resolutions
-- Supports Retina displays with high-DPI variants
-- Used for application bundle and Dock
-
-### Linux Icons
-
-- **`.png`** files in standard sizes (16x16, 32x32, 48x48, 64x64, 128x128, 256x256, 512x512)
-- Used for desktop entries and window managers
+Linux takes the `-icop` branch too, so it also receives an `.ico` rather than the loose `.png` set Linux packaging conventionally expects. This matches the `.ico` reference in the generated `electron-builder.yml`, but it is a known rough edge rather than an intentional design.
+:::
 
 ## Icon Output Location
 
-Generated icons are placed in your project's distribution folder:
+Generated icons land flat in the icons folder for your project — `dist/{project-directory}-icons`, the `iconOutputPath` wired into the `nx-electron-icons` target. There are no per-platform subdirectories:
 
 ```
 dist/
-└── [your-electron-project]/
-    └── icons/
-        ├── win/
-        │   ├── icon.ico
-        │   └── setup.ico
-        ├── mac/
-        │   ├── icon.icns
-        │   └── setup.icns
-        └── png/
-            ├── 16x16.png
-            ├── 32x32.png
-            ├── 48x48.png
-            └── ... (all sizes)
+└── apps/
+    └── my-app-electron-icons/
+        ├── icon.ico     # or icon.icns on macOS
+        └── setup.ico    # or setup.icns on macOS
 ```
 
 ## Integration with Build Process
@@ -135,9 +127,11 @@ Icon generation is automatically integrated into your production build workflow:
 
 ## Customizing Icon Generation
 
-### Custom Source Paths
+### Custom Output Path
 
-You can customize the source icon paths in your project configuration. The default paths can be modified in your `project.json`:
+The **source** paths are fixed by convention: the executor always reads `{projectRoot}/src/resources/icon/source/icon.png` and `setup.png`. To use your own artwork, replace those two files in place rather than pointing the target elsewhere.
+
+What you can configure is where the generated icons are written, plus the mode:
 
 ```json
 {

@@ -9,12 +9,19 @@
       "executor": "@nx/vitest:test",
       "outputs": ["{options.reportsDirectory}"],
       "options": {
-        "reportsDirectory": "../../coverage/smoke-tests"
+        "reportsDirectory": "{projectRoot}/../../coverage/smoke-tests"
       },
       "configurations": {
         "ci": {
           "reporter": ["verbose"]
         }
+      }
+    },
+    "e2e-electron": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx playwright test -c electron-e2e/playwright.config.ts",
+        "cwd": "smoke-tests"
       }
     }
   }

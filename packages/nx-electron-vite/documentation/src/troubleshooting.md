@@ -170,8 +170,27 @@ Before distributing your application:
 **Solutions**:
 
 - Ensure you ran `nx g @erickrodrcodes/nx-electron-vite:build-native` for the module
-- Verify the `.node` file exists in `src/main/native/`
-- Check that you're using the correct path in your code
+- Verify the `.node` file exists in `src/main/native/` (source) **and** next to `main.cjs` in your
+  main process output directory (runtime). The build copies it flat — there is no `native/`
+  subfolder in the output
+- Resolve the binary with `join(__dirname, '<name>.node')`. Do not use
+  `fileURLToPath(import.meta.url)`: the main process is CommonJS, and that expression becomes
+  `undefined` after bundling, which crashes the app on startup
+- Use the filename exactly as recorded in `reference.json` — it follows the npm package name, so
+  `better-sqlite3.node` with hyphens, not `better_sqlite3.node`
+
+**"not a valid Win32 application" specifically** means the `.node` file is not a Windows binary at
+all — typically a prebuild for another platform (for example a macOS `darwin-arm64.node`) was picked
+up instead of a real rebuild. Confirm the file starts with the `MZ` signature of a Windows PE binary:
+
+```powershell
+# Prints "MZ" for a valid Windows binary
+[System.IO.File]::ReadAllBytes("apps/my-app-electron/src/main/native/better-sqlite3.node")[0..1] `
+  | ForEach-Object { [char]$_ }
+```
+
+If it is not `MZ`, delete the file and re-run `build-native` so the module is compiled for your
+platform and Electron ABI.
 
 ### ABI Mismatch Errors
 
@@ -189,10 +208,16 @@ Check `src/main/native/reference.json` to see the exact binary filenames:
 ```json
 {
   "better-sqlite3": {
-    "path": "better_sqlite3.node",
-    "version": "11.8.1"
+    "path": "better-sqlite3.node",
+    "version": "13.0.3"
   }
 }
+```
+
+Load it relative to the compiled main process, which is where the build places it:
+
+```typescript
+nativeBinding: join(__dirname, 'better-sqlite3.node');
 ```
 
 ## Getting Help

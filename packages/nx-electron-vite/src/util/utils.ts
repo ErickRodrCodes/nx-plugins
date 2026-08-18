@@ -14,7 +14,7 @@ import {
 
 import { rebuild } from '@electron/rebuild';
 
-import { determineProjectNameAndRootOptions } from '@nx/devkit/src/generators/project-name-and-root-utils';
+import { determineProjectNameAndRootOptions } from '@nx/devkit/internal';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { ChildProcess, exec } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -64,7 +64,7 @@ export interface RebuildResult {
  */
 export async function getProjectOutputDirectory(
   tree: Tree,
-  projectName: string
+  projectName: string,
 ): Promise<string> {
   const projectConfig = readProjectConfiguration(tree, projectName);
 
@@ -79,7 +79,7 @@ export async function getProjectOutputDirectory(
         .replace(/\.\.\//g, '');
 
       logger.info(
-        `Resolved output path for project ${projectName} from build target outputs: ${outputPath}`
+        `Resolved output path for project ${projectName} from build target outputs: ${outputPath}`,
       );
       return outputPath;
     }
@@ -89,7 +89,7 @@ export async function getProjectOutputDirectory(
   if (projectConfig.targets?.build?.options?.outputPath) {
     return projectConfig.targets.build.options.outputPath.replace(
       /\.\.\//g,
-      ''
+      '',
     );
   }
 
@@ -103,7 +103,7 @@ export async function getProjectOutputDirectory(
   throw new Error(
     `Could not determine output path for project ${projectName}. ` +
       `Please ensure the project has a build target with outputs configured, ` +
-      `or explicitly set outputPath in project.json, or have a vite.config.ts with outDir specified.`
+      `or explicitly set outputPath in project.json, or have a vite.config.ts with outDir specified.`,
   );
 }
 
@@ -115,7 +115,7 @@ export async function getProjectOutputDirectory(
  */
 export async function getViteOutputPath(
   tree: Tree,
-  projectName: string
+  projectName: string,
 ): Promise<string> {
   const projectConfig = readProjectConfiguration(tree, projectName);
 
@@ -130,7 +130,7 @@ export async function getViteOutputPath(
 
   const viteConfigPath = path.posix.join(
     projectConfig.root,
-    viteConfigFiles[0]
+    viteConfigFiles[0],
   );
   const viteConfigContent = tree.read(viteConfigPath, 'utf-8');
 
@@ -149,7 +149,7 @@ export async function getViteOutputPath(
     logger.info(
       `Resolved output path for project ${projectName} from ${
         viteConfigFiles[0]
-      }: ${fullPath.replace(/\.\.\//g, '')}`
+      }: ${fullPath.replace(/\.\.\//g, '')}`,
     );
     return fullPath.replace(/\.\.\//g, '');
   }
@@ -164,7 +164,7 @@ export async function getViteOutputPath(
  */
 export async function normalizeOptions(
   tree: Tree,
-  schema: SetupProjectSchema
+  schema: SetupProjectSchema,
 ): Promise<SetupProjectSchema> {
   // Normalize project name: use guestProject-electron only if nameProject is undefined, null, empty string or whitespace
   const projectName =
@@ -193,7 +193,7 @@ export async function normalizeOptions(
 
   const outputGuestDirectory = await getProjectOutputDirectory(
     tree,
-    schema.guestProject
+    schema.guestProject,
   );
 
   const options: SetupProjectSchema = {
@@ -214,7 +214,7 @@ export async function normalizeOptions(
     directoryResources: path.posix.join(projectDirectory, 'src/resources'),
     offsetFromRoot: offsetFromRoot(projectDirectory),
     rootTsConfigPath: `${offsetFromRoot(
-      projectDirectory
+      projectDirectory,
     )}${getRootTsConfigPath()}`,
     nsisExtraFilePath: path.posix.join(projectDirectory, 'src/installer.nsh'),
   };
@@ -230,7 +230,7 @@ export async function normalizeOptions(
  */
 export const isApplication = async (
   tree: Tree,
-  guestProject: string
+  guestProject: string,
 ): Promise<boolean> => {
   const project = readProjectConfiguration(tree, guestProject);
   return project.projectType === 'application';
@@ -269,11 +269,11 @@ function getRootTsConfigFileName(): string | null {
  */
 export const checkNodeVersion = (
   currentVersion: string,
-  suggestedNodeVersion: string
+  suggestedNodeVersion: string,
 ): void => {
   if (compareNodeVersion(currentVersion, suggestedNodeVersion) === -1) {
     throw new Error(
-      `Your current node version ${currentVersion} is lower than the suggested version ${suggestedNodeVersion}. Please update your node version to ${suggestedNodeVersion} or higher.`
+      `Your current node version ${currentVersion} is lower than the suggested version ${suggestedNodeVersion}. Please update your node version to ${suggestedNodeVersion} or higher.`,
     );
   }
 };
@@ -286,7 +286,7 @@ export const checkNodeVersion = (
  */
 export const cleanupDependencies = async (
   tree: Tree,
-  schema: SetupProjectSchema
+  schema: SetupProjectSchema,
 ): Promise<GeneratorCallback> => {
   const devDependencies: string[] = [
     '@nx/web',
@@ -313,7 +313,7 @@ export const cleanupDependencies = async (
  */
 export const installDependencies = async (
   tree: Tree,
-  schema: SetupProjectSchema
+  schema: SetupProjectSchema,
 ): Promise<GeneratorCallback> => {
   // First check the current node version
   checkNodeVersion(process.versions.node, versionLibraries.node);
@@ -331,13 +331,14 @@ export const installDependencies = async (
   const dependencies = {};
 
   if (schema.testRunner && schema.testRunner === 'vitest') {
+    devDependencies['@nx/vitest'] = NX_VERSION;
     devDependencies['vitest'] = versionLibraries.vitest;
   }
 
   return await addDependenciesToPackageJson(
     tree,
     dependencies,
-    devDependencies
+    devDependencies,
   );
 };
 
@@ -370,7 +371,7 @@ export function compareNodeVersion(version1: string, version2: string): number {
  */
 export function runCommandUntil(
   command: string,
-  criteria: (output: string) => boolean
+  criteria: (output: string) => boolean,
 ): Promise<ChildProcess> {
   const pathToWorkspace = resolve(workspaceRoot);
   const p = exec(`${command}`, {
@@ -415,11 +416,11 @@ export function runCommandUntil(
  */
 export async function restorePackageJson(
   workspace: string,
-  originalPackageJson: object
+  originalPackageJson: object,
 ): Promise<void> {
   await writeFile(
     path.posix.join(workspace, 'package.json'),
-    JSON.stringify(originalPackageJson, null, 2)
+    JSON.stringify(originalPackageJson, null, 2),
   );
 }
 
@@ -454,7 +455,7 @@ export interface RebuildResult {
  * @returns {Promise<string>} - The command to execute for icon generation.
  */
 export async function resolveIconCommand(
-  params: ResolveIconCommandParams
+  params: ResolveIconCommandParams,
 ): Promise<string> {
   if (!existsSync(params.iconOutputPath)) {
     await mkdir(params.iconOutputPath, { recursive: true });
@@ -466,7 +467,7 @@ export async function resolveIconCommand(
     'resources',
     'icon',
     'source',
-    `${params.type}.png`
+    `${params.type}.png`,
   );
   const resolveTargetFile = path.posix.join(params.iconOutputPath, params.type);
 
@@ -498,7 +499,7 @@ async function validateModule(moduleName: string): Promise<boolean> {
  * @throws {Error} If any module is invalid or if the rebuild process fails.
  */
 export async function rebuildNativeModules(
-  moduleNames: string | string[]
+  moduleNames: string | string[],
 ): Promise<RebuildResult> {
   // Ensure moduleNames is always an array
   const modules = Array.isArray(moduleNames) ? moduleNames : [moduleNames];
@@ -514,7 +515,7 @@ export async function rebuildNativeModules(
     modules.map(async (moduleName) => ({
       moduleName,
       exists: await validateModule(moduleName),
-    }))
+    })),
   );
 
   // Filter out invalid modules
@@ -529,7 +530,7 @@ export async function rebuildNativeModules(
       .map((m) => m.moduleName)
       .join(', ');
     throw new Error(
-      `Cannot proceed with rebuild. Missing modules: ${invalidModuleNames}`
+      `Cannot proceed with rebuild. Missing modules: ${invalidModuleNames}`,
     );
   }
 
@@ -543,14 +544,27 @@ export async function rebuildNativeModules(
     try {
       logger.info(`📦 Rebuilding ${moduleName}...`);
 
-      await rebuild({
-        buildPath: workspaceRoot,
-        force: true,
-        onlyModules: [moduleName],
-        electronVersion: versionLibraries.electron.replace('^', ''),
+      // better-sqlite3 (prebuildify) sets binding.gyp `prebuild_exists` from a
+      // host Node prebuild and skips compile (`type: none`) unless force_build=1.
+      // Without this, @electron/rebuild "succeeds" but produces no .node for Electron.
+      await withNpmConfigForceBuild(async () => {
+        await rebuild({
+          buildPath: workspaceRoot,
+          force: true,
+          onlyModules: [moduleName],
+          electronVersion: versionLibraries.electron.replace('^', ''),
+          arch: process.arch,
+        });
       });
 
       const nativeFilePath = await getNativeAddonFile(moduleName);
+      if (!isRebuiltNativeAddonPath(nativeFilePath)) {
+        throw new Error(
+          `Rebuild of ${moduleName} did not produce build/Release/*.node ` +
+            `(got ${nativeFilePath}). Ensure Visual Studio Build Tools / Python ` +
+            `are available for @electron/rebuild, and force_build is applied.`,
+        );
+      }
       successful.push({ moduleName, nativeFilePath });
       logger.info(`✅ Successfully rebuilt ${moduleName}`);
     } catch (error) {
@@ -566,10 +580,35 @@ export async function rebuildNativeModules(
 }
 
 /**
+ * Forces node-gyp `force_build=1` for the duration of `fn` (prebuildify packages
+ * otherwise skip compile when a host Node prebuild exists).
+ */
+export async function withNpmConfigForceBuild<T>(
+  fn: () => Promise<T>,
+): Promise<T> {
+  const prevForceBuild = process.env.npm_config_force_build;
+  process.env.npm_config_force_build = '1';
+  try {
+    return await fn();
+  } finally {
+    if (prevForceBuild === undefined) {
+      delete process.env.npm_config_force_build;
+    } else {
+      process.env.npm_config_force_build = prevForceBuild;
+    }
+  }
+}
+
+/** True when the path is @electron/rebuild output, not an npm prebuild. */
+export function isRebuiltNativeAddonPath(nativeFilePath: string): boolean {
+  return /\/build\/(Release|Debug)\//i.test(nativeFilePath.replace(/\\/g, '/'));
+}
+
+/**
  * Locates the native addon (.node) file for a given module.
- * @param {string} moduleName - Name of the module.
- * @returns {Promise<string>} - Path to the .node file.
- * @throws {Error} If the native addon file cannot be found.
+ * Prefers Electron rebuild output under build/Release, then a platform-matching
+ * prebuild. Never returns a cross-platform prebuild (that yields
+ * "not a valid Win32 application" / bad Mach-O / bad ELF at dlopen).
  */
 async function getNativeAddonFile(moduleName: string): Promise<string> {
   try {
@@ -579,38 +618,107 @@ async function getNativeAddonFile(moduleName: string): Promise<string> {
     const nodeFile = await findNodeFile(moduleFolder);
     if (!nodeFile) {
       throw new Error(
-        `No .node file found for "${moduleName}" in ${moduleFolder}`
+        `No .node file found for "${moduleName}" in ${moduleFolder}. ` +
+          `Expected build/Release/*.node after @electron/rebuild (not a foreign prebuild).`,
       );
     }
 
     return nodeFile;
   } catch (error) {
     throw new Error(
-      `Failed to locate native addon for "${moduleName}": ${error.message}`
+      `Failed to locate native addon for "${moduleName}": ${error.message}`,
     );
   }
 }
 
+function platformPrebuildNames(): string[] {
+  const arch = process.arch;
+  const names = [`${process.platform}-${arch}.node`];
+  // better-sqlite3 / prebuildify naming
+  if (process.platform === 'win32' && arch === 'x64') {
+    names.push('win32-x64.node');
+  }
+  if (process.platform === 'linux' && arch === 'x64') {
+    names.push('linux-x64.node', 'linuxmusl-x64.node');
+  }
+  return names;
+}
+
 /**
- * Recursively searches for a .node file in a directory.
- * @param {string} directory - Directory to search in.
- * @returns {Promise<string|null>} - Path to the .node file or null if not found.
- * @throws {Error} If there's an error accessing the directory.
+ * Recursively collect .node paths (platform-native path joins).
  */
-async function findNodeFile(directory: string): Promise<string | null> {
-  const entries = await readdir(directory, { withFileTypes: true });
+async function collectNodeFiles(directory: string): Promise<string[]> {
+  const found: string[] = [];
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch {
+    return found;
+  }
 
   for (const entry of entries) {
-    const fullPath = path.posix.join(directory, entry.name);
-
+    const fullPath = path.join(directory, entry.name);
     if (entry.isFile() && path.extname(entry.name) === '.node') {
-      return fullPath;
+      found.push(fullPath);
+    } else if (entry.isDirectory()) {
+      found.push(...(await collectNodeFiles(fullPath)));
     }
+  }
+  return found;
+}
 
-    if (entry.isDirectory()) {
-      const result = await findNodeFile(fullPath);
-      if (result) return result;
+/**
+ * Locates the native addon (.node) file after rebuild.
+ * Order: build/Release → build/Debug → platform prebuild → other (excluding foreign prebuilds).
+ */
+export async function findNodeFile(directory: string): Promise<string | null> {
+  const releaseDir = path.join(directory, 'build', 'Release');
+  const debugDir = path.join(directory, 'build', 'Debug');
+  const prebuildsDir = path.join(directory, 'prebuilds');
+
+  for (const dir of [releaseDir, debugDir]) {
+    if (!existsSync(dir)) continue;
+    const inDir = await collectNodeFiles(dir);
+    const preferred =
+      inDir.find((f) => /better_sqlite3\.node$/i.test(path.basename(f))) ||
+      inDir.find((f) => /better.?sqlite/i.test(path.basename(f))) ||
+      inDir.find((f) => !/test_extension/i.test(path.basename(f))) ||
+      inDir[0];
+    if (preferred) {
+      logger.info(`📍 Using rebuilt native addon: ${preferred}`);
+      return preferred;
     }
+  }
+
+  if (existsSync(prebuildsDir)) {
+    for (const name of platformPrebuildNames()) {
+      const candidate = path.join(prebuildsDir, name);
+      if (existsSync(candidate)) {
+        logger.warn(
+          `⚠️ No build/Release/*.node found; using platform prebuild ${name}. ` +
+            `This may be Node ABI, not Electron — prefer a successful @electron/rebuild.`,
+        );
+        return candidate;
+      }
+    }
+  }
+
+  // Last resort: any .node outside prebuilds/
+  const all = await collectNodeFiles(directory);
+  const nonPrebuild = all.filter(
+    (f) => !f.split(path.sep).includes('prebuilds'),
+  );
+  if (nonPrebuild.length > 0) {
+    logger.info(`📍 Using native addon: ${nonPrebuild[0]}`);
+    return nonPrebuild[0];
+  }
+
+  // Do NOT return foreign prebuilds (darwin on win32, etc.)
+  if (all.length > 0) {
+    logger.error(
+      `❌ Found ${all.length} .node file(s) but none for ${process.platform}-${process.arch} under build/Release. ` +
+        `Refusing to copy a cross-platform prebuild (e.g. ${path.basename(all[0])}).`,
+    );
   }
 
   return null;

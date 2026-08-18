@@ -116,14 +116,11 @@ pnpm install
 pnpm test
 ```
 
-### **Future E2E Tests (Optional)**
+### **Layer 2 E2E (Playwright Electron)**
 
 ```bash
-# Install Playwright first
-pnpm add -D @playwright/test
-
-# Run e2e tests
-pnpm nx e2e nx-electron-vite-e2e
+# Requires a Layer 1 run first (writes tmp/latest-workspace.json)
+pnpm nx run smoke-tests:e2e-electron
 ```
 
 ## Conclusion

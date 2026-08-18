@@ -1,162 +1,78 @@
-# Smoke Tests for nx-electron-vite Plugin
+# Smoke Tests — nx-electron-vite
 
-This directory contains comprehensive smoke tests for the nx-electron-vite plugin, organized in a modular structure with **optimized setup** to avoid redundant workspace creation.
+Two layers:
 
-## Test Structure
+| Layer | Tool                   | Purpose                                                                   |
+| ----- | ---------------------- | ------------------------------------------------------------------------- |
+| **1** | Vitest                 | Plugin contract: init → setup-project → icons → `dist` + installer        |
+| **2** | Playwright `_electron` | Runtime: packaged launch, `isPackaged`, IPC both ways (`app:ping` + push) |
+
+With `SMOKE_NATIVE=1`, Layer 1 also rebuilds `better-sqlite3`, ships the `.node`, and Layer 2 asserts main loads it and pushes mock rows over IPC.
+
+## Layout
 
 ```
 smoke-tests/
 ├── shared/
-│   ├── workspace-generator.ts    # Shared utilities for workspace management
-│   └── setup.ts                  # Shared workspace setup (runs once)
+│   ├── setup.ts
+│   ├── wipe-tmp.ts
+│   ├── workspace-generator.ts
+│   ├── inject-sqlite-ipc.ts     # SMOKE_NATIVE host main inject
+│   └── latest-workspace.ts      # Pointer for Layer 2
 ├── nx-electron-vite/
-│   ├── 01-workspace-setup.test.ts      # Verifies workspace structure
-│   ├── 02-plugin-init.test.ts          # Tests plugin initialization
-│   ├── 03-project-setup.test.ts        # Tests Electron project setup
-│   ├── 04-native-modules.test.ts       # Tests native module building
-│   ├── 05-icon-generation.test.ts      # Tests icon generation
-│   ├── 06-app-building.test.ts         # Tests Electron app building
-│   └── 07-integration.test.ts          # Tests complete workflow
-├── vitest.setup.ts              # Global setup (runs once)
-├── vitest.config.ts            # Vitest configuration
-├── package.json                # Dependencies and scripts
-├── tsconfig.json               # TypeScript configuration
-└── README.md                   # This file
+│   └── smoke-tests-sequential.test.ts   # Layer 1
+├── electron-e2e/
+│   ├── playwright.config.ts
+│   └── packaged-app.spec.ts             # Layer 2
+├── vitest.config.ts
+└── README.md
 ```
 
-## Optimized Test Architecture
-
-### **Shared Workspace Setup** ⚡
-
-- **Single Setup**: Workspace is created **once** before all tests run
-- **Shared State**: All tests use the same workspace instance
-- **No Redundancy**: Eliminates repeated workspace creation and plugin installation
-- **Faster Execution**: Dramatically reduces test execution time
-
-### **Test Flow**
-
-1. **Global Setup** (`vitest.setup.ts`): Creates workspace, React app, installs plugin, initializes plugin, creates Electron app
-2. **Individual Tests**: Each test only executes its specific commands and verifications
-3. **Global Cleanup**: Cleans up workspace after all tests complete
-
-## What Each Test Covers
-
-### 01-workspace-setup.test.ts
-
-- ✅ Verifies workspace structure exists
-- ✅ Verifies React guest app is properly configured
-- ✅ Verifies Electron app is properly configured
-- ✅ Verifies plugin initialization
-- ✅ Verifies correct project naming convention
-
-### 02-plugin-init.test.ts
-
-- ✅ Verifies Vite plugin configuration in nx.json
-- ✅ Verifies Vite configuration files
-- ✅ Tests plugin re-initialization (no duplicates)
-- ✅ Verifies Vite configuration structure
-
-### 03-project-setup.test.ts
-
-- ✅ Verifies main files in Electron app
-- ✅ Verifies configuration files
-- ✅ Verifies package.json and project.json structure
-- ✅ Verifies directory structure
-- ✅ Verifies TypeScript configuration
-- ✅ Verifies automatic naming convention
-
-### 04-native-modules.test.ts
-
-- ✅ Tests build-native generator with **better-sqlite3**
-- ✅ Verifies native module directory creation and file placement
-- ✅ Tests with multiple packages and custom paths
-- ✅ Verifies configuration files
-- ✅ **Verifies native module is included in build output**
-- ✅ **Tests native module loading in Electron context**
-- ✅ **Validates file permissions and binary integrity**
-
-### 05-icon-generation.test.ts
-
-- ✅ Tests build-icons executor
-- ✅ Verifies icon file generation in multiple formats
-- ✅ Tests platform-specific icons (Windows ICO, macOS ICNS, Linux PNG)
-- ✅ Validates electron-builder configuration
-
-### 06-app-building.test.ts
-
-- ✅ Tests build-electron executor
-- ✅ Verifies build output structure
-- ✅ Tests development and production builds
-- ✅ Validates Vite and electron-nx-vite configuration
-
-### 07-integration.test.ts
-
-- ✅ Tests complete end-to-end workflow
-- ✅ Tests with different workspace presets
-- ✅ Tests with different package managers
-- ✅ Comprehensive output verification
-
-## Performance Benefits
-
-### **Before Optimization**
-
-- Each test: ~2-3 minutes setup + test time
-- Total time: ~15-20 minutes for all tests
-- Redundant workspace creation and plugin installation
-
-### **After Optimization**
-
-- Global setup: ~2-3 minutes (once)
-- Each test: ~30 seconds to 2 minutes
-- Total time: ~5-8 minutes for all tests
-- **60-70% time reduction**
-
-## Running the Tests
+## Layer 1 (packaging)
 
 ```bash
-# Install dependencies
-npm install
-
-# Run all smoke tests (optimized)
-npm test
-
-# Run specific test file
-npm test 04-native-modules.test.ts
-
-# Run in watch mode
-npm run test:watch
-
-# Run with UI
-npm run test:ui
+pnpm nx test smoke-tests --output-style=stream-without-prefixes
 ```
 
-## Test Configuration
+**Always deletes `smoke-tests/tmp` before setup** (no reuse of prior runs), then writes `tmp/latest-workspace.json` (with `hasDist: true` after a successful `dist`).
 
-- **Global Setup**: Single workspace creation before all tests
-- **Timeout**: 5 minutes per test (300000ms)
-- **Global Setup Timeout**: 5 minutes
-- **Environment**: Node.js
-- **Framework**: Vitest
-- **Pool**: Single fork for shared workspace
-- **Cleanup**: Automatic cleanup after all tests
+### Opt-in native (`.node` ship + load proof)
 
-## Native Module Testing
+```bash
+$env:SMOKE_NATIVE='1'; pnpm nx test smoke-tests --output-style=stream-without-prefixes
+```
 
-The native module tests use **better-sqlite3** as a real-world test case to verify:
+Ordered steps (before `dist`):
 
-1. **Module Installation**: Installs better-sqlite3 package
-2. **Native Rebuild**: Rebuilds the module for Electron
-3. **File Placement**: Verifies the .node file is placed in the correct location
-4. **Binary Integrity**: Checks that the file is a valid binary (not empty)
-5. **Build Integration**: Verifies the module is included in the final build
-6. **Runtime Loading**: Tests that the module can be loaded in Electron context
-7. **Functionality**: Tests basic database operations with the native module
+1. **Nx plugin** — `nx g …:build-native` (after `npm install -D better-sqlite3`) → `src/main/native/better-sqlite3.node` + `reference.json`.
+2. **Edit host main + preload** — inject `sqlite-smoke.ts` so main loads the `.node` via `nativeBinding` and seeds mock rows, then add named `dbNativeStatus` / `dbPublishMock` / `onDbMockRows` wrappers to the host preload (the generated bridge exposes fixed operations, never a raw channel).
+3. **Nx** — `nx run <host>:dist` (Vite `copyNative` + `build-electron` with `asarUnpack: **/*.node`).
+4. Assert `.node` in host dist **and** under packaged `app.asar.unpacked`; set pointer `hasNative` for Layer 2.
+
+Inference: if a real `.node` ships and loads in main, buildable host libraries that need native/main-only artifacts can use the same pipeline.
+
+## Layer 2 (Playwright Electron)
+
+Requires a prior Layer 1 run that produced `dist/win-unpacked` (or mac/linux equivalent).
+
+```bash
+pnpm nx run smoke-tests:e2e-electron
+```
+
+- Always: launch, `isPackaged`, preload bridge, `app:ping`, main→renderer string push.
+- When pointer `hasNative`: packaged `.node` on disk, `db:native-status` (load proof), `db:mock-rows` push.
+
+Override workspace path:
+
+```bash
+$env:SMOKE_WORKSPACE='C:\path\to\smoke-test-workspace'; pnpm nx run smoke-tests:e2e-electron
+```
 
 ## Notes
 
-- **Shared Workspace**: All tests use the same workspace instance
-- **No Redundant Setup**: Workspace creation happens only once
-- **Fast Execution**: Tests focus only on their specific functionality
-- **Real-time Output**: All commands use `stdio: 'inherit'` for real-time output
-- **Comprehensive Verification**: Tests verify both file existence and content structure
-- **Native Module Testing**: Includes real functionality verification with better-sqlite3
+- Guest React app uses `--style=css` (Nx 23).
+- Temp workspace uses **npm**; Nx is invoked via `npx nx`.
+- Layer 2 uses experimental Playwright Electron support (`_electron.launch`).
+- Layer 2 is the only end-to-end suite. The former `e2e/nx-electron-vite` browser+webServer
+  suite was removed: it drove a React page in three browsers and covered nothing about
+  Electron packaging.

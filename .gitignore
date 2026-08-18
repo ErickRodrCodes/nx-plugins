@@ -64,3 +64,12 @@ electron-builder-output/
 release/
 electron-dist/
 smoke-tests/test-results.json
+smoke-tests/test-results/
+
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs
+
+# Local secrets and act (GitHub Actions locally) runner map
+.secrets
+.actrc

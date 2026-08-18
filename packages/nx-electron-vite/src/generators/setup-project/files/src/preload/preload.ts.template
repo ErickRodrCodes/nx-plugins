@@ -1,24 +1,35 @@
-import { ipcRenderer, contextBridge } from 'electron'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 
-// --------- Expose some API to the Renderer process ---------
-contextBridge.exposeInMainWorld('ipcRenderer', {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
-  },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
-  },
-  send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
-  },
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
-  },
+/**
+ * The host → guest contract.
+ *
+ * Every entry is a named operation bound to a fixed channel. Never expose
+ * `ipcRenderer` or its methods directly: a caller-supplied channel lets the
+ * renderer reach anything the main process registers, and forwarding the
+ * `IpcRendererEvent` hands back a reference to `ipcRenderer` through
+ * `event.sender`. Both are called out in Electron's security checklist #20,
+ * "Do not expose Electron APIs to untrusted web content".
+ *
+ * To add an operation: register a handler in `src/main/main.ts`, wrap it here,
+ * then declare it on `Window` in `src/main/electron-env.d.ts` so the guest
+ * gets types.
+ */
+contextBridge.exposeInMainWorld('electronAPI', {
+  /** Round-trips to main; proves the bridge and IPC are wired. */
+  ping: () => ipcRenderer.invoke('app:ping'),
 
-  // You can expose other APTs you need here.
-  // ...
+  /**
+   * Subscribes to the greeting main sends on load. The wrapper strips the
+   * event argument and returns an unsubscribe function.
+   */
+  onMainProcessMessage: (callback: (message: string) => void) => {
+    const listener = (_event: IpcRendererEvent, message: string) =>
+      callback(message)
+
+    ipcRenderer.on('main-process-message', listener)
+
+    return () => {
+      ipcRenderer.off('main-process-message', listener)
+    }
+  },
 })

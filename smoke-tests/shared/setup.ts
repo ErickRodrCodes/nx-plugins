@@ -3,6 +3,8 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll } from 'vitest';
+import { writeLatestWorkspacePointer } from './latest-workspace';
+import { wipeSmokeTestsTmp } from './wipe-tmp';
 import { WorkspaceGenerator } from './workspace-generator';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -10,72 +12,55 @@ const rootDir = join(__dirname, '../../');
 const testHash = Date.now().toString();
 const smokeTestsTmpDir = join(__dirname, `../tmp/run-${testHash}`);
 
+/** Shared constants for Layer 1 packaging smoke */
+export const GUEST_APP = 'smoke-test-app';
+export const ELECTRON_HOST = 'smoke-test-app-electron';
+export const EXECUTABLE_NAME = 'smoke-test-app';
+
 let workspaceGenerator: WorkspaceGenerator | null = null;
 
-// Global setup - runs once before all tests
 beforeAll(async () => {
-  // Step 0: Kill any lingering esbuild processes that might lock files
-  console.log('Killing any lingering esbuild processes...');
-  try {
-    // Use full path to taskkill.exe for security (prevents PATH manipulation attacks)
-    // Use spawnSync with shell: false to avoid shell injection
-    const taskkillPath = join(
-      process.env.SYSTEMROOT || 'C:\\Windows',
-      'System32',
-      'taskkill.exe'
-    );
-    spawnSync(taskkillPath, ['/im', 'esbuild.exe', '/f'], {
-      cwd: rootDir,
-      stdio: 'ignore', // Suppress output - it's ok if no process exists
-      shell: false,
-    });
-    console.log('✓ Cleaned up esbuild processes');
-  } catch (e) {
-    // Ignore errors - process might not be running
-    console.log('✓ No esbuild processes to clean up');
-  }
+  // NON-NEGOTIABLE: never reuse a previous run's tmp (Windows locks / stale dist).
+  await wipeSmokeTestsTmp();
 
-  // Create unique directory - no cleanup needed since it's unique
   mkdirSync(smokeTestsTmpDir, { recursive: true });
 
-  // Step 1: Build plugin
   console.log('Building plugin...');
   execSync('pnpm nx clean nx-electron-vite', {
     cwd: rootDir,
     stdio: 'inherit',
   });
-
   execSync('pnpm nx build nx-electron-vite', {
     cwd: rootDir,
     stdio: 'inherit',
   });
 
-  // Step 2: Create tar.gz
-  // Use full path to tar.exe for security (prevents PATH manipulation attacks)
   const tarGzPath = join(smokeTestsTmpDir, 'nx-electron-vite.tar.gz');
-  const tarPath = join(
-    process.env.SYSTEMROOT || 'C:\\Windows',
-    'system32',
-    'tar.exe'
-  );
-  spawnSync(
-    tarPath,
-    [
-      '-czf',
-      tarGzPath,
-      '--directory=dist/packages/nx-electron-vite',
-      '--exclude=node_modules',
-      '--exclude=.git',
-      '.',
-    ],
-    {
-      cwd: rootDir,
-      stdio: 'inherit',
-      shell: false,
-    }
-  );
+  if (process.platform === 'win32') {
+    const tarPath = join(
+      process.env.SYSTEMROOT || 'C:\\Windows',
+      'system32',
+      'tar.exe',
+    );
+    spawnSync(
+      tarPath,
+      [
+        '-czf',
+        tarGzPath,
+        '--directory=dist/packages/nx-electron-vite',
+        '--exclude=node_modules',
+        '--exclude=.git',
+        '.',
+      ],
+      { cwd: rootDir, stdio: 'inherit', shell: false },
+    );
+  } else {
+    execSync(
+      `tar -czf "${tarGzPath}" --exclude=node_modules --exclude=.git -C dist/packages/nx-electron-vite .`,
+      { cwd: rootDir, stdio: 'inherit' },
+    );
+  }
 
-  // Step 3: Create workspace
   console.log('Creating workspace...');
   const workspacePath = join(smokeTestsTmpDir, 'smoke-test-workspace');
   workspaceGenerator = WorkspaceGenerator.fromAbsolutePath(workspacePath);
@@ -88,40 +73,46 @@ beforeAll(async () => {
     directory: smokeTestsTmpDir,
   });
 
-  // Step 3.1: Add @nx/react
+  const nx = () => workspaceGenerator!.nxCli();
+
   console.log('Adding @nx/react...');
-  workspaceGenerator.execCommand('npx nx add @nx/react --yes');
+  workspaceGenerator.execCommand(`${nx()} add @nx/react --yes`);
 
-  // Step 3.2: Create React app
-  console.log('Creating React app...');
-  workspaceGenerator.generateReactApp('smoke-test-app', 'apps/smoke-test-app');
+  console.log('Creating React guest app...');
+  workspaceGenerator.generateReactApp(GUEST_APP, `apps/${GUEST_APP}`);
 
-  // Step 4: Install plugin
-  console.log('Installing plugin...');
+  console.log('Installing plugin from local tarball...');
   workspaceGenerator.copyPluginTarGz();
   workspaceGenerator.addPluginAsDevDependency();
 
-  // Step 5: Run init generator
   console.log('Running init generator...');
   workspaceGenerator.execCommand(
-    'npx nx g @erickrodrcodes/nx-electron-vite:init'
+    `${nx()} g @erickrodrcodes/nx-electron-vite:init`,
   );
 
-  // Step 6: Create Electron project
-  console.log('Creating Electron project...');
-  const electronAppName = 'smoke-test-app-electron';
-  const command = `npx nx g @erickrodrcodes/nx-electron-vite:setup-project --guestProject="smoke-test-app" --name="Smoke Test Electron App" --author="Test Author" --description="Test Electron application" --executableName="smoke-test-app" --directory="apps/${electronAppName}" --updater=false --test=none --no-interactive`;
-  workspaceGenerator.execCommand(command);
+  console.log('Creating Electron host project...');
+  workspaceGenerator.execCommand(
+    `${nx()} g @erickrodrcodes/nx-electron-vite:setup-project --guestProject="${GUEST_APP}" --name="Smoke Test Electron App" --author="Test Author" --description="Test Electron application" --executableName="${EXECUTABLE_NAME}" --directory="apps/${ELECTRON_HOST}" --updater=false --test=none --no-interactive`,
+  );
 
-  console.log('Setup completed successfully');
-}, 300000); // 5 minutes timeout
+  console.log('Layer 1 setup completed successfully');
 
-// Global cleanup - runs once after all tests
+  writeLatestWorkspacePointer({
+    workspacePath,
+    runDir: smokeTestsTmpDir,
+    guestApp: GUEST_APP,
+    electronHost: ELECTRON_HOST,
+    executableName: EXECUTABLE_NAME,
+    hasDist: false,
+  });
+}, 300000);
+
 afterAll(async () => {
-  // Temporarily disabled cleanup for debugging
-  // if (workspaceGenerator) {
-  //   await workspaceGenerator.cleanup();
-  // }
+  // Keep workspace on disk for debugging failed CI/local runs.
+  // Set SMOKE_CLEANUP=1 to remove the temp workspace after tests.
+  if (process.env.SMOKE_CLEANUP === '1' && workspaceGenerator) {
+    await workspaceGenerator.cleanup();
+  }
 }, 30000);
 
 export { rootDir, smokeTestsTmpDir, workspaceGenerator };

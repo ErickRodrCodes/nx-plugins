@@ -1,11 +1,13 @@
-import { app, BrowserWindow } from 'electron'
-// import { createRequire } from 'node:module' // Uncomment if you need to require CommonJS modules in ESM
-import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
+import { app, BrowserWindow, ipcMain } from 'electron'
+import path, { join } from 'node:path'
 
-import path from 'node:path'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+/**
+ * Main is emitted as CommonJS (`main.cjs`). Use Node's `__dirname` — do not use
+ * `import.meta.url` here. Vite/Rolldown CJS transforms have rewritten
+ * `fileURLToPath(import.meta.url)` to `fileURLToPath({}.url)` (undefined),
+ * which crashes the packaged app at startup.
+ */
+declare const __dirname: string
 
 // Ensure Single Instance Lock
 if (!app.requestSingleInstanceLock()) {
@@ -22,6 +24,18 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, '<%= guestProject %
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
+/**
+ * Demo / smoke-testable IPC: the guest calls `window.electronAPI.ping()`, which
+ * the preload wraps around this channel. Guests stay Electron-agnostic; the host
+ * owns the contract, so every channel needs a named wrapper in
+ * `src/preload/preload.ts` before the renderer can reach it.
+ */
+ipcMain.handle('app:ping', async () => ({
+  ok: true as const,
+  from: 'main' as const,
+  packaged: app.isPackaged,
+}))
+
 let win: BrowserWindow | null
 
 function createWindow() {
@@ -33,11 +47,17 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: join(__dirname, process.env.NODE_ENV === 'development' ? 'preload.js' : 'preload.cjs'),
-      sandbox: false
+      /**
+       * Electron's default since v20 and recommendation #4 of the security
+       * checklist. A sandboxed preload may only require 'electron' and a small
+       * polyfilled subset of Node — expose privileged work over IPC instead of
+       * turning this off.
+       */
+      sandbox: true
     },
   })
 
-  // Test active push message to Renderer-process.
+  // Push to the renderer; the guest subscribes via `electronAPI.onMainProcessMessage`.
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.webContents.send('main-process-message', new Date().toLocaleString())
   })
